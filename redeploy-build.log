@@ -1,0 +1,40 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< com.autotrading:auto-trading >--------------------
+[INFO] Building auto-trading 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ war ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ auto-trading ---
+[INFO] Deleting C:\workspace\autotrading\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ auto-trading ---
+[INFO] Copying 4 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ auto-trading ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 50 source files with javac [debug target 11] to target\classes
+[INFO] /C:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: C:\workspace\autotrading\src\main\java\com\autotrading\market\KoreaInvestmentApiClient.java uses unchecked or unsafe operations.
+[INFO] /C:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ auto-trading ---
+[INFO] skip non existing resourceDirectory C:\workspace\autotrading\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ auto-trading ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ auto-trading ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- war:3.3.2:war (default-war) @ auto-trading ---
+[INFO] Packaging webapp
+[INFO] Assembling webapp [auto-trading] in [C:\workspace\autotrading\target\auto-trading]
+[INFO] Processing war project
+[INFO] Copying webapp resources [C:\workspace\autotrading\src\main\webapp]
+[INFO] Building war: C:\workspace\autotrading\target\auto-trading.war
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  4.780 s
+[INFO] Finished at: 2026-03-17T01:10:36+09:00
+[INFO] ------------------------------------------------------------------------

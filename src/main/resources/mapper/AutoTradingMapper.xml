@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.autotrading.mapper.AutoTradingMapper">
+
+    <insert id="insertPriceLog">
+        INSERT INTO tb_auto_price_log(symbol, price, volume, created_at)
+        VALUES(#{symbol}, #{price}, #{volume}, #{createdAt})
+    </insert>
+
+    <insert id="insertOrderLog">
+        INSERT INTO tb_auto_order_log(symbol, side, quantity, price, reason, created_at)
+        VALUES(#{symbol}, #{side}, #{quantity}, #{price}, #{reason}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="upsertPosition">
+        INSERT INTO tb_auto_position(symbol, quantity, avg_price, updated_at)
+        VALUES(#{symbol}, #{quantity}, #{avgPrice}, CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE
+            quantity = VALUES(quantity),
+            avg_price = VALUES(avg_price),
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="findPosition" resultType="com.autotrading.model.AutoPosition">
+        SELECT id, symbol, quantity, avg_price, updated_at
+        FROM tb_auto_position
+        WHERE symbol = #{symbol}
+    </select>
+
+    <insert id="insertStrategy">
+        INSERT INTO tb_auto_strategy(symbol, strategy_type, status, created_at)
+        VALUES(#{symbol}, #{strategyType}, #{status}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <select id="findLastQuote" resultType="com.autotrading.model.StockQuote">
+        SELECT symbol, price, volume, created_at AS timestamp
+        FROM tb_auto_price_log
+        WHERE symbol = #{symbol}
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="findRecentOrders" resultType="com.autotrading.model.OrderLog">
+        SELECT id, symbol, side, quantity, price, reason, created_at
+        FROM tb_auto_order_log
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findRecentPrices" resultType="com.autotrading.model.PriceLog">
+        SELECT id, symbol, price, volume, created_at
+        FROM tb_auto_price_log
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countWatchlist" resultType="int">
+        SELECT COUNT(*) FROM tb_auto_watchlist
+    </select>
+
+    <select id="countPositions" resultType="int">
+        SELECT COUNT(*) FROM tb_auto_position WHERE quantity > 0
+    </select>
+</mapper>

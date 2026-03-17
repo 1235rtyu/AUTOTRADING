@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.autotrading.mapper.WatchlistMapper">
+
+    <select id="findAll" resultType="com.autotrading.model.WatchlistItem">
+        SELECT id, symbol, created_at
+        FROM tb_auto_watchlist
+        ORDER BY id DESC
+    </select>
+
+    <insert id="insert">
+        INSERT INTO tb_auto_watchlist(symbol, created_at)
+        VALUES(#{symbol}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM tb_auto_watchlist WHERE id = #{id}
+    </delete>
+</mapper>
