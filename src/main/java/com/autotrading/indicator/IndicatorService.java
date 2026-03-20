@@ -7,21 +7,35 @@ import java.util.List;
 @Service
 public class IndicatorService {
 
+// ✅ 수정 후 — Wilder's SMMA 방식 (표준 RSI)
     public double calculateRSI(List<Double> closes, int period) {
         if (closes == null || closes.size() < period + 1) {
             return 50.0;
         }
-        double gain = 0, loss = 0;
-        for (int i = closes.size() - period; i < closes.size(); i++) {
+        // 1단계: 초기 평균 (period개)
+        int startIdx = closes.size() - period - 1;
+        double avgGain = 0, avgLoss = 0;
+        for (int i = startIdx + 1; i <= startIdx + period; i++) {
             double diff = closes.get(i) - closes.get(i - 1);
-            if (diff > 0) gain += diff;
-            else loss += Math.abs(diff);
+            if (diff > 0) avgGain += diff;
+            else avgLoss += Math.abs(diff);
         }
-        double avgGain = gain / period;
-        double avgLoss = loss / period;
+        avgGain /= period;
+        avgLoss /= period;
+
+        // 2단계: Wilder's SMMA로 마지막 값까지 갱신
+        for (int i = startIdx + period + 1; i < closes.size(); i++) {
+            double diff = closes.get(i) - closes.get(i - 1);
+            if (diff > 0) {
+                avgGain = (avgGain * (period - 1) + diff) / period;
+                avgLoss = (avgLoss * (period - 1)) / period;
+            } else {
+                avgGain = (avgGain * (period - 1)) / period;
+                avgLoss = (avgLoss * (period - 1) + Math.abs(diff)) / period;
+            }
+        }
         if (avgLoss == 0) return 100;
-        double rs = avgGain / avgLoss;
-        return 100 - (100 / (1 + rs));
+        return 100 - (100 / (1 + avgGain / avgLoss));
     }
 
     public BollingerBands calculateBollingerBands(List<Double> closes, int period, double multiplier) {

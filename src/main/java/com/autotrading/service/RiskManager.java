@@ -1,7 +1,8 @@
 package com.autotrading.service;
 
 import org.springframework.stereotype.Component;
-
+// 5번 줄 아래에 추가
+import org.springframework.scheduling.annotation.Scheduled;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,8 +23,19 @@ public class RiskManager {
         return true;
     }
 
-    public synchronized void orderCompleted(String symbol) {
+    public synchronized void orderSucceeded(String symbol) {
         inFlightOrders.remove(symbol);
+    }
+
+    public synchronized void orderFailed(String symbol) {
+        inFlightOrders.remove(symbol);
+    }
+
+    /**
+     * Backward-compatible alias. Prefer orderSucceeded/orderFailed explicitly.
+     */
+    public synchronized void orderCompleted(String symbol) {
+        orderSucceeded(symbol);
     }
 
     public synchronized void addLoss(double loss) {
@@ -32,5 +44,11 @@ public class RiskManager {
 
     public synchronized boolean hasHitLossLimit() {
         return dailyLoss >= dailyLossLimit;
+        
+    }
+    // 35번 줄 아래에 추가
+    @Scheduled(cron = "0 0 0 * * *")
+    public synchronized void resetDailyLoss() {
+        dailyLoss = 0;
     }
 }

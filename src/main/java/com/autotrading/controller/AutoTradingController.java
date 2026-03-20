@@ -18,8 +18,10 @@ public class AutoTradingController {
 
     @GetMapping("/start")
     @ResponseBody
-    public String start(@RequestParam(name = "symbol", defaultValue = "005930") String symbol) {
-        return autoTradingService.start(symbol);
+    public String start(@RequestParam(name = "symbol", defaultValue = "005930") String symbol,
+                        @RequestParam(name = "exchange", required = false) String exchange,
+                        @RequestParam(name = "buyAmount", required = false) Double buyAmount) {
+        return autoTradingService.start(symbol, exchange, buyAmount);
     }
 
     @GetMapping("/stop")

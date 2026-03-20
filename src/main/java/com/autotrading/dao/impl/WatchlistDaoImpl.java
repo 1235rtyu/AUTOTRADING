@@ -21,8 +21,13 @@ public class WatchlistDaoImpl implements WatchlistDao {
     }
 
     @Override
-    public int add(String symbol) {
-        return mapper.insert(symbol);
+    public WatchlistItem findBySymbol(String symbol) {
+        return mapper.findBySymbol(symbol);
+    }
+
+    @Override
+    public int add(String symbol, String exchange) {
+        return mapper.insert(symbol, exchange);
     }
 
     @Override

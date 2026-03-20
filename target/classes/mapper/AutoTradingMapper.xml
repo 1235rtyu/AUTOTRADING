@@ -5,8 +5,8 @@
 <mapper namespace="com.autotrading.mapper.AutoTradingMapper">
 
     <insert id="insertPriceLog">
-        INSERT INTO tb_auto_price_log(symbol, price, volume, created_at)
-        VALUES(#{symbol}, #{price}, #{volume}, #{createdAt})
+        INSERT INTO tb_auto_price_log(symbol, symbol_name, price, volume, created_at)
+        VALUES(#{symbol}, #{symbolName}, #{price}, #{volume}, #{createdAt})
     </insert>
 
     <insert id="insertOrderLog">
@@ -15,16 +15,17 @@
     </insert>
 
     <insert id="upsertPosition">
-        INSERT INTO tb_auto_position(symbol, quantity, avg_price, updated_at)
-        VALUES(#{symbol}, #{quantity}, #{avgPrice}, CURRENT_TIMESTAMP)
+        INSERT INTO tb_auto_position(symbol, symbol_name, quantity, avg_price, updated_at)
+        VALUES(#{symbol}, #{symbolName}, #{quantity}, #{avgPrice}, CURRENT_TIMESTAMP)
         ON DUPLICATE KEY UPDATE
+            symbol_name = COALESCE(VALUES(symbol_name), symbol_name),
             quantity = VALUES(quantity),
             avg_price = VALUES(avg_price),
             updated_at = CURRENT_TIMESTAMP
     </insert>
 
     <select id="findPosition" resultType="com.autotrading.model.AutoPosition">
-        SELECT id, symbol, quantity, avg_price, updated_at
+        SELECT id, symbol, symbol_name AS symbolName, quantity, avg_price, updated_at
         FROM tb_auto_position
         WHERE symbol = #{symbol}
     </select>
@@ -35,7 +36,7 @@
     </insert>
 
     <select id="findLastQuote" resultType="com.autotrading.model.StockQuote">
-        SELECT symbol, price, volume, created_at AS timestamp
+        SELECT symbol, symbol_name AS name, price, volume, created_at AS timestamp
         FROM tb_auto_price_log
         WHERE symbol = #{symbol}
         ORDER BY created_at DESC
@@ -49,8 +50,40 @@
         LIMIT #{limit}
     </select>
 
+    <select id="findRecentKrOrders" resultType="com.autotrading.model.OrderLog">
+        SELECT o.id,
+               o.symbol,
+               p.symbol_name AS symbolName,
+               o.side,
+               o.quantity,
+               o.price,
+               o.reason,
+               o.created_at AS createdAt
+        FROM tb_auto_order_log o
+        LEFT JOIN tb_auto_position p ON p.symbol = o.symbol
+        WHERE o.symbol REGEXP '^[0-9]+$'
+        ORDER BY o.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findRecentUsOrders" resultType="com.autotrading.model.OrderLog">
+        SELECT o.id,
+               o.symbol,
+               p.symbol_name AS symbolName,
+               o.side,
+               o.quantity,
+               o.price,
+               o.reason,
+               o.created_at AS createdAt
+        FROM tb_auto_order_log o
+        LEFT JOIN tb_auto_position p ON p.symbol = o.symbol
+        WHERE o.symbol REGEXP '^[A-Za-z].*'
+        ORDER BY o.id DESC
+        LIMIT #{limit}
+    </select>
+
     <select id="findRecentPrices" resultType="com.autotrading.model.PriceLog">
-        SELECT id, symbol, price, volume, created_at
+        SELECT id, symbol, symbol_name AS symbolName, price, volume, created_at
         FROM tb_auto_price_log
         ORDER BY id DESC
         LIMIT #{limit}
@@ -62,5 +95,76 @@
 
     <select id="countPositions" resultType="int">
         SELECT COUNT(*) FROM tb_auto_position WHERE quantity > 0
+    </select>
+
+    <select id="findMonitorAggregate" resultType="com.autotrading.model.MonitorAggregateRow">
+        SELECT IFNULL(SUM(p.quantity * COALESCE(lp.price, p.avg_price)), 0) AS evaluationAmount,
+               IFNULL(SUM(p.quantity * p.avg_price), 0) AS costAmount,
+               COUNT(*) AS holdingCount
+        FROM tb_auto_position p
+        LEFT JOIN (
+            SELECT pl.symbol, pl.price
+            FROM tb_auto_price_log pl
+            INNER JOIN (
+                SELECT symbol, MAX(id) AS max_id
+                FROM tb_auto_price_log
+                GROUP BY symbol
+            ) latest ON latest.max_id = pl.id
+        ) lp ON lp.symbol = p.symbol
+        WHERE p.quantity > 0
+        <choose>
+            <when test="market == 'US'">
+                AND p.symbol REGEXP '^[A-Za-z].*'
+            </when>
+            <otherwise>
+                AND p.symbol REGEXP '^[0-9]+$'
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="findTodaySignedAmount" resultType="double">
+        SELECT IFNULL(SUM(
+            CASE
+                WHEN o.side = 'SELL' THEN o.quantity * o.price
+                WHEN o.side = 'BUY' THEN -o.quantity * o.price
+                ELSE 0
+            END
+        ), 0)
+        FROM tb_auto_order_log o
+        WHERE o.reason LIKE '%ACCEPTED%'
+          AND DATE(o.created_at) = CURDATE()
+        <choose>
+            <when test="market == 'US'">
+                AND o.symbol REGEXP '^[A-Za-z].*'
+            </when>
+            <otherwise>
+                AND o.symbol REGEXP '^[0-9]+$'
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="findDailySignedAmounts" resultType="com.autotrading.model.DailyProfitPoint">
+        SELECT DATE_FORMAT(o.created_at, '%Y-%m-%d') AS tradeDate,
+               IFNULL(SUM(
+                   CASE
+                       WHEN o.side = 'SELL' THEN o.quantity * o.price
+                       WHEN o.side = 'BUY' THEN -o.quantity * o.price
+                       ELSE 0
+                   END
+               ), 0) AS profitAmount
+        FROM tb_auto_order_log o
+        WHERE o.reason LIKE '%ACCEPTED%'
+          AND o.created_at >= #{startAt}
+          AND o.created_at &lt; #{endAt}
+        <choose>
+            <when test="market == 'US'">
+                AND o.symbol REGEXP '^[A-Za-z].*'
+            </when>
+            <otherwise>
+                AND o.symbol REGEXP '^[0-9]+$'
+            </otherwise>
+        </choose>
+        GROUP BY DATE_FORMAT(o.created_at, '%Y-%m-%d')
+        ORDER BY tradeDate
     </select>
 </mapper>

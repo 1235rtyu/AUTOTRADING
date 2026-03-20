@@ -4,7 +4,9 @@ USE auto_sy;
 CREATE TABLE IF NOT EXISTS tb_auto_watchlist (
   id INT AUTO_INCREMENT PRIMARY KEY,
   symbol VARCHAR(30) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  exchange VARCHAR(8) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_tb_auto_watchlist_symbol (symbol)
 );
 
 CREATE TABLE IF NOT EXISTS tb_auto_position (

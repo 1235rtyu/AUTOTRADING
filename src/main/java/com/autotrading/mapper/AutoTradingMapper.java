@@ -1,6 +1,8 @@
 package com.autotrading.mapper;
 
 import com.autotrading.model.AutoPosition;
+import com.autotrading.model.DailyProfitPoint;
+import com.autotrading.model.MonitorAggregateRow;
 import com.autotrading.model.OrderLog;
 import com.autotrading.model.PriceLog;
 import com.autotrading.model.StockQuote;
@@ -11,6 +13,7 @@ import java.util.List;
 
 public interface AutoTradingMapper {
     void insertPriceLog(@Param("symbol") String symbol,
+                        @Param("symbolName") String symbolName,
                         @Param("price") double price,
                         @Param("volume") double volume,
                         @Param("createdAt") LocalDateTime createdAt);
@@ -22,6 +25,7 @@ public interface AutoTradingMapper {
                         @Param("reason") String reason);
 
     void upsertPosition(@Param("symbol") String symbol,
+                        @Param("symbolName") String symbolName,
                         @Param("quantity") int quantity,
                         @Param("avgPrice") double avgPrice);
 
@@ -34,10 +38,20 @@ public interface AutoTradingMapper {
     StockQuote findLastQuote(@Param("symbol") String symbol);
 
     List<OrderLog> findRecentOrders(@Param("limit") int limit);
+    List<OrderLog> findRecentKrOrders(@Param("limit") int limit);
+    List<OrderLog> findRecentUsOrders(@Param("limit") int limit);
 
     List<PriceLog> findRecentPrices(@Param("limit") int limit);
 
     int countWatchlist();
 
     int countPositions();
+
+    MonitorAggregateRow findMonitorAggregate(@Param("market") String market);
+
+    Double findTodaySignedAmount(@Param("market") String market);
+
+    List<DailyProfitPoint> findDailySignedAmounts(@Param("market") String market,
+                                                  @Param("startAt") LocalDateTime startAt,
+                                                  @Param("endAt") LocalDateTime endAt);
 }

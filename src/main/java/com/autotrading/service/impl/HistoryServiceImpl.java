@@ -19,4 +19,14 @@ public class HistoryServiceImpl implements HistoryService {
     public List<OrderLog> getRecentOrders(int limit) {
         return autoTradingDao.findRecentOrders(limit);
     }
+
+    @Override
+    public List<OrderLog> getRecentKrOrders(int limit) {
+        return autoTradingDao.findRecentKrOrders(limit);
+    }
+
+    @Override
+    public List<OrderLog> getRecentUsOrders(int limit) {
+        return autoTradingDao.findRecentUsOrders(limit);
+    }
 }

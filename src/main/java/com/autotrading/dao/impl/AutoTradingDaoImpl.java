@@ -3,6 +3,8 @@ package com.autotrading.dao.impl;
 import com.autotrading.dao.AutoTradingDao;
 import com.autotrading.mapper.AutoTradingMapper;
 import com.autotrading.model.AutoPosition;
+import com.autotrading.model.DailyProfitPoint;
+import com.autotrading.model.MonitorAggregateRow;
 import com.autotrading.model.OrderLog;
 import com.autotrading.model.PriceLog;
 import com.autotrading.model.StockQuote;
@@ -20,8 +22,8 @@ public class AutoTradingDaoImpl implements AutoTradingDao {
     }
 
     @Override
-    public void savePriceLog(String symbol, double price, double volume, LocalDateTime timestamp) {
-        mapper.insertPriceLog(symbol, price, volume, timestamp);
+    public void savePriceLog(String symbol, String symbolName, double price, double volume, LocalDateTime timestamp) {
+        mapper.insertPriceLog(symbol, symbolName, price, volume, timestamp);
     }
 
     @Override
@@ -30,8 +32,8 @@ public class AutoTradingDaoImpl implements AutoTradingDao {
     }
 
     @Override
-    public void savePosition(String symbol, int quantity, double avgPrice) {
-        mapper.upsertPosition(symbol, quantity, avgPrice);
+    public void savePosition(String symbol, String symbolName, int quantity, double avgPrice) {
+        mapper.upsertPosition(symbol, symbolName, quantity, avgPrice);
     }
 
     @Override
@@ -55,6 +57,16 @@ public class AutoTradingDaoImpl implements AutoTradingDao {
     }
 
     @Override
+    public List<OrderLog> findRecentKrOrders(int limit) {
+        return mapper.findRecentKrOrders(limit);
+    }
+
+    @Override
+    public List<OrderLog> findRecentUsOrders(int limit) {
+        return mapper.findRecentUsOrders(limit);
+    }
+
+    @Override
     public List<PriceLog> findRecentPrices(int limit) {
         return mapper.findRecentPrices(limit);
     }
@@ -67,5 +79,21 @@ public class AutoTradingDaoImpl implements AutoTradingDao {
     @Override
     public int countPositions() {
         return mapper.countPositions();
+    }
+
+    @Override
+    public MonitorAggregateRow findMonitorAggregate(String market) {
+        return mapper.findMonitorAggregate(market);
+    }
+
+    @Override
+    public double findTodaySignedAmount(String market) {
+        Double value = mapper.findTodaySignedAmount(market);
+        return value == null ? 0.0 : value;
+    }
+
+    @Override
+    public List<DailyProfitPoint> findDailySignedAmounts(String market, LocalDateTime startAt, LocalDateTime endAt) {
+        return mapper.findDailySignedAmounts(market, startAt, endAt);
     }
 }

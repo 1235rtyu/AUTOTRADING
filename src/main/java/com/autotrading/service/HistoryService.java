@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface HistoryService {
     List<OrderLog> getRecentOrders(int limit);
+    List<OrderLog> getRecentKrOrders(int limit);
+    List<OrderLog> getRecentUsOrders(int limit);
 }

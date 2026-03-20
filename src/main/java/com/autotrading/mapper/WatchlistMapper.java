@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface WatchlistMapper {
     List<WatchlistItem> findAll();
-    int insert(@Param("symbol") String symbol);
+    WatchlistItem findBySymbol(@Param("symbol") String symbol);
+    int insert(@Param("symbol") String symbol, @Param("exchange") String exchange);
     int delete(@Param("id") int id);
 }

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 public class OrderLog {
     private Integer id;
     private String symbol;
+    private String symbolName;
     private String side;
     private int quantity;
     private double price;
@@ -15,6 +16,8 @@ public class OrderLog {
     public void setId(Integer id) { this.id = id; }
     public String getSymbol() { return symbol; }
     public void setSymbol(String symbol) { this.symbol = symbol; }
+    public String getSymbolName() { return symbolName; }
+    public void setSymbolName(String symbolName) { this.symbolName = symbolName; }
     public String getSide() { return side; }
     public void setSide(String side) { this.side = side; }
     public int getQuantity() { return quantity; }

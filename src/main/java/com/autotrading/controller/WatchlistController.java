@@ -28,8 +28,9 @@ public class WatchlistController {
     }
 
     @PostMapping("/add")
-    public String add(@RequestParam("symbol") String symbol) {
-        watchlistService.addSymbol(symbol);
+    public String add(@RequestParam("symbol") String symbol,
+                      @RequestParam(name = "exchange", required = false) String exchange) {
+        watchlistService.addSymbol(symbol, exchange);
         return "redirect:/watchlist";
     }
 

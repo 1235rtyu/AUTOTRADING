@@ -30,11 +30,29 @@ public class KisProperties {
     @Value("${kis.requireHashKey:true}")
     private boolean requireHashKey;
 
+    @Value("${kis.forceReal:false}")
+    private boolean forceReal;
+
+    @Value("${kis.overseas.trIdBuy:TTTT1002U}")
+    private String overseasTrIdBuy;
+
+    @Value("${kis.overseas.trIdSell:TTTT1006U}")
+    private String overseasTrIdSell;
+
+    @Value("${kis.overseas.demoTrIdBuy:VTTT1002U}")
+    private String overseasDemoTrIdBuy;
+
+    @Value("${kis.overseas.demoTrIdSell:VTTT1001U}")
+    private String overseasDemoTrIdSell;
+
     public String getEnv() {
         return env;
     }
 
     public boolean isDemo() {
+        if (forceReal) {
+            return false;
+        }
         if (!StringUtils.hasText(env)) {
             return true;
         }
@@ -72,6 +90,22 @@ public class KisProperties {
 
     public boolean isRequireHashKey() {
         return requireHashKey;
+    }
+
+    public String getOverseasTrIdBuy() {
+        return overseasTrIdBuy;
+    }
+
+    public String getOverseasTrIdSell() {
+        return overseasTrIdSell;
+    }
+
+    public String getOverseasDemoTrIdBuy() {
+        return overseasDemoTrIdBuy;
+    }
+
+    public String getOverseasDemoTrIdSell() {
+        return overseasDemoTrIdSell;
     }
 
     public boolean isConfigured() {

@@ -254,6 +254,27 @@ body {
 .hw-val.gold    { color: var(--gold); }
 .hw-bar { width: 100%; height: 2px; background: var(--lime); }
 
+/* 시장 지수 스트립 */
+.idx-strip{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap:10px;
+  margin-bottom:28px;
+  animation: fade-up .5s .22s ease both;
+}
+.idx-card{
+  background:var(--panel);
+  border:1px solid var(--rim);
+  border-radius:var(--r2);
+  padding:9px 12px;
+}
+.idx-name{font-family:var(--mono);font-size:9px;color:rgba(232,237,245,.92);letter-spacing:1px;text-transform:uppercase;}
+.idx-price{font-family:var(--mono);font-size:16px;font-weight:600;color:#fff;margin-top:4px;line-height:1.1;}
+.idx-change{font-family:var(--mono);font-size:10px;margin-top:3px;color:#fff;}
+.idx-change.up{color:var(--red);}
+.idx-change.dn{color:var(--blue);}
+.idx-change.fl{color:#fff;}
+
 /* 섹션 디바이더 */
 .sec-div { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; animation: fade-up .5s .3s ease both; }
 .div-ln  { flex: 1; height: 1px; background: linear-gradient(90deg, var(--rim), transparent); }
@@ -583,7 +604,7 @@ body {
           </p>
           <div class="hero-ctas">
             <a class="cta-primary"   href="${pageContext.request.contextPath}/dashboard">▶&nbsp;&nbsp;Dashboard 열기</a>
-            <a class="cta-secondary" href="${pageContext.request.contextPath}/control">⚡ Control Panel</a>
+            <a class="cta-secondary" href="${pageContext.request.contextPath}/control/kr">⚡ Control Panel</a>
           </div>
           <div class="api-hint">
             <span class="api-lbl">API</span>
@@ -608,6 +629,39 @@ body {
         </div>
       </div>
 
+      <div class="idx-strip" id="idxStrip">
+        <div class="idx-card" data-idx="KOSPI">
+          <div class="idx-name">KOSPI</div>
+          <div class="idx-price" id="idx-kospi-price">-</div>
+          <div class="idx-change fl" id="idx-kospi-chg">-</div>
+        </div>
+        <div class="idx-card" data-idx="KOSDAQ">
+          <div class="idx-name">KOSDAQ</div>
+          <div class="idx-price" id="idx-kosdaq-price">-</div>
+          <div class="idx-change fl" id="idx-kosdaq-chg">-</div>
+        </div>
+        <div class="idx-card" data-idx="S&P 500">
+          <div class="idx-name">S&amp;P 500</div>
+          <div class="idx-price" id="idx-sp500-price">-</div>
+          <div class="idx-change fl" id="idx-sp500-chg">-</div>
+        </div>
+        <div class="idx-card" data-idx="NASDAQ">
+          <div class="idx-name">NASDAQ</div>
+          <div class="idx-price" id="idx-nasdaq-price">-</div>
+          <div class="idx-change fl" id="idx-nasdaq-chg">-</div>
+        </div>
+        <div class="idx-card" data-idx="DOW">
+          <div class="idx-name">DOW</div>
+          <div class="idx-price" id="idx-dow-price">-</div>
+          <div class="idx-change fl" id="idx-dow-chg">-</div>
+        </div>
+        <div class="idx-card" data-idx="USD/KRW">
+          <div class="idx-name">USD/KRW</div>
+          <div class="idx-price" id="idx-fx-price">-</div>
+          <div class="idx-change fl" id="idx-fx-chg">-</div>
+        </div>
+      </div>
+
       <!-- 메뉴 카드 -->
       <div class="sec-div">
         <div class="div-ln"></div><span class="div-lbl">Navigation</span>
@@ -618,7 +672,7 @@ body {
           <div class="card-body"><div class="card-icon">📊</div><div class="card-name">Dashboard</div><div class="card-desc">상태, 최근 주문, 실시간 가격 로그 종합 요약</div></div>
           <div class="card-foot"><span class="card-tag">Overview</span><span class="card-arrow">→ OPEN</span></div>
         </a>
-        <a class="menu-card c-emerald" href="${pageContext.request.contextPath}/control">
+        <a class="menu-card c-emerald" href="${pageContext.request.contextPath}/control/kr">
           <div class="card-body"><div class="card-icon">⚡</div><div class="card-name">Auto Control</div><div class="card-desc">자동매매 엔진 시작·중지 및 실시간 상태 모니터링</div></div>
           <div class="card-foot"><span class="card-tag">Engine Control</span><span class="card-arrow">→ OPEN</span></div>
         </a>
@@ -661,7 +715,7 @@ body {
       <!-- NAV FOOTER -->
       <div class="nav-footer">
         <a class="nav-btn primary" href="${pageContext.request.contextPath}/dashboard">Dashboard</a>
-        <a class="nav-btn" href="${pageContext.request.contextPath}/control">Control</a>
+        <a class="nav-btn" href="${pageContext.request.contextPath}/control/kr">Control</a>
         <a class="nav-btn" href="${pageContext.request.contextPath}/history/orders">Order History</a>
         <a class="nav-btn" href="${pageContext.request.contextPath}/watchlist">Watchlist</a>
       </div>
@@ -781,6 +835,42 @@ setInterval(()=>{
   logoutBtn.addEventListener('click',()=>post(BASE+'/api/auth/logout',{}).then(()=>showOut()));
 })();
 
+/* ── 시장 지수 카드 ── */
+function setIndexCard(priceId, chgId, price, change, point){
+  const pEl = document.getElementById(priceId);
+  const cEl = document.getElementById(chgId);
+  if(!pEl || !cEl) return;
+  const p = Number(price);
+  const ch = Number(change);
+  const pt = Number(point);
+  const safeP = Number.isFinite(p) ? p : 0;
+  const safeCh = Number.isFinite(ch) ? ch : 0;
+  const safePt = Number.isFinite(pt) ? pt : 0;
+  pEl.textContent = safeP.toLocaleString('ko-KR', {maximumFractionDigits: 2});
+  const pointSign = safePt > 0 ? '+' : '';
+  cEl.textContent = `\${safeCh > 0 ? '+' : ''}\${safeCh.toFixed(2)}% (\${pointSign}\${safePt.toLocaleString('ko-KR', {maximumFractionDigits: 2})})`;
+  cEl.classList.remove('up','dn','fl');
+  cEl.classList.add(safeCh > 0 ? 'up' : (safeCh < 0 ? 'dn' : 'fl'));
+}
+
+function loadMarketIndex(){
+  fetch(BASE + '/api/market/index', { cache: 'no-store' })
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(json=>{
+      const list = Array.isArray(json.data) ? json.data : [];
+      const byName = {};
+      list.forEach(it => { if(it && it.name) byName[String(it.name)] = it; });
+      const v = (name, key)=> (byName[name] && byName[name][key] != null) ? byName[name][key] : 0;
+      setIndexCard('idx-kospi-price',  'idx-kospi-chg',  v('KOSPI', 'price'),   v('KOSPI', 'change'),   v('KOSPI', 'point'));
+      setIndexCard('idx-kosdaq-price', 'idx-kosdaq-chg', v('KOSDAQ', 'price'),  v('KOSDAQ', 'change'),  v('KOSDAQ', 'point'));
+      setIndexCard('idx-sp500-price',  'idx-sp500-chg',  v('S&P 500', 'price'), v('S&P 500', 'change'), v('S&P 500', 'point'));
+      setIndexCard('idx-nasdaq-price', 'idx-nasdaq-chg', v('NASDAQ', 'price'),  v('NASDAQ', 'change'),  v('NASDAQ', 'point'));
+      setIndexCard('idx-dow-price',    'idx-dow-chg',    v('DOW', 'price'),     v('DOW', 'change'),     v('DOW', 'point'));
+      setIndexCard('idx-fx-price',     'idx-fx-chg',     v('USD/KRW', 'price'), v('USD/KRW', 'change'), v('USD/KRW', 'point'));
+    })
+    .catch(()=>{});
+}
+
 /* ════ 사이드바 로직 ════ */
 let rawData     = [];      // API 원본
 let activeTab   = 'vol';   // vol | chg | new
@@ -812,7 +902,7 @@ window.loadRanking = function(manual){
   const btn = document.getElementById('sbRefBtn');
   btn.classList.add('spinning');
 
-  fetch(BASE + '/api/market/ranking/hts')   /* ApiController → marketInsightService.getHtsTopView() → getVolumeRanking() */
+  fetch(BASE + '/api/market/ranking?market=KR&exch=NAS', { cache: 'no-store' })
     .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(json=>{
       /*
@@ -823,12 +913,18 @@ window.loadRanking = function(manual){
        *   stck_prpr      : 현재가
        *   prdy_vrss      : 전일 대비
        *   prdy_ctrt      : 등락률(%)
-       *   acml_vol       : 누적거래량
+       *   acml_tr_pbmn  : 누적거래대금 (없으면 가격*거래량 추정)
        *   prdy_vrss_sign : 부호 (1:상한 2:상승 3:보합 4:하한 5:하락)
        *   stck_hgpr      : 당일 고가
        *   stck_lwpr      : 당일 저가
        */
-      rawData = (json.output || []).slice(0, TOP_N);
+      let rows = [];
+      if (Array.isArray(json.output)) rows = json.output;
+      else if (Array.isArray(json.data)) rows = json.data;
+      else if (json.data && Array.isArray(json.data.output)) rows = json.data.output;
+      else if (json.data && Array.isArray(json.data.items)) rows = json.data.items;
+      else if (Array.isArray(json.items)) rows = json.items;
+      rawData = rows.slice(0, TOP_N);
       renderList(rawData);
 
       const n=new Date(), p=v=>String(v).padStart(2,'0');
@@ -837,7 +933,7 @@ window.loadRanking = function(manual){
     })
     .catch(err=>{
       document.getElementById('sbBody').innerHTML =
-        `<div class="sb-msg error"><div class="sb-msg-icon">✕</div><div class="sb-msg-txt">${esc(err.message)}</div></div>`;
+        `<div class="sb-msg error"><div class="sb-msg-icon">✕</div><div class="sb-msg-txt">\${esc(err.message)}</div></div>`;
     })
     .finally(()=>btn.classList.remove('spinning'));
 };
@@ -850,55 +946,82 @@ function renderList(data){
     return;
   }
 
-  /* 필터 적용 */
-  let filtered = data;
-  if(activeFilter === 'kospi')  filtered = data.filter(r=> r.mksc_shrn_iscd < '200000');
-  if(activeFilter === 'kosdaq') filtered = data.filter(r=> r.mksc_shrn_iscd >= '200000');
+  const toNum = (v)=>{
+    const n = Number(String(v == null ? '' : v).replace(/,/g, ''));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const pick = (r, a, b)=> (r && r[a] != null) ? r[a] : ((r && r[b] != null) ? r[b] : '');
+  const getCode  = (r)=> String(pick(r, 'mksc_shrn_iscd', 'symbol')).trim();
+  const getName  = (r)=> {
+    const v = (r && r.hts_kor_isnm != null) ? r.hts_kor_isnm : ((r && r.name != null) ? r.name : getCode(r));
+    return String(v || '-').trim();
+  };
+  const getPrice = (r)=> toNum(pick(r, 'stck_prpr', 'price'));
+  const getRate  = (r)=> toNum(pick(r, 'prdy_ctrt', 'diff_rate'));
+  const getSign  = (r)=>{
+    const s = String(pick(r, 'prdy_vrss_sign', 'diff_sign')).trim();
+    if (s) return s;
+    const rate = getRate(r);
+    return rate > 0 ? '2' : (rate < 0 ? '5' : '3');
+  };
+  const getVol   = (r)=> toNum((r && r.acml_tr_pbmn != null) ? r.acml_tr_pbmn : ((r && r.acml_vol != null) ? r.acml_vol : ((r && r.volume != null) ? r.volume : ((r && r.vol != null) ? r.vol : 0))));
+  const getHigh  = (r)=> toNum((r && r.stck_hgpr != null) ? r.stck_hgpr : ((r && r.high != null) ? r.high : ((r && r.stck_prpr != null) ? r.stck_prpr : ((r && r.price != null) ? r.price : 0))));
 
-  /* 탭별 정렬 */
+  let filtered = data;
+  if(activeFilter === 'kospi'){
+    filtered = data.filter(r=>{
+      const codeNum = Number(getCode(r).replace(/\D/g, ''));
+      return Number.isFinite(codeNum) && codeNum > 0 && codeNum < 200000;
+    });
+  }
+  if(activeFilter === 'kosdaq'){
+    filtered = data.filter(r=>{
+      const codeNum = Number(getCode(r).replace(/\D/g, ''));
+      return Number.isFinite(codeNum) && codeNum >= 200000;
+    });
+  }
+
   const sorted = [...filtered].sort((a,b)=>{
-    if(activeTab==='chg')
-      return Math.abs(parseFloat(b.prdy_ctrt||0)) - Math.abs(parseFloat(a.prdy_ctrt||0));
-    if(activeTab==='new')
-      return parseFloat(b.stck_hgpr||0) - parseFloat(a.stck_hgpr||0);
-    /* 거래량 기본 */
-    return parseFloat(b.acml_vol||0) - parseFloat(a.acml_vol||0);
+    if(activeTab==='chg') return Math.abs(getRate(b)) - Math.abs(getRate(a));
+    if(activeTab==='new') return getHigh(b) - getHigh(a);
+    return getVol(b) - getVol(a);
   }).slice(0, TOP_N);
 
-  const maxVol = Math.max(...sorted.map(r=>parseFloat(r.acml_vol||0)), 1);
-  const newSet = new Set(sorted.map(r=>r.mksc_shrn_iscd));
+  const maxVol = Math.max(...sorted.map(getVol), 1);
+  const newSet = new Set(sorted.map(getCode));
 
   const rows = sorted.map((r, idx)=>{
-    const rank  = idx + 1;
-    const rnCls = rank===1?'r1':rank===2?'r2':rank===3?'r3':'rN';
-    const name  = esc(r.hts_kor_isnm || '—');
-    const code  = esc(r.mksc_shrn_iscd || '');
-    const price = Number(r.stck_prpr||0).toLocaleString('ko-KR');
-    const diff  = parseFloat(r.prdy_ctrt||0);
-    const sign  = r.prdy_vrss_sign||'3';
-    const isUp  = sign==='1'||sign==='2';
-    const isDn  = sign==='4'||sign==='5';
-    const chgCls= isUp?'up':isDn?'down':'flat';
-    const prefix= isUp?'▲':isDn?'▼':'—';
-    const chgTxt= prefix + Math.abs(diff).toFixed(2) + '%';
-    const vol   = parseFloat(r.acml_vol||0);
-    const volPct= Math.max((vol/maxVol*100), 2).toFixed(1);
-    const volFmt= vol>=1e6?(vol/1e6).toFixed(1)+'M':vol>=1e3?(vol/1e3).toFixed(0)+'K':vol.toLocaleString();
-    const isNew = !prevCodes.has(r.mksc_shrn_iscd);
+    const rank   = idx + 1;
+    const rnCls  = rank===1?'r1':rank===2?'r2':rank===3?'r3':'rN';
+    const codeRaw= getCode(r);
+    const name   = esc(getName(r));
+    const code   = esc(codeRaw);
+    const price  = getPrice(r).toLocaleString('ko-KR');
+    const diff   = getRate(r);
+    const sign   = getSign(r);
+    const isUp   = sign==='1'||sign==='2';
+    const isDn   = sign==='4'||sign==='5';
+    const chgCls = isUp?'up':isDn?'down':'flat';
+    const prefix = isUp?'▲':isDn?'▼':'-';
+    const chgTxt = prefix + Math.abs(diff).toFixed(2) + '%';
+    const vol    = getVol(r);
+    const volPct = Math.max((vol/maxVol*100), 2).toFixed(1);
+    const volFmt = vol>=1e6?(vol/1e6).toFixed(1)+'M':vol>=1e3?(vol/1e3).toFixed(0)+'K':vol.toLocaleString();
+    const isNew  = !prevCodes.has(codeRaw);
 
-    return `<div class="rank-row${isNew?' new-row':''}" style="animation-delay:${idx*18}ms">
-      <div class="rn ${rnCls}">${rank}</div>
+    return `<div class="rank-row\${isNew?' new-row':''}" style="animation-delay:\${idx*18}ms">
+      <div class="rn \${rnCls}">\${rank}</div>
       <div class="ri">
-        <div class="ri-name" title="${name}">${name}</div>
-        <div class="ri-code">${code}</div>
+        <div class="ri-name" title="\${name}">\${name}</div>
+        <div class="ri-code">\${code}</div>
         <div class="ri-bar-wrap">
-          <div class="ri-bar" style="width:${volPct}%"></div>
-          <div class="ri-vol">${volFmt}</div>
+          <div class="ri-bar" style="width:\${volPct}%"></div>
+          <div class="ri-vol">\${volFmt}</div>
         </div>
       </div>
       <div class="rp">
-        <div class="rp-price">${price}</div>
-        <div class="rp-chg ${chgCls}">${chgTxt}</div>
+        <div class="rp-price">\${price}</div>
+        <div class="rp-chg \${chgCls}">\${chgTxt}</div>
       </div>
     </div>`;
   }).join('');
@@ -924,9 +1047,11 @@ function updateProg(){
   document.getElementById('sbProg').style.width = pct + '%';
 }
 
-function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 /* ── 초기 실행 ── */
+loadMarketIndex();
+setInterval(loadMarketIndex, 30000);
 loadRanking();
 
 })();

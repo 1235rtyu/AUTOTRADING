@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 public class PriceLog {
     private Integer id;
     private String symbol;
+    private String symbolName;
     private double price;
     private double volume;
     private LocalDateTime createdAt;
@@ -13,6 +14,8 @@ public class PriceLog {
     public void setId(Integer id) { this.id = id; }
     public String getSymbol() { return symbol; }
     public void setSymbol(String symbol) { this.symbol = symbol; }
+    public String getSymbolName() { return symbolName; }
+    public void setSymbolName(String symbolName) { this.symbolName = symbolName; }
     public double getPrice() { return price; }
     public void setPrice(double price) { this.price = price; }
     public double getVolume() { return volume; }

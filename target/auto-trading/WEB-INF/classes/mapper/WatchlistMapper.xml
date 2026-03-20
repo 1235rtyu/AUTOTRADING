@@ -5,14 +5,22 @@
 <mapper namespace="com.autotrading.mapper.WatchlistMapper">
 
     <select id="findAll" resultType="com.autotrading.model.WatchlistItem">
-        SELECT id, symbol, created_at
+        SELECT id, symbol, exchange, created_at
         FROM tb_auto_watchlist
         ORDER BY id DESC
     </select>
 
+    <select id="findBySymbol" resultType="com.autotrading.model.WatchlistItem">
+        SELECT id, symbol, exchange, created_at
+        FROM tb_auto_watchlist
+        WHERE symbol = #{symbol}
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
     <insert id="insert">
-        INSERT INTO tb_auto_watchlist(symbol, created_at)
-        VALUES(#{symbol}, CURRENT_TIMESTAMP)
+        INSERT INTO tb_auto_watchlist(symbol, exchange, created_at)
+        VALUES(#{symbol}, #{exchange}, CURRENT_TIMESTAMP)
     </insert>
 
     <delete id="delete">
