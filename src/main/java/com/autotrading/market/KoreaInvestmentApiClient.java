@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -24,7 +25,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -41,6 +44,13 @@ import java.util.Optional;
 public class KoreaInvestmentApiClient {
     private static final Logger logger = LoggerFactory.getLogger(KoreaInvestmentApiClient.class);
     private static final DateTimeFormatter TOKEN_EXPIRY_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final ZoneId NY_ZONE = ZoneId.of("America/New_York");
+    private static final LocalTime US_OPEN_TIME = LocalTime.of(9, 30);
+    private static final LocalTime US_CLOSE_TIME = LocalTime.of(16, 0);
+    private static final LocalTime US_MOO_WINDOW_START = LocalTime.of(9, 0);
+    private static final LocalTime US_MOO_WINDOW_END = LocalTime.of(9, 30);
+    private static final LocalTime US_MOC_WINDOW_START = LocalTime.of(15, 55);
+    private static final LocalTime US_MOC_WINDOW_END = LocalTime.of(16, 0);
 
     private final KisProperties properties;
     private final AccountCredentialStore credentialStore;
@@ -617,7 +627,11 @@ public Map<String, Object> fetchVolumeRanking() {
             return result;
         }
 
-        AccountInfo accountInfo = resolveAccountInfo();
+        if (!isAccountConfigValid()) {
+            return accountConfigMissingResult("sendOrder");
+        }
+
+        AccountInfo accountInfo = resolveAccountInfo("sendOrder");
         if (!accountInfo.isValid()) {
             result.put("status", "ERROR");
             result.put("message", "Account number/product code missing. Login or set kis.accountNo and kis.accountProductCode.");
@@ -632,9 +646,140 @@ public Map<String, Object> fetchVolumeRanking() {
         }
 
         if (isOverseasOrder(command)) {
-            return sendOverseasOrder(command, accountInfo, token);
+            return placeOverseasOrderInternal(command, accountInfo, token);
         }
         return sendDomesticOrder(command, accountInfo, token);
+    }
+
+    public Map<String, Object> placeOverseasOrder(OrderCommand command) {
+        Map<String, Object> result = new HashMap<>();
+        if (command == null) {
+            result.put("status", "ERROR");
+            result.put("message", "Order command is null.");
+            return result;
+        }
+        if (!properties.isConfigured()) {
+            result.put("status", "ERROR");
+            result.put("message", "KIS appKey/appSecret not configured.");
+            return result;
+        }
+
+        if (!isAccountConfigValid()) {
+            return accountConfigMissingResult("placeOverseasOrder");
+        }
+
+        AccountInfo accountInfo = resolveAccountInfo("placeOverseasOrder");
+        if (!accountInfo.isValid()) {
+            result.put("status", "ERROR");
+            result.put("message", "Account number/product code missing. Login or set kis.accountNo and kis.accountProductCode.");
+            return result;
+        }
+
+        String token = generateAccessToken();
+        if (!StringUtils.hasText(token)) {
+            result.put("status", "ERROR");
+            result.put("message", "KIS access token unavailable.");
+            return result;
+        }
+
+        return placeOverseasOrderInternal(command, accountInfo, token);
+    }
+
+    private Map<String, Object> placeOverseasOrderInternal(OrderCommand command, AccountInfo accountInfo, String token) {
+        Map<String, Object> result = new HashMap<>();
+        boolean isBuy = "BUY".equalsIgnoreCase(command.getType());
+        String trId = properties.isDemo()
+                ? (isBuy ? properties.getOverseasDemoTrIdBuy() : properties.getOverseasDemoTrIdSell())
+                : (isBuy ? properties.getOverseasTrIdBuy() : properties.getOverseasTrIdSell());
+        String exchange = normalizeOverseasOrderExchange(command.getExchange());
+
+        ZonedDateTime nowNy = ZonedDateTime.now(NY_ZONE);
+        String sessionLabel = classifyUsSession(nowNy);
+
+        OverseasOrderParams params = resolveOverseasOrderParams(command, exchange, isBuy, nowNy);
+        if (params.invalid) {
+            result.put("status", "ERROR");
+            result.put("message", params.fallbackReason);
+            result.put("symbol", command.getSymbol());
+            result.put("side", command.getType());
+            result.put("exchange", exchange);
+            return result;
+        }
+
+        logger.info("US session NY={} phase={} preMOO={} nearMOC={} regular={}",
+                nowNy.toLocalTime(),
+                sessionLabel,
+                isUsPreOpenForMoo(nowNy),
+                isUsNearCloseForMoc(nowNy),
+                isUsRegularSession(nowNy));
+
+        logger.info("OVERSEAS_ORDER_PRE symbol={} side={} exchange={} trId={} marketOrder={} ordDvsn={} ordUnpr={} fallbackUsed={} fallbackReason={}",
+                command.getSymbol(),
+                command.getType(),
+                exchange,
+                trId,
+                command.isMarketOrder(),
+                params.ordDvsn,
+                params.ordUnpr,
+                params.fallbackUsed,
+                params.fallbackReason);
+
+        String baseUrl = properties.getBaseUrl();
+        String url = baseUrl + "/uapi/overseas-stock/v1/trading/order";
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("CANO", accountInfo.cano);
+        payload.put("ACNT_PRDT_CD", accountInfo.productCode);
+        payload.put("OVRS_EXCG_CD", exchange);
+        payload.put("PDNO", command.getSymbol());
+        payload.put("ORD_DVSN", params.ordDvsn);
+        payload.put("ORD_QTY", String.valueOf(command.getQuantity()));
+        payload.put("OVRS_ORD_UNPR", params.ordUnpr);
+        payload.put("ORD_SVR_DVSN_CD", "0");
+
+        try {
+            String hashKey = properties.isRequireHashKey() ? createHashKey(payload) : null;
+            String body = objectMapper.writeValueAsString(payload);
+
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("authorization", "Bearer " + token)
+                    .header("appkey", properties.getAppKey())
+                    .header("appsecret", properties.getAppSecret())
+                    .header("tr_id", trId)
+                    .header("custtype", properties.getCustomerType())
+                    .header("content-type", "application/json");
+            if (StringUtils.hasText(hashKey)) {
+                requestBuilder.header("hashkey", hashKey);
+            }
+
+            HttpResponse<String> response = httpClient.send(
+                    requestBuilder.POST(HttpRequest.BodyPublishers.ofString(body)).build(),
+                    HttpResponse.BodyHandlers.ofString());
+
+            String rawBody = response.body();
+            logger.debug("Overseas order raw response: {}", rawBody);
+
+            JsonNode root = objectMapper.readTree(rawBody);
+            String rtCd = root.path("rt_cd").asText();
+            String message = root.path("msg1").asText("");
+            String orderNo = extractOrderNo(root);
+
+            result.put("status", "0".equals(rtCd) ? "ACCEPTED" : "REJECTED");
+            result.put("orderId", orderNo);
+            result.put("message", message);
+            result.put("symbol", command.getSymbol());
+            result.put("side", command.getType());
+            result.put("price", command.getPrice());
+            result.put("exchange", exchange);
+            return result;
+        } catch (Exception e) {
+            logger.error("Overseas order request failed", e);
+            result.put("status", "ERROR");
+            result.put("message", "Overseas order request failed: " + e.getMessage());
+            return result;
+        }
     }
 
     private Map<String, Object> sendDomesticOrder(OrderCommand command, AccountInfo accountInfo, String token) {
@@ -651,9 +796,9 @@ public Map<String, Object> fetchVolumeRanking() {
         payload.put("CANO", accountInfo.cano);
         payload.put("ACNT_PRDT_CD", accountInfo.productCode);
         payload.put("PDNO", command.getSymbol());
-        payload.put("ORD_DVSN", "00");
+        payload.put("ORD_DVSN", resolveDomesticOrdDvsn(command));
         payload.put("ORD_QTY", String.valueOf(command.getQuantity()));
-        payload.put("ORD_UNPR", formatOrderPrice(command.getPrice()));
+        payload.put("ORD_UNPR", formatOrderPrice(command.isMarketOrder() ? 0.0 : command.getPrice()));
 
         try {
             String hashKey = properties.isRequireHashKey() ? createHashKey(payload) : null;
@@ -693,66 +838,121 @@ public Map<String, Object> fetchVolumeRanking() {
         }
     }
 
-    private Map<String, Object> sendOverseasOrder(OrderCommand command, AccountInfo accountInfo, String token) {
-        Map<String, Object> result = new HashMap<>();
-        boolean isBuy = "BUY".equalsIgnoreCase(command.getType());
-        String trId = properties.isDemo()
-                ? (isBuy ? properties.getOverseasDemoTrIdBuy() : properties.getOverseasDemoTrIdSell())
-                : (isBuy ? properties.getOverseasTrIdBuy() : properties.getOverseasTrIdSell());
-        String exchange = normalizeOverseasOrderExchange(command.getExchange());
+    private static class OverseasOrderParams {
+        final String ordDvsn;
+        final String ordUnpr;
+        final boolean fallbackUsed;
+        final String fallbackReason;
+        final boolean invalid;
 
-        String baseUrl = properties.getBaseUrl();
-        String url = baseUrl + "/uapi/overseas-stock/v1/trading/order";
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("CANO", accountInfo.cano);
-        payload.put("ACNT_PRDT_CD", accountInfo.productCode);
-        payload.put("OVRS_EXCG_CD", exchange);
-        payload.put("PDNO", command.getSymbol());
-        payload.put("ORD_DVSN", "00"); // limit
-        payload.put("ORD_QTY", String.valueOf(command.getQuantity()));
-        payload.put("OVRS_ORD_UNPR", formatOverseasOrderPrice(command.getPrice()));
-        payload.put("ORD_SVR_DVSN_CD", "0");
-
-        try {
-            String hashKey = properties.isRequireHashKey() ? createHashKey(payload) : null;
-            String body = objectMapper.writeValueAsString(payload);
-
-            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(10))
-                    .header("authorization", "Bearer " + token)
-                    .header("appkey", properties.getAppKey())
-                    .header("appsecret", properties.getAppSecret())
-                    .header("tr_id", trId)
-                    .header("custtype", properties.getCustomerType())
-                    .header("content-type", "application/json");
-            if (StringUtils.hasText(hashKey)) {
-                requestBuilder.header("hashkey", hashKey);
-            }
-
-            HttpResponse<String> response = httpClient.send(
-                    requestBuilder.POST(HttpRequest.BodyPublishers.ofString(body)).build(),
-                    HttpResponse.BodyHandlers.ofString());
-            JsonNode root = objectMapper.readTree(response.body());
-            String rtCd = root.path("rt_cd").asText();
-            String message = root.path("msg1").asText("");
-            String orderNo = extractOrderNo(root);
-
-            result.put("status", "0".equals(rtCd) ? "ACCEPTED" : "REJECTED");
-            result.put("orderId", orderNo);
-            result.put("message", message);
-            result.put("symbol", command.getSymbol());
-            result.put("side", command.getType());
-            result.put("price", command.getPrice());
-            result.put("exchange", exchange);
-            return result;
-        } catch (Exception e) {
-            logger.error("Overseas order request failed", e);
-            result.put("status", "ERROR");
-            result.put("message", "Overseas order request failed: " + e.getMessage());
-            return result;
+        OverseasOrderParams(String ordDvsn, String ordUnpr, boolean fallbackUsed, String fallbackReason, boolean invalid) {
+            this.ordDvsn = ordDvsn;
+            this.ordUnpr = ordUnpr;
+            this.fallbackUsed = fallbackUsed;
+            this.fallbackReason = fallbackReason;
+            this.invalid = invalid;
         }
+    }
+
+    private OverseasOrderParams resolveOverseasOrderParams(OrderCommand command,
+                                                          String exchange,
+                                                          boolean isBuy,
+                                                          ZonedDateTime nowNy) {
+        boolean marketOrder = command.isMarketOrder();
+        boolean isUs = isUsExchange(exchange);
+        boolean isDemo = properties.isDemo();
+
+        String ordDvsn = properties.getOverseasOrdDvsnLimit();
+        String ordUnpr = formatOverseasOrderPrice(command.getPrice());
+        boolean fallbackUsed = false;
+        String fallbackReason = "";
+
+        if (!marketOrder) {
+            return new OverseasOrderParams(ordDvsn, ordUnpr, false, "", false);
+        }
+
+        if (isDemo) {
+            fallbackUsed = true;
+            fallbackReason = "DEMO_MARKET_ORDER_NOT_SUPPORTED";
+            return new OverseasOrderParams(ordDvsn, ordUnpr, fallbackUsed, fallbackReason, false);
+        }
+
+        if (!isUs) {
+            fallbackUsed = true;
+            fallbackReason = "MARKET_ORDER_NOT_SUPPORTED_NON_US";
+            return new OverseasOrderParams(ordDvsn, ordUnpr, fallbackUsed, fallbackReason, false);
+        }
+
+        if (isBuy) {
+            fallbackUsed = true;
+            fallbackReason = "MARKET_ORDER_NOT_SUPPORTED_US_BUY";
+            return new OverseasOrderParams(ordDvsn, ordUnpr, fallbackUsed, fallbackReason, false);
+        }
+
+        if (isUsPreOpenForMoo(nowNy)) {
+            ordDvsn = properties.getOverseasOrdDvsnUsSellMoo();
+            ordUnpr = "0";
+            return new OverseasOrderParams(ordDvsn, ordUnpr, false, "", false);
+        }
+
+        if (isUsNearCloseForMoc(nowNy)) {
+            ordDvsn = properties.getOverseasOrdDvsnUsSellMoc();
+            ordUnpr = "0";
+            return new OverseasOrderParams(ordDvsn, ordUnpr, false, "", false);
+        }
+
+        fallbackUsed = true;
+        fallbackReason = "OUTSIDE_MOO_MOC_WINDOW";
+        ordDvsn = properties.getOverseasOrdDvsnUsLimit();
+
+        double basePrice = command.getPrice();
+        if (!Double.isFinite(basePrice) || basePrice <= 0.0) {
+            return new OverseasOrderParams(ordDvsn, "0", true, "FALLBACK_PRICE_MISSING", true);
+        }
+
+        double discount = properties.getOverseasUsSellFallbackDiscount();
+        double fallbackPrice = roundUsTick(basePrice * (1.0 - discount));
+        ordUnpr = formatOverseasOrderPrice(fallbackPrice);
+        return new OverseasOrderParams(ordDvsn, ordUnpr, true, fallbackReason, false);
+    }
+
+    private boolean isUsExchange(String exchange) {
+        if (!StringUtils.hasText(exchange)) return true;
+        String ex = exchange.trim().toUpperCase();
+        return "NASD".equals(ex) || "NYSE".equals(ex) || "AMEX".equals(ex);
+    }
+
+    private boolean isUsRegularSession(ZonedDateTime nowNy) {
+        LocalTime time = nowNy.toLocalTime();
+        return !time.isBefore(US_OPEN_TIME) && time.isBefore(US_CLOSE_TIME);
+    }
+
+    private boolean isUsPreOpenForMoo(ZonedDateTime nowNy) {
+        LocalTime time = nowNy.toLocalTime();
+        return !time.isBefore(US_MOO_WINDOW_START) && time.isBefore(US_MOO_WINDOW_END);
+    }
+
+    private boolean isUsNearCloseForMoc(ZonedDateTime nowNy) {
+        LocalTime time = nowNy.toLocalTime();
+        return !time.isBefore(US_MOC_WINDOW_START) && time.isBefore(US_MOC_WINDOW_END);
+    }
+
+    private String classifyUsSession(ZonedDateTime nowNy) {
+        LocalTime time = nowNy.toLocalTime();
+        if (time.isBefore(US_MOO_WINDOW_START)) return "pre-market";
+        if (isUsPreOpenForMoo(nowNy)) return "pre-open";
+        if (isUsRegularSession(nowNy)) {
+            if (isUsNearCloseForMoc(nowNy)) return "near-close";
+            return "regular";
+        }
+        if (time.isAfter(US_CLOSE_TIME)) return "after-hours";
+        return "unknown";
+    }
+
+    private double roundUsTick(double price) {
+        if (!Double.isFinite(price)) return 0.0;
+        double tick = price < 1.0 ? 0.0001 : 0.01;
+        return Math.max(tick, Math.floor(price / tick) * tick);
     }
 
     public Map<String, Object> checkOrderStatus(String orderId) {
@@ -763,7 +963,7 @@ public Map<String, Object> fetchVolumeRanking() {
             return result;
         }
 
-        AccountInfo accountInfo = resolveAccountInfo();
+        AccountInfo accountInfo = resolveAccountInfo("fetchDomesticBalance");
         if (!accountInfo.isValid()) {
             result.put("status", "ERROR");
             result.put("message", "Account number/product code missing.");
@@ -834,6 +1034,10 @@ public Map<String, Object> fetchVolumeRanking() {
             result.put("status", "ERROR");
             result.put("message", "KIS appKey/appSecret not configured.");
             return result;
+        }
+
+        if (!isAccountConfigValid()) {
+            return accountConfigMissingResult("fetchDomesticBalance");
         }
 
         AccountInfo accountInfo = resolveAccountInfo();
@@ -1370,7 +1574,11 @@ public Map<String, Object> fetchVolumeRanking() {
             return result;
         }
 
-        AccountInfo accountInfo = resolveAccountInfo();
+        if (!isAccountConfigValid()) {
+            return accountConfigMissingResult("fetchOverseasBalance");
+        }
+
+        AccountInfo accountInfo = resolveAccountInfo("fetchOverseasBalance");
         if (!accountInfo.isValid()) {
             result.put("status", "ERROR");
             result.put("message", "Account number/product code missing. Login first.");
@@ -1410,7 +1618,9 @@ public Map<String, Object> fetchVolumeRanking() {
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonNode root = objectMapper.readTree(response.body());
+            String rawBody = response.body();
+            logger.debug("Overseas balance raw response exchange={} body={}", ex, rawBody);
+            JsonNode root = objectMapper.readTree(rawBody);
             String rtCd = root.path("rt_cd").asText();
             result.put("status", "0".equals(rtCd) ? "OK" : "ERROR");
             result.put("message", root.path("msg1").asText(""));
@@ -1686,31 +1896,74 @@ public Map<String, Object> fetchVolumeRanking() {
     }
 
     private AccountInfo resolveAccountInfo() {
-        String cano = null;
-        String productCode = null;
+        return resolveAccountInfo("resolveAccountInfo");
+    }
+
+    public boolean isAccountConfigValid() {
+        AccountInfo propInfo = resolveAccountInfoFromProperties();
+        return propInfo.isValid();
+    }
+
+    public boolean isAccountConfigMissing() {
+        return !isAccountConfigValid();
+    }
+
+    private AccountInfo resolveAccountInfoFromProperties() {
+        AccountInfo propInfo = parseAccount(properties.getAccountNo());
+        String productCode = StringUtils.hasText(propInfo.productCode)
+                ? propInfo.productCode.trim()
+                : (StringUtils.hasText(properties.getAccountProductCode())
+                    ? properties.getAccountProductCode().trim()
+                    : "");
+        String cano = StringUtils.hasText(propInfo.cano) ? propInfo.cano.trim() : "";
+        return new AccountInfo(cano, productCode);
+    }
+
+    private Map<String, Object> accountConfigMissingResult(String caller) {
+        Map<String, Object> result = new HashMap<>();
+        logger.error("KIS account config missing({}) - set kis.accountNo and kis.accountProductCode", caller);
+        result.put("status", "ERROR");
+        result.put("message", "KIS account config missing. Set kis.accountNo and kis.accountProductCode.");
+        return result;
+    }
+
+    private AccountInfo resolveAccountInfo(String caller) {
+        String sessionCano = "";
+        String sessionProd = "";
 
         Optional<AccountCredential> stored = credentialStore.get();
         if (stored.isPresent()) {
             AccountCredential credential = stored.get();
-            cano = credential.getCano();
-            productCode = credential.getAccountProductCode();
+            sessionCano = StringUtils.hasText(credential.getCano()) ? credential.getCano().trim() : "";
+            sessionProd = StringUtils.hasText(credential.getAccountProductCode())
+                    ? credential.getAccountProductCode().trim()
+                    : "";
         }
 
         AccountInfo propInfo = parseAccount(properties.getAccountNo());
-        if (!StringUtils.hasText(cano)) {
-            cano = propInfo.cano;
-        }
-        if (!StringUtils.hasText(productCode)) {
-            productCode = StringUtils.hasText(propInfo.productCode) ? propInfo.productCode : properties.getAccountProductCode();
-        }
+        String propCano = StringUtils.hasText(propInfo.cano) ? propInfo.cano.trim() : "";
+        String propProd = StringUtils.hasText(propInfo.productCode)
+                ? propInfo.productCode.trim()
+                : (StringUtils.hasText(properties.getAccountProductCode())
+                    ? properties.getAccountProductCode().trim()
+                    : "");
+
+        String cano = StringUtils.hasText(sessionCano) ? sessionCano : propCano;
+        String productCode = StringUtils.hasText(sessionProd) ? sessionProd : propProd;
 
         AccountInfo info = new AccountInfo(cano, productCode);
+        logger.info("Account resolve({}) sessionCano={} sessionProd={} propCano={} propProd={} -> cano={} prod={}",
+                caller,
+                StringUtils.hasText(sessionCano),
+                StringUtils.hasText(sessionProd),
+                StringUtils.hasText(propCano),
+                StringUtils.hasText(propProd),
+                StringUtils.hasText(cano),
+                StringUtils.hasText(productCode));
+
         if (!info.isValid()) {
-            logger.warn("Account info missing. sessionCano={}, sessionProd={}, propCano={}, propProd={}",
-                    stored.map(AccountCredential::getCano).orElse(""),
-                    stored.map(AccountCredential::getAccountProductCode).orElse(""),
-                    propInfo.cano,
-                    StringUtils.hasText(propInfo.productCode) ? propInfo.productCode : properties.getAccountProductCode());
+            logger.warn("Account info missing({}) sessionCano={} sessionProd={} propCano={} propProd={}",
+                    caller, sessionCano, sessionProd, propCano, propProd);
         }
         return info;
     }
@@ -1751,6 +2004,13 @@ public Map<String, Object> fetchVolumeRanking() {
             return String.format(Locale.US, "%.2f", price);
         }
         return String.format(Locale.US, "%.4f", price);
+    }
+
+    private String resolveDomesticOrdDvsn(OrderCommand command) {
+        if (command != null && command.isMarketOrder()) {
+            return properties.getDomesticOrdDvsnMarket();
+        }
+        return properties.getDomesticOrdDvsnLimit();
     }
 
     private boolean isOverseasOrder(OrderCommand command) {
@@ -1842,5 +2102,83 @@ public Map<String, Object> fetchVolumeRanking() {
             return productCode;
         }
     }
+
+
+public Map<String, Object> fetchDailyMinuteChart(String symbol, String date, String fromTime) {
+    String url = UriComponentsBuilder
+        .fromHttpUrl(properties.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-time-dailychartprice")
+        .queryParam("FID_COND_MRKT_DIV_CODE", "J")
+        .queryParam("FID_INPUT_ISCD",          symbol)
+        .queryParam("FID_INPUT_HOUR_1",        fromTime)   // HHMMSS
+        .queryParam("FID_INPUT_DATE_1",        date)       // YYYYMMDD
+        .queryParam("FID_PW_DATA_INCU_YN",     "Y")
+        .queryParam("FID_FAKE_TICK_INCU_YN",   " ")        // 공백 필수
+        .build().toUriString();
+
+    return get(url, "FHKST03010230");
+}
+
+
+// ──────────────────────────────────────────────────────────
+// [2] get(String path, String trId, Map<String,String> params)
+//     fetchVolumeRanking() 이 호출하는 3-인자 오버로드.
+//     path + params 로 URL 을 조립한 뒤 기존 get(url, trId) 에 위임.
+// ──────────────────────────────────────────────────────────
+
+/**
+ * 경로(path)와 쿼리 파라미터 Map 을 받아 URL 을 조립한 뒤
+ * 기존 get(String url, String trId) 에 위임하는 오버로드.
+ */
+@SuppressWarnings("unchecked")
+private Map<String, Object> get(String path, String trId, Map<String, String> params) {
+    UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(properties.getBaseUrl() + path);
+    if (params != null) {
+        params.forEach(builder::queryParam);
+    }
+    return get(builder.build().toUriString(), trId);
+}
+
+private Map<String, Object> get(String url, String trId) {
+    Map<String, Object> result = new HashMap<>();
+    if (!properties.isConfigured()) {
+        result.put("status", "ERROR");
+        result.put("message", "KIS appKey/appSecret not configured.");
+        return result;
+    }
+
+    String token = generateAccessToken();
+    if (!StringUtils.hasText(token)) {
+        result.put("status", "ERROR");
+        result.put("message", "KIS access token unavailable.");
+        return result;
+    }
+
+    try {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(10))
+                .header("authorization", "Bearer " + token)
+                .header("appkey", properties.getAppKey())
+                .header("appsecret", properties.getAppSecret())
+                .header("tr_id", trId)
+                .header("custtype", properties.getCustomerType())
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            result.put("status", "ERROR");
+            result.put("message", "HTTP " + response.statusCode());
+            return result;
+        }
+
+        return objectMapper.readValue(response.body(), Map.class);
+    } catch (Exception e) {
+        logger.error("Request failed for {} {}", url, trId, e);
+        result.put("status", "ERROR");
+        result.put("message", "Request failed: " + e.getMessage());
+        return result;
+    }
+}
 }
 

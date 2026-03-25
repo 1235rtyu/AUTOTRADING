@@ -45,6 +45,30 @@ public class KisProperties {
     @Value("${kis.overseas.demoTrIdSell:VTTT1001U}")
     private String overseasDemoTrIdSell;
 
+    @Value("${kis.domestic.ordDvsnLimit:00}")
+    private String domesticOrdDvsnLimit;
+
+    @Value("${kis.domestic.ordDvsnMarket:01}")
+    private String domesticOrdDvsnMarket;
+
+    @Value("${kis.overseas.ordDvsnLimit:00}")
+    private String overseasOrdDvsnLimit;
+
+    @Value("${kis.overseas.ordDvsnMarket:31}")
+    private String overseasOrdDvsnMarket;
+
+    @Value("${kis.overseas.usSellFallbackDiscount:0.002}")
+    private double overseasUsSellFallbackDiscount;
+
+    @Value("${kis.overseas.ordDvsnUsLimit:00}")
+    private String overseasOrdDvsnUsLimit;
+
+    @Value("${kis.overseas.ordDvsnUsSellMoo:31}")
+    private String overseasOrdDvsnUsSellMoo;
+
+    @Value("${kis.overseas.ordDvsnUsSellMoc:33}")
+    private String overseasOrdDvsnUsSellMoc;
+
     public String getEnv() {
         return env;
     }
@@ -84,6 +108,21 @@ public class KisProperties {
         return accountProductCode;
     }
 
+    public synchronized void setAccountNo(String accountNo) {
+        this.accountNo = StringUtils.hasText(accountNo) ? accountNo.trim() : "";
+    }
+
+    public synchronized void setAccountProductCode(String accountProductCode) {
+        this.accountProductCode = StringUtils.hasText(accountProductCode) ? accountProductCode.trim() : "";
+    }
+
+    public synchronized void updateAccountInfo(String accountNo, String accountProductCode) {
+        setAccountNo(accountNo);
+        if (StringUtils.hasText(accountProductCode)) {
+            setAccountProductCode(accountProductCode);
+        }
+    }
+
     public String getCustomerType() {
         return customerType;
     }
@@ -106,6 +145,38 @@ public class KisProperties {
 
     public String getOverseasDemoTrIdSell() {
         return overseasDemoTrIdSell;
+    }
+
+    public String getDomesticOrdDvsnLimit() {
+        return domesticOrdDvsnLimit;
+    }
+
+    public String getDomesticOrdDvsnMarket() {
+        return domesticOrdDvsnMarket;
+    }
+
+    public String getOverseasOrdDvsnLimit() {
+        return overseasOrdDvsnLimit;
+    }
+
+    public String getOverseasOrdDvsnMarket() {
+        return overseasOrdDvsnMarket;
+    }
+
+    public double getOverseasUsSellFallbackDiscount() {
+        return overseasUsSellFallbackDiscount;
+    }
+
+    public String getOverseasOrdDvsnUsLimit() {
+        return overseasOrdDvsnUsLimit;
+    }
+
+    public String getOverseasOrdDvsnUsSellMoo() {
+        return overseasOrdDvsnUsSellMoo;
+    }
+
+    public String getOverseasOrdDvsnUsSellMoc() {
+        return overseasOrdDvsnUsSellMoc;
     }
 
     public boolean isConfigured() {

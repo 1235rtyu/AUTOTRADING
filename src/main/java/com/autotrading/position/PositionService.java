@@ -4,6 +4,8 @@ import com.autotrading.dao.AutoTradingDao;
 import com.autotrading.model.AutoPosition;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class PositionService {
     private final AutoTradingDao autoTradingDao;
@@ -22,5 +24,9 @@ public class PositionService {
 
     public AutoPosition getPosition(String symbol) {
         return autoTradingDao.findPosition(symbol);
+    }
+
+    public List<AutoPosition> getAllPositions() {
+        return autoTradingDao.findAllPositions();
     }
 }

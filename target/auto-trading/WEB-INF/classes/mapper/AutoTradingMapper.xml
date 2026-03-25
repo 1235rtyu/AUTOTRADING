@@ -30,6 +30,11 @@
         WHERE symbol = #{symbol}
     </select>
 
+    <select id="findAllPositions" resultType="com.autotrading.model.AutoPosition">
+        SELECT id, symbol, symbol_name AS symbolName, quantity, avg_price, updated_at
+        FROM tb_auto_position
+    </select>
+
     <insert id="insertStrategy">
         INSERT INTO tb_auto_strategy(symbol, strategy_type, status, created_at)
         VALUES(#{symbol}, #{strategyType}, #{status}, CURRENT_TIMESTAMP)
@@ -44,16 +49,9 @@
     </select>
 
     <select id="findRecentOrders" resultType="com.autotrading.model.OrderLog">
-        SELECT id, symbol, side, quantity, price, reason, created_at
-        FROM tb_auto_order_log
-        ORDER BY id DESC
-        LIMIT #{limit}
-    </select>
-
-    <select id="findRecentKrOrders" resultType="com.autotrading.model.OrderLog">
         SELECT o.id,
                o.symbol,
-               p.symbol_name AS symbolName,
+               COALESCE(NULLIF(p.symbol_name, ''), NULLIF(lp.symbol_name, '')) AS symbolName,
                o.side,
                o.quantity,
                o.price,
@@ -61,6 +59,43 @@
                o.created_at AS createdAt
         FROM tb_auto_order_log o
         LEFT JOIN tb_auto_position p ON p.symbol = o.symbol
+        LEFT JOIN (
+            SELECT pl.symbol, pl.symbol_name
+            FROM tb_auto_price_log pl
+            INNER JOIN (
+                SELECT symbol, MAX(id) AS max_id
+                FROM tb_auto_price_log
+                WHERE symbol_name IS NOT NULL
+                  AND TRIM(symbol_name) != ''
+                GROUP BY symbol
+            ) latest_pl ON latest_pl.max_id = pl.id
+        ) lp ON lp.symbol = o.symbol
+        ORDER BY o.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findRecentKrOrders" resultType="com.autotrading.model.OrderLog">
+        SELECT o.id,
+               o.symbol,
+               COALESCE(NULLIF(p.symbol_name, ''), NULLIF(lp.symbol_name, '')) AS symbolName,
+               o.side,
+               o.quantity,
+               o.price,
+               o.reason,
+               o.created_at AS createdAt
+        FROM tb_auto_order_log o
+        LEFT JOIN tb_auto_position p ON p.symbol = o.symbol
+        LEFT JOIN (
+            SELECT pl.symbol, pl.symbol_name
+            FROM tb_auto_price_log pl
+            INNER JOIN (
+                SELECT symbol, MAX(id) AS max_id
+                FROM tb_auto_price_log
+                WHERE symbol_name IS NOT NULL
+                  AND TRIM(symbol_name) != ''
+                GROUP BY symbol
+            ) latest_pl ON latest_pl.max_id = pl.id
+        ) lp ON lp.symbol = o.symbol
         WHERE o.symbol REGEXP '^[0-9]+$'
         ORDER BY o.id DESC
         LIMIT #{limit}
@@ -69,7 +104,7 @@
     <select id="findRecentUsOrders" resultType="com.autotrading.model.OrderLog">
         SELECT o.id,
                o.symbol,
-               p.symbol_name AS symbolName,
+               COALESCE(NULLIF(p.symbol_name, ''), NULLIF(lp.symbol_name, '')) AS symbolName,
                o.side,
                o.quantity,
                o.price,
@@ -77,6 +112,17 @@
                o.created_at AS createdAt
         FROM tb_auto_order_log o
         LEFT JOIN tb_auto_position p ON p.symbol = o.symbol
+        LEFT JOIN (
+            SELECT pl.symbol, pl.symbol_name
+            FROM tb_auto_price_log pl
+            INNER JOIN (
+                SELECT symbol, MAX(id) AS max_id
+                FROM tb_auto_price_log
+                WHERE symbol_name IS NOT NULL
+                  AND TRIM(symbol_name) != ''
+                GROUP BY symbol
+            ) latest_pl ON latest_pl.max_id = pl.id
+        ) lp ON lp.symbol = o.symbol
         WHERE o.symbol REGEXP '^[A-Za-z].*'
         ORDER BY o.id DESC
         LIMIT #{limit}
@@ -94,7 +140,7 @@
     </select>
 
     <select id="countPositions" resultType="int">
-        SELECT COUNT(*) FROM tb_auto_position WHERE quantity > 0
+        SELECT COUNT(*) FROM tb_auto_position WHERE quantity &gt; 0
     </select>
 
     <select id="findMonitorAggregate" resultType="com.autotrading.model.MonitorAggregateRow">
@@ -111,7 +157,7 @@
                 GROUP BY symbol
             ) latest ON latest.max_id = pl.id
         ) lp ON lp.symbol = p.symbol
-        WHERE p.quantity > 0
+        WHERE p.quantity &gt; 0
         <choose>
             <when test="market == 'US'">
                 AND p.symbol REGEXP '^[A-Za-z].*'
@@ -154,7 +200,7 @@
                ), 0) AS profitAmount
         FROM tb_auto_order_log o
         WHERE o.reason LIKE '%ACCEPTED%'
-          AND o.created_at >= #{startAt}
+          AND o.created_at &gt;= #{startAt}
           AND o.created_at &lt; #{endAt}
         <choose>
             <when test="market == 'US'">
@@ -167,4 +213,5 @@
         GROUP BY DATE_FORMAT(o.created_at, '%Y-%m-%d')
         ORDER BY tradeDate
     </select>
+
 </mapper>

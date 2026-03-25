@@ -1,6 +1,8 @@
 package com.autotrading.dao;
 
 import com.autotrading.model.AutoPosition;
+
+import java.util.List;
 import com.autotrading.model.DailyProfitPoint;
 import com.autotrading.model.MonitorAggregateRow;
 import com.autotrading.model.OrderLog;
@@ -15,6 +17,7 @@ public interface AutoTradingDao {
     void saveOrderLog(String symbol, String side, int qty, double price, String reason);
     void savePosition(String symbol, String symbolName, int quantity, double avgPrice);
     AutoPosition findPosition(String symbol);
+    List<AutoPosition> findAllPositions();
     void saveStrategyRecord(String symbol, String strategyType, String status);
     StockQuote findLastQuote(String symbol);
     List<OrderLog> findRecentOrders(int limit);

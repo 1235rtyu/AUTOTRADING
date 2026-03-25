@@ -1,110 +1,141 @@
 package com.autotrading.scheduler;
 
-import com.autotrading.market.KoreaInvestmentApiClient;
-import com.autotrading.market.MarketDataService;
-import com.autotrading.order.OrderService;
-import com.autotrading.position.PositionService;
 import com.autotrading.dao.AutoTradingDao;
 import com.autotrading.dao.WatchlistDao;
+import com.autotrading.market.KoreaInvestmentApiClient;
+import com.autotrading.market.MarketDataService;
 import com.autotrading.model.AutoPosition;
 import com.autotrading.model.StockQuote;
 import com.autotrading.model.WatchlistItem;
+import com.autotrading.order.OrderService;
+import com.autotrading.position.PositionService;
 import com.autotrading.service.RiskManager;
 import com.autotrading.strategy.StrategyEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import org.springframework.beans.factory.DisposableBean;
+import java.lang.reflect.Method;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * SchedulerService v3.6
- *
- * [v3.5 → v3.6 수정 내역]
- *
- * 수정 A (High). exchange 파라미터 무시 문제
- *   기존: start(symbol, exchange)가 exchange를 무시하고 start(symbol)과 동일하게 동작.
- *         isOverseasSymbol()로만 시장을 감지하여 KRX 심볼도 OK지만
- *         exchange가 명시된 경우에는 그대로 사용되어야 하는데 무시되는 버그.
- *   수정: start(symbol, exchange)에서 exchange를 StrategyEngine.Market으로 변환하여
- *         strategyEngine.setMarket()으로 명시적으로 등록.
- *         exchange가 null이면 기존처럼 자동 감지에 위임.
- *
- * 수정 B (High). buyPending이 placeOrder 직전에만 설정되도록 수정
- *   기존: decide()가 BUY OrderCommand 반환 직후 buyPending=true 설정.
- *         그 사이 타이머 재진입 시 pending 30초 대기.
- *   수정: decide()에서 pending을 설정하지 않음.
- *         execute()에서 실제 주문 직전(placeOrder 직전)에만
- *         strategyEngine.markBuyPending()을 호출.
- *         재진입 시 markBuyPending() 이전에는 pending이 설정되지 않으므로 안전.
- *
- * 수정 C (High). SELL 후 clearPositionState 타이밍 문제
- *   기존: decide() 내부에서 SELL 신호 생성 직후 clearPositionState() 호출.
- *         이후 REJECT/ERROR 시에도 상태가 초기화되는 버그.
- *   수정: handleAccepted(SELL)에서 strategyEngine.notifySellAccepted()를 호출.
- *         REJECT/ERROR 시에는 호출하지 않아 상태가 유지되어 재시도 가능.
- *
- * 수정 D (Medium). stopSymbol() 개별 종목 중지 기능 추가
- *   기존: stop()이 전체 종목을 중지. toggle(enable=false)이 stop()을 호출하여
- *         다른 종목도 함께 중지되는 문제.
- *   수정: stopSymbol(symbol)을 추가하여 특정 종목만 중지하고 해당 상태만 초기화.
- *         toggle(enable=false)은 별도로 ApiController에서 호출 방식 변경 필요.
- *         stop()은 전체 중지 전용으로 유지.
- *
- * v3.5에서 유지되는 사항:
- *   BarAccumulator startNewBar 중복 시작 방지 (타이밍 문제, 분봉 정확성)
- *   REJECTED/ERROR 케이스 처리 분리
- *   stop() 전체 상태 clear
- *   해외 심볼 DB fallback
- */
 @Service
-public class SchedulerService {
+public class SchedulerService implements InitializingBean, DisposableBean {
+
     private static final Logger logger = LoggerFactory.getLogger(SchedulerService.class);
 
-    private final MarketDataService        marketDataService;
-    private final StrategyEngine           strategyEngine;
-    private final OrderService             orderService;
-    private final PositionService          positionService;
-    private final AutoTradingDao           autoTradingDao;
-    private final WatchlistDao             watchlistDao;
-    private final RiskManager              riskManager;
+    // ── 공통 상수 ─────────────────────────────────────────────────────────────
+    private static final long   COOLDOWN_NORMAL_SEC            = 120;
+    private static final long   COOLDOWN_STOPLOSS_SEC          = 600;
+    private static final long   TICK_INTERVAL_MS               = 5_000L;
+    private static final int    BUY_FILL_CONFIRM_MAX_ATTEMPTS  = 5;
+
+    private static final int    SELL_FILL_CONFIRM_MAX_ATTEMPTS = 8;
+    private static final long   BUY_FILL_CONFIRM_INTERVAL_MS   = 700L;
+    private static final long   SELL_FILL_CONFIRM_INTERVAL_MS  = 350L;
+
+    private static final int    OVERSEAS_QUOTE_FAIL_LIMIT      = 24;
+    private static final double VOLUME_RESET_RATIO             = 0.5;
+    private static final long   POSITION_SYNC_INTERVAL_SEC     = 60L;
+    private static final long   POSITION_CACHE_TTL_MS          = 3_000L;
+    private static final long   POSITION_CACHE_MAX_STALE_MS    = 10_000L;
+    private static final long   REJECT_COOLDOWN_MS             = 30_000L;
+    private static final long   REJECT_COOLDOWN_PRICE_MS       = 60_000L;
+
+    // 🔴 fix2: 캐시 갱신 실패 시 재시도 간격 (정상 TTL보다 짧게)
+    private static final long   POSITION_CACHE_FAIL_RETRY_MS   = 1_500L;
+
+    private static final String STATUS_ACCEPTED = "ACCEPTED";
+    private static final String STATUS_REJECTED = "REJECTED";
+    private static final String STATUS_ERROR    = "ERROR";
+
+    // ── 장 시간 관련 ─────────────────────────────────────────────────────────
+    private static final ZoneId KST_ZONE = ZoneId.of("Asia/Seoul");
+    private static final ZoneId NY_ZONE  = ZoneId.of("America/New_York");
+
+    private static final LocalTime KRX_OPEN_TIME            = LocalTime.of(9, 0);
+    private static final LocalTime KRX_CLOSE_TIME           = LocalTime.of(15, 30);
+    private static final LocalTime KRX_OPENING_BLOCK_START  = LocalTime.of(9, 0);
+    private static final LocalTime KRX_OPENING_BLOCK_END    = LocalTime.of(9, 5);
+    private static final LocalTime KRX_OPENING_CAUTION_END  = LocalTime.of(9, 15);
+
+    private static final LocalTime US_OPEN_TIME             = LocalTime.of(9, 30);
+    private static final LocalTime US_CLOSE_TIME            = LocalTime.of(16, 0);
+
+    private static final long MARKET_SESSION_CACHE_TTL_MS   = 15_000L;
+
+    // ── 의존성 ───────────────────────────────────────────────────────────────
+    private final MarketDataService marketDataService;
+    private final StrategyEngine strategyEngine;
+    private final OrderService orderService;
+    private final PositionService positionService;
+    private final AutoTradingDao autoTradingDao;
+    private final WatchlistDao watchlistDao;
+    private final RiskManager riskManager;
     private final KoreaInvestmentApiClient kisApiClient;
 
-    private final Map<String, Timer>          timers          = new ConcurrentHashMap<>();
-    private final Map<String, Double>         prevVolume      = new ConcurrentHashMap<>();
-    private final Map<String, Instant>        lastSellTime    = new ConcurrentHashMap<>();
-    private final Map<String, Instant>        stopLossTime    = new ConcurrentHashMap<>();
-    private final Map<String, BarAccumulator> barAccumMap     = new ConcurrentHashMap<>();
-    private final Map<String, String>         symbolExchange  = new ConcurrentHashMap<>();
-    private final Map<String, Integer>        quoteFailCount  = new ConcurrentHashMap<>();
-    private final Map<String, String>         symbolNameCache = new ConcurrentHashMap<>();
-    private final Map<String, ScheduledFuture<?>> buyFillConfirmTasks = new ConcurrentHashMap<>();
+    // ── 상태 맵 ───────────────────────────────────────────────────────────────
+    private final Map<String, ScheduledExecutorService> schedulers       = new ConcurrentHashMap<>();
+    private final Map<String, ScheduledFuture<?>>       tickTasks        = new ConcurrentHashMap<>();
+    private final Map<String, Double>                   prevVolume       = new ConcurrentHashMap<>();
+    private final Map<String, Instant>                  lastSellTime     = new ConcurrentHashMap<>();
+    private final Map<String, Instant>                  stopLossTime     = new ConcurrentHashMap<>();
+    private final Map<String, BarAccumulator>           barAccumMap      = new ConcurrentHashMap<>();
+    private final Map<String, String>                   symbolExchange   = new ConcurrentHashMap<>();
+    private final Map<String, Integer>                  quoteFailCount   = new ConcurrentHashMap<>();
+    private final Map<String, String>                   symbolNameCache  = new ConcurrentHashMap<>();
+    private final Map<String, Long>                     rejectCooldownUntilMs = new ConcurrentHashMap<>();
+    private final Map<String, String>                   lastRejectMessage     = new ConcurrentHashMap<>();
+
+    private final Map<String, ScheduledFuture<?>>       buyFillConfirmTasks  = new ConcurrentHashMap<>();
+    private final Map<String, ScheduledFuture<?>>       sellFillConfirmTasks = new ConcurrentHashMap<>();
+    private final Map<String, SessionStatusCacheEntry>  marketSessionCache   = new ConcurrentHashMap<>();
+    private final Map<String, PositionSnapshot>         positionCache        = new ConcurrentHashMap<>();
+    private final AtomicBoolean                         positionCacheRefreshing = new AtomicBoolean(false);
 
     private final ScheduledExecutorService buyFillConfirmExecutor =
-            Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread t = new Thread(r, "buy-fill-confirm");
-                    t.setDaemon(true);
-                    return t;
-                }
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "buy-fill-confirm");
+                t.setDaemon(true);
+                return t;
             });
 
-    // ── 1분봉 누적기 ────────────────────────────────────────────────────────────
+    private final ScheduledExecutorService sellFillConfirmExecutor =
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "sell-fill-confirm");
+                t.setDaemon(true);
+                return t;
+            });
+
+    private final ScheduledExecutorService positionSyncExecutor =
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "position-sync");
+                t.setDaemon(true);
+                return t;
+            });
+
+    private final AtomicBoolean positionSyncStarted = new AtomicBoolean(false);
+    private volatile long positionCacheUpdatedMs = 0L;
+    private volatile long lastKrCacheOkMs = 0L;
+    private volatile long lastUsCacheOkMs = 0L;
+    private volatile long lastAccountConfigWarnMs = 0L;
+
+    // ── 내부 클래스 ───────────────────────────────────────────────────────────
     private static class BarAccumulator {
         double open       = 0;
         double high       = 0;
@@ -113,14 +144,18 @@ public class SchedulerService {
         double volAccum   = 0;
         long   barStartMs = 0;
 
-        boolean isEmpty() { return barStartMs == 0; }
+        boolean isEmpty() {
+            return barStartMs == 0;
+        }
 
         void update(double price, double deltaVol) {
             if (isEmpty()) {
-                open = price; high = price; low = price;
+                open = price;
+                high = price;
+                low  = price;
             } else {
                 high = Math.max(high, price);
-                low  = Math.min(low,  price);
+                low  = Math.min(low, price);
             }
             close    = price;
             volAccum += deltaVol;
@@ -140,15 +175,106 @@ public class SchedulerService {
         }
     }
 
-    private static final long COOLDOWN_NORMAL_SEC   = 120;
-    private static final long COOLDOWN_STOPLOSS_SEC = 300;
+    private static class PositionSnapshot {
+        final int quantity;
+        final double avgPrice;
+        final boolean liveUnavailable;
+        final String exchange;
+        final String symbolName;
 
-    private static final String STATUS_ACCEPTED = "ACCEPTED";
-    private static final String STATUS_REJECTED = "REJECTED";
-    private static final String STATUS_ERROR    = "ERROR";
-    private static final int BUY_FILL_CONFIRM_MAX_ATTEMPTS = 5;
-    private static final long BUY_FILL_CONFIRM_INTERVAL_MS = 700L;
+        PositionSnapshot(int quantity, double avgPrice, boolean liveUnavailable, String exchange, String symbolName) {
+            this.quantity = quantity;
+            this.avgPrice = avgPrice;
+            this.liveUnavailable = liveUnavailable;
+            this.exchange = exchange;
+            this.symbolName = symbolName;
+        }
+    }
 
+    private static class RealPosition {
+        final int quantity;
+        final double avgPrice;
+
+        RealPosition(int quantity, double avgPrice) {
+            this.quantity = quantity;
+            this.avgPrice = avgPrice;
+        }
+    }
+
+    private static class LivePosition {
+        final String symbol;
+        final String symbolName;
+        final int quantity;
+        final double avgPrice;
+        final String exchange;
+
+        LivePosition(String symbol, String symbolName, int quantity, double avgPrice, String exchange) {
+            this.symbol = symbol;
+            this.symbolName = symbolName;
+            this.quantity = quantity;
+            this.avgPrice = avgPrice;
+            this.exchange = exchange;
+        }
+    }
+
+    private static class SellFillContext {
+        final String symbol;
+        final String exchange;
+        final int previousQty;
+        final int requestedSellQty;
+        final int expectedRemainingQty;
+        final double avgPrice;
+        final boolean defensiveExit;
+        final double referencePrice;
+        final String reason;
+        final boolean marketOrder;
+
+        SellFillContext(String symbol,
+                        String exchange,
+                        int previousQty,
+                        int requestedSellQty,
+                        int expectedRemainingQty,
+                        double avgPrice,
+                        boolean defensiveExit,
+                        double referencePrice,
+                        String reason,
+                        boolean marketOrder) {
+            this.symbol = symbol;
+            this.exchange = exchange;
+            this.previousQty = previousQty;
+            this.requestedSellQty = requestedSellQty;
+            this.expectedRemainingQty = expectedRemainingQty;
+            this.avgPrice = avgPrice;
+            this.defensiveExit = defensiveExit;
+            this.referencePrice = referencePrice;
+            this.reason = reason;
+            this.marketOrder = marketOrder;
+        }
+    }
+
+    private static class MarketSessionStatus {
+        final boolean tradable;
+        final String source;
+        final String detail;
+
+        MarketSessionStatus(boolean tradable, String source, String detail) {
+            this.tradable = tradable;
+            this.source = source;
+            this.detail = detail;
+        }
+    }
+
+    private static class SessionStatusCacheEntry {
+        final MarketSessionStatus status;
+        final long checkedAtMs;
+
+        SessionStatusCacheEntry(MarketSessionStatus status, long checkedAtMs) {
+            this.status = status;
+            this.checkedAtMs = checkedAtMs;
+        }
+    }
+
+    // ── 생성자 ───────────────────────────────────────────────────────────────
     public SchedulerService(MarketDataService marketDataService,
                             StrategyEngine strategyEngine,
                             OrderService orderService,
@@ -158,31 +284,74 @@ public class SchedulerService {
                             RiskManager riskManager,
                             KoreaInvestmentApiClient kisApiClient) {
         this.marketDataService = marketDataService;
-        this.strategyEngine    = strategyEngine;
-        this.orderService      = orderService;
-        this.positionService   = positionService;
-        this.autoTradingDao    = autoTradingDao;
-        this.watchlistDao      = watchlistDao;
-        this.riskManager       = riskManager;
-        this.kisApiClient      = kisApiClient;
+        this.strategyEngine = strategyEngine;
+        this.orderService = orderService;
+        this.positionService = positionService;
+        this.autoTradingDao = autoTradingDao;
+        this.watchlistDao = watchlistDao;
+        this.riskManager = riskManager;
+        this.kisApiClient = kisApiClient;
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        if (!ensureAccountConfigReady("startup")) {
+            logger.error("KIS account config missing at startup - scheduler will remain disabled until configured.");
+            return;
+        }
+        if (!positionSyncStarted.compareAndSet(false, true)) {
+            return;
+        }
+        positionSyncExecutor.scheduleWithFixedDelay(
+                () -> {
+                    try {
+                        syncAllPositions("periodic");
+                    } catch (Exception e) {
+                        logger.warn("Position sync failed: {}", e.getMessage());
+                    }
+                },
+                2L,
+                POSITION_SYNC_INTERVAL_SEC,
+                TimeUnit.SECONDS
+        );
+
+        try {
+            syncAllPositions("startup");
+        } catch (Exception e) {
+            logger.warn("Startup position sync failed: {}", e.getMessage());
+        }
+    }
+
+    // 🔴 fix (운영이슈): 앱 종료 시 모든 executor 정리
+    public void shutdown() {
+        logger.info("SchedulerService shutdown initiated");
+        try { stop(); } catch (Exception e) { logger.warn("stop() on shutdown error: {}", e.getMessage()); }
+        shutdownExecutor(positionSyncExecutor, "position-sync");
+        shutdownExecutor(buyFillConfirmExecutor, "buy-fill-confirm");
+        shutdownExecutor(sellFillConfirmExecutor, "sell-fill-confirm");
+        logger.info("SchedulerService shutdown complete");
+    }
+
+    @Override
+    public void destroy() {
+        shutdown();
+    }
+
+    private void shutdownExecutor(ExecutorService executor, String name) {
+        try {
+            executor.shutdownNow();
+            if (!executor.awaitTermination(3, TimeUnit.SECONDS)) {
+                logger.warn("Executor {} did not terminate in 3s", name);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public synchronized String start(String symbol) {
         return start(symbol, null, null);
     }
 
-    /**
-     * [수정 A] exchange를 strategyEngine.setMarket()으로 명시적으로 등록.
-     *
-     * exchange 값 → Market 매핑:
-     *   "KRX", "KR", "KOSPI", "KOSDAQ" → Market.KRX
-     *   "NAS", "NASD", "NYSE", "AMEX"  → Market.US
-     *   null (KRX 심볼 = 숫자로 시작)   → Market.KRX (자동 감지)
-     *   null && 영문 심볼               → Market.US  (기존처럼 자동 감지에 위임)
-     *
-     * setMarket()을 호출하면 detectMarket()에서 st.market이 null이 아니므로
-     * 자동 감지 없이 명시적으로 등록된 값을 사용한다.
-     */
     public synchronized String start(String symbol, String exchange) {
         return start(symbol, exchange, null);
     }
@@ -190,17 +359,22 @@ public class SchedulerService {
     public synchronized String start(String symbol, String exchange, Double buyAmount) {
         if (symbol == null || symbol.isBlank()) return "Invalid symbol";
         String sym = symbol.trim().toUpperCase();
+
+        if (!ensureAccountConfigReady("start")) {
+            return "KIS account config missing";
+        }
+
         if (buyAmount != null) {
             strategyEngine.setBuyAmount(sym, buyAmount);
         }
-        if (timers.containsKey(sym)) {
+
+        if (schedulers.containsKey(sym)) {
             if (buyAmount != null) {
                 return "Already Running (buy amount updated): " + sym;
             }
             return "Already Running: " + sym;
         }
 
-        // [수정 A] Market 등록
         String orderExchange = resolveOrderExchangeForStart(sym, exchange);
         symbolExchange.put(sym, orderExchange);
 
@@ -208,231 +382,263 @@ public class SchedulerService {
         strategyEngine.setMarket(sym, market);
         logger.info("Market set for {} : exchange={} -> orderExchange={} -> {}",
                 sym, exchange, orderExchange, market);
-        // exchange == null이면 StrategyEngine.detectMarket()이 자동 감지에 위임
 
-        Timer timer = new Timer(true);
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override public void run() {
-                try { execute(sym); }
-                catch (Exception e) {
-                    logger.error("Strategy error for {}", sym, e);
-                }
-            }
-        }, 0, 5_000);
-        timers.put(sym, timer);
+        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "scheduler-" + sym);
+            t.setDaemon(true);
+            return t;
+        });
+
+        ScheduledFuture<?> task = exec.scheduleWithFixedDelay(
+                () -> {
+                    try {
+                        execute(sym);
+                    } catch (Exception e) {
+                        logger.error("Strategy error for {}", sym, e);
+                    }
+                },
+                0L,
+                TICK_INTERVAL_MS,
+                TimeUnit.MILLISECONDS
+        );
+
+        schedulers.put(sym, exec);
+        tickTasks.put(sym, task);
         logger.info("Auto-trading scheduler started for {}", sym);
         return "Started " + sym;
     }
 
-    /**
-     * [수정 A] exchange 문자열을 StrategyEngine.Market으로 변환
-     */
-    private StrategyEngine.Market resolveMarket(String exchUpper) {
-        if (exchUpper == null) {
-            return StrategyEngine.Market.KRX;
+    private void syncAllPositions(String reason) {
+        if (!ensureAccountConfigReady("syncAllPositions:" + reason)) {
+            return;
         }
-        switch (exchUpper) {
-            case "KRX":
-            case "KR":
-            case "KOSPI":
-            case "KOSDAQ":
-                return StrategyEngine.Market.KRX;
-            default:
-                return StrategyEngine.Market.US;
+        Map<String, LivePosition> liveKr = new HashMap<>();
+        Map<String, LivePosition> liveUs = new HashMap<>();
+
+        boolean krOk = collectDomesticPositions(liveKr);
+        boolean usOk = collectOverseasPositions(liveUs);
+
+        if (krOk) {
+            applyLivePositions(liveKr, reason);
+            reconcileMissingPositions(liveKr.keySet(), true, reason);
+        }
+
+        if (usOk) {
+            applyLivePositions(liveUs, reason);
+            reconcileMissingPositions(liveUs.keySet(), false, reason);
         }
     }
 
+    private boolean collectDomesticPositions(Map<String, LivePosition> target) {
+        try {
+            Map<String, Object> balResp = kisApiClient.fetchDomesticBalance();
+            if (!"OK".equals(balResp.get("status"))) {
+                logger.warn("Position sync: domestic balance non-OK: {}", balResp.get("message"));
+                return false;
+            }
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> output1 =
+                    (List<Map<String, Object>>) balResp.get("output1");
+            if (output1 == null) return true;
+
+            for (Map<String, Object> item : output1) {
+                String symbol = pickString(item, "pdno", "item_cd", "symbol", "stck_shrn_iscd");
+                if (!StringUtils.hasText(symbol)) continue;
+                int qty = pickInt(item, "hldg_qty", "cblc_qty", "hold_qty");
+                if (qty <= 0) continue;
+                double avg = pickDouble(item, "pchs_avg_pric", "avg_pric", "avg_unpr", "pchs_unpr");
+                String name = normalizeSymbolName(pickString(item,
+                        "prdt_name", "prdt_nm", "stck_isnm", "hts_kor_isnm", "name"));
+                target.put(symbol, new LivePosition(symbol, name, qty, avg, "KRX"));
+            }
+            return true;
+        } catch (Exception e) {
+            logger.warn("Position sync: domestic balance error: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean collectOverseasPositions(Map<String, LivePosition> target) {
+        boolean anyOk = false;
+        List<String> exchanges = buildOverseasExchangeCandidates(null);
+
+        for (String ex : exchanges) {
+            Map<String, Object> balResp = fetchOverseasBalanceWithRetry(ex, 2);
+            if (balResp == null || !"OK".equals(balResp.get("status"))) {
+                String msg = balResp != null ? String.valueOf(balResp.get("message")) : "null response";
+                logger.warn("Position sync: overseas balance non-OK for {}: {}", ex, msg);
+                continue;
+            }
+            anyOk = true;
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> output1 =
+                    (List<Map<String, Object>>) balResp.get("output1");
+            if (output1 == null) continue;
+
+            for (Map<String, Object> item : output1) {
+                String symbol = pickString(item, "ovrs_pdno", "pdno", "symbol", "item_cd");
+                if (!StringUtils.hasText(symbol)) continue;
+                int qty = pickInt(item, "ovrs_cblc_qty", "hldg_qty", "hold_qty", "cblc_qty");
+                if (qty <= 0) continue;
+                double avg = pickDouble(item, "pchs_avg_pric", "avg_unpr", "pchs_unpr", "avg_pric");
+                String name = normalizeSymbolName(pickString(item,
+                        "ovrs_item_name", "ovrs_item_kor_name", "hts_kor_isnm", "stck_isnm", "prdt_name", "name"));
+
+                if (!target.containsKey(symbol)) {
+                    target.put(symbol, new LivePosition(symbol, name, qty, avg, ex));
+                }
+                symbolExchange.put(symbol, ex);
+            }
+        }
+
+        return anyOk;
+    }
+
+    private void applyLivePositions(Map<String, LivePosition> livePositions, String reason) {
+        if (livePositions.isEmpty()) return;
+
+        for (LivePosition pos : livePositions.values()) {
+            positionService.updatePosition(pos.symbol, pos.symbolName, pos.quantity, pos.avgPrice);
+            if (StringUtils.hasText(pos.symbolName)) {
+                symbolNameCache.put(pos.symbol, pos.symbolName);
+            }
+        }
+        logger.info("Position sync applied: count={} reason={}", livePositions.size(), reason);
+    }
+
+    private void reconcileMissingPositions(Set<String> liveSymbols, boolean krxMarket, String reason) {
+        List<AutoPosition> dbPositions = positionService.getAllPositions();
+        if (dbPositions == null || dbPositions.isEmpty()) return;
+
+        for (AutoPosition dbPos : dbPositions) {
+            String symbol = dbPos.getSymbol();
+            if (!StringUtils.hasText(symbol)) continue;
+
+            boolean isKrx = isKrxSymbol(symbol);
+            if (krxMarket != isKrx) continue;
+            if (liveSymbols.contains(symbol)) continue;
+            if (dbPos.getQuantity() == 0) continue;
+
+            positionService.updatePosition(symbol, dbPos.getSymbolName(), 0, dbPos.getAvgPrice());
+            strategyEngine.clearStaleHoldState(symbol);
+            logger.info("Position cleared (not in live) symbol={} qty={} reason={}",
+                    symbol, dbPos.getQuantity(), reason);
+        }
+    }
+
+    private String normalizeSymbolName(String raw) {
+        if (!StringUtils.hasText(raw)) return null;
+        String trimmed = raw.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Map<String, Object> fetchOverseasBalanceWithRetry(String exchange, int attempts) {
+        String ex = normalizeOverseasOrderExchange(exchange);
+        for (int attempt = 1; attempt <= attempts; attempt++) {
+            try {
+                Map<String, Object> balResp = kisApiClient.fetchOverseasBalance(ex, "USD");
+                if (balResp == null) return null;
+                if (!"OK".equals(balResp.get("status"))) {
+                    if (attempt < attempts) {
+                        logger.warn("fetchOverseasBalance retry {} for {}: {}", attempt, ex, balResp.get("message"));
+                        continue;
+                    }
+                }
+                return balResp;
+            } catch (Exception e) {
+                if (attempt < attempts) {
+                    logger.warn("fetchOverseasBalance retry {} failed for {}: {}", attempt, ex, e.getMessage());
+                    continue;
+                }
+                logger.warn("fetchOverseasBalance failed for {}: {}", ex, e.getMessage());
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private List<String> buildOverseasExchangeCandidates(String exchange) {
+        List<String> list = new ArrayList<>();
+        String primary = normalizeOverseasOrderExchange(exchange);
+        if ("NASD".equals(primary) || "NYSE".equals(primary) || "AMEX".equals(primary)) {
+            list.add(primary);
+        }
+        if (!list.contains("NASD")) list.add("NASD");
+        if (!list.contains("NYSE")) list.add("NYSE");
+        if (!list.contains("AMEX")) list.add("AMEX");
+        return list;
+    }
+
+    // ── 실행 루프 ─────────────────────────────────────────────────────────────
     private void execute(String symbol) {
+        if (!ensureAccountConfigReady("execute")) {
+            return;
+        }
         if (riskManager.hasHitLossLimit()) {
             logger.warn("Daily loss limit reached; stopping all trading");
             stop();
             return;
         }
 
-        // ── 1. 현재가 시세 조회 ──────────────────────────────────────────────────
         String orderExchange = resolveOrderExchangeForRuntime(symbol);
-        String quoteExchangeHint = toQuoteExchangeHint(orderExchange);
-        var quote = safeFetchQuote(symbol, quoteExchangeHint);
-        if (quote == null) {
-            return;
-        }
+
+        StockQuote quote = safeFetchQuote(symbol, toQuoteExchangeHint(orderExchange));
+        if (quote == null) return;
+
         quoteFailCount.remove(symbol);
         orderExchange = syncOrderExchangeWithQuote(symbol, orderExchange);
-        double price = quote.getPrice();
-        double rawVol = quote.getVolume();
+
+        double deltaVolume = calculateDeltaVolume(symbol, quote.getVolume());
+
         String symbolName = resolveSymbolName(symbol, quote);
+        double currentVolume1m = updateBarAccumulator(symbol, quote, symbolName, deltaVolume);
 
-        // ── 2. delta 거래량 계산 ─────────────────────────────────────────────────
-        double prevVol     = prevVolume.getOrDefault(symbol, rawVol);
-        double deltaVolume = Math.max(0, rawVol - prevVol);
-        prevVolume.put(symbol, rawVol);
+        PositionSnapshot pos = loadPositionSnapshot(symbol, orderExchange);
+        int quantity = pos.quantity;
+        double avgPrice = pos.avgPrice;
 
-        // ── 3. 1분봉 누적 처리 ───────────────────────────────────────────────────
-        long nowMs    = System.currentTimeMillis();
-        long bucketTs = BarAccumulator.bucketTs(nowMs);
-
-        BarAccumulator accum = barAccumMap.computeIfAbsent(symbol, k -> new BarAccumulator());
-
-        if (!accum.isEmpty() && accum.barStartMs != bucketTs) {
-            logger.debug("1m bar completed for {} @ {} o={} h={} l={} c={} vol={}",
-                    symbol, accum.barStartMs,
-                    accum.open, accum.high, accum.low, accum.close, accum.volAccum);
-            // 5초 틱마다 저장하지 않고 완성된 1분봉 단위로 저장
-            autoTradingDao.savePriceLog(symbol, symbolName, accum.close, accum.volAccum, quote.getTimestamp());
-            strategyEngine.record(
-                    symbol,
-                    accum.open, accum.high, accum.low, accum.close,
-                    accum.volAccum, accum.barStartMs
-            );
-            accum.startNewBar(bucketTs, price, deltaVolume);
-        } else if (accum.isEmpty()) {
-            accum.startNewBar(bucketTs, price, deltaVolume);
-        } else {
-            accum.update(price, deltaVolume);
-        }
-
-        double currentVolume1m = accum.volAccum;
-
-        // ── 4. 보유 포지션 조회 ──────────────────────────────────────────────────
-        int    quantity = 0;
-        double avgPrice = 0;
-
-        if (isOverseasSymbol(symbol)) {
-            logger.debug("Overseas symbol {} → skipping fetchDomesticBalance, using DB", symbol);
-            AutoPosition dbPos = positionService.getPosition(symbol);
-            quantity = dbPos != null ? dbPos.getQuantity() : 0;
-            avgPrice = dbPos != null ? dbPos.getAvgPrice()  : 0;
-        } else {
-            RealPosition real = fetchRealPosition(symbol);
-            if (real != null) {
-                quantity = real.quantity;
-                avgPrice = real.avgPrice;
-                AutoPosition dbPos = positionService.getPosition(symbol);
-                int dbQty = dbPos != null ? dbPos.getQuantity() : 0;
-                if (dbQty != quantity) {
-                    logger.info("Position sync {} : DB qty={} → Real qty={} avgPrice={}",
-                            symbol, dbQty, quantity, avgPrice);
-                    positionService.updatePosition(symbol, quantity, avgPrice);
-                }
-            } else {
-                logger.warn("Real position fetch failed for {}, falling back to DB", symbol);
-                AutoPosition dbPos = positionService.getPosition(symbol);
-                quantity = dbPos != null ? dbPos.getQuantity() : 0;
-                avgPrice = dbPos != null ? dbPos.getAvgPrice()  : 0;
-            }
-        }
-
-        // If a live position exists, treat BUY as filled and stop async confirm task.
         if (quantity > 0) {
             cancelBuyFillConfirmTask(symbol);
             strategyEngine.notifyBuyFilled(symbol);
+        } else if (buyFillConfirmTasks.containsKey(symbol)) {
+            cancelBuyFillConfirmTask(symbol);
+            strategyEngine.clearStaleHoldState(symbol);
         }
 
-        // ── 5. 전략 판단 ─────────────────────────────────────────────────────────
-        var orderOpt = strategyEngine.decide(symbol, price, currentVolume1m, quantity, avgPrice);
+        Optional<com.autotrading.model.OrderCommand> orderOpt =
+                strategyEngine.decide(symbol, quote.getPrice(), currentVolume1m, quantity, avgPrice);
+
         if (orderOpt.isEmpty()) return;
 
-        var command = orderOpt.get();
+        com.autotrading.model.OrderCommand command = orderOpt.get();
         if (isOverseasSymbol(symbol)) {
             command.setExchange(orderExchange);
         }
 
-        // ── 6. 매수/매도 쿨다운 체크 ────────────────────────────────────────────
-        if ("BUY".equals(command.getType())) {
-            Instant slTime = stopLossTime.get(symbol);
-            if (slTime != null && Instant.now().isBefore(slTime.plusSeconds(COOLDOWN_STOPLOSS_SEC))) {
-                long rem = COOLDOWN_STOPLOSS_SEC
-                        - (Instant.now().getEpochSecond() - slTime.getEpochSecond());
-                logger.info("BUY blocked (stop-loss cooldown) for {} ({}s remaining)", symbol, rem);
-                // [수정 B] markBuyPending 이전에 리턴하므로 pending 설정 없음. 안전.
-                return;
-            }
-            Instant sellTime = lastSellTime.get(symbol);
-            if (sellTime != null && Instant.now().isBefore(sellTime.plusSeconds(COOLDOWN_NORMAL_SEC))) {
-                long rem = COOLDOWN_NORMAL_SEC
-                        - (Instant.now().getEpochSecond() - sellTime.getEpochSecond());
-                logger.info("BUY blocked (sell cooldown) for {} ({}s remaining)", symbol, rem);
-                return;
-            }
+        if (!passesRejectCooldown(symbol, command)) {
+            return;
         }
 
-        // ── 7. 주문 실행 전 계좌 사전체크 ────────────────────────────────────────
-        // [수정 B] 실제 주문 직전(placeOrder 직전)에만 BUY pending 설정.
-        //          이 시점 이전에는 pending이 설정되지 않으므로 타이머 재진입 시 안전.
-        // BUY 직전 실계좌 포지션 재확인으로 중복 매수 방지
-        if ("BUY".equals(command.getType())) {
-            RealPosition livePos = isOverseasSymbol(symbol)
-                    ? fetchOverseasRealPosition(symbol, orderExchange)
-                    : fetchRealPosition(symbol);
-
-            AutoPosition dbPosNow = positionService.getPosition(symbol);
-            int dbQtyNow = dbPosNow != null ? dbPosNow.getQuantity() : 0;
-            double dbAvgNow = dbPosNow != null ? dbPosNow.getAvgPrice() : 0.0;
-
-            if (livePos != null && (livePos.quantity != dbQtyNow
-                    || Math.abs(livePos.avgPrice - dbAvgNow) > 0.0001)) {
-                logger.info("Pre-order position sync {} : DB qty={} -> Real qty={} avgPrice={}",
-                        symbol, dbQtyNow, livePos.quantity, livePos.avgPrice);
-                positionService.updatePosition(symbol, livePos.quantity, livePos.avgPrice);
-                dbQtyNow = livePos.quantity;
-            }
-
-            int effectiveQty = livePos != null ? Math.max(livePos.quantity, dbQtyNow) : dbQtyNow;
-            if (effectiveQty > 0) {
-                logger.info("BUY blocked (pre-check holding) for {} : qty={}", symbol, effectiveQty);
-                return;
-            }
-
-            if (livePos == null) {
-                logger.warn("BUY pre-check position unavailable for {} -> proceeding with snapshot qty={}",
-                        symbol, quantity);
-            }
+        if (!passesMarketSessionGate(symbol, command, orderExchange)) {
+            return;
         }
 
-        // Re-check live account position right before SELL to avoid repeated rejects.
+        if ("BUY".equals(command.getType())) {
+            if (!passesBuyGate(symbol, command, orderExchange, pos)) return;
+        }
+
         if ("SELL".equals(command.getType())) {
-            RealPosition livePos = isOverseasSymbol(symbol)
-                    ? fetchOverseasRealPosition(symbol, orderExchange)
-                    : fetchRealPosition(symbol);
-
-            AutoPosition dbPosNow = positionService.getPosition(symbol);
-            int dbQtyNow = dbPosNow != null ? dbPosNow.getQuantity() : 0;
-            double dbAvgNow = dbPosNow != null ? dbPosNow.getAvgPrice() : 0.0;
-
-            if (livePos != null && (livePos.quantity != dbQtyNow
-                    || Math.abs(livePos.avgPrice - dbAvgNow) > 0.0001)) {
-                logger.info("Pre-order position sync {} : DB qty={} -> Real qty={} avgPrice={}",
-                        symbol, dbQtyNow, livePos.quantity, livePos.avgPrice);
-                positionService.updatePosition(symbol, livePos.quantity, livePos.avgPrice);
-                dbQtyNow = livePos.quantity;
-                quantity = livePos.quantity;
-                avgPrice = livePos.avgPrice;
-            }
-
-            int availableQty = livePos != null ? livePos.quantity : dbQtyNow;
-            if (availableQty <= 0) {
-                logger.info("SELL blocked (pre-check no holding) for {}", symbol);
-                // Clear stale-hold state only (do not reuse SELL-accepted semantic path).
-                strategyEngine.clearStaleHoldState(symbol);
-                return;
-            }
-
-            if (command.getQuantity() > availableQty) {
-                logger.info("SELL quantity adjusted for {} : requested={} -> available={}",
-                        symbol, command.getQuantity(), availableQty);
-                command.setQuantity(availableQty);
-            }
-
-            if (livePos == null) {
-                logger.warn("SELL pre-check position unavailable for {} -> proceeding with snapshot qty={}",
-                        symbol, quantity);
-            }
+            if (!passesSellGate(symbol, command, orderExchange)) return;
         }
 
-        // ── 8. 리스크 매니저 체크 (실주문 직전) ──────────────────────────────────
         if (!riskManager.allowOrder(symbol)) {
             logger.warn("Order blocked by risk manager for {}", symbol);
             return;
+        }
+
+        if ("SELL".equals(command.getType()) && command.isMarketOrder() && command.getPrice() <= 0.0) {
+            command.setPrice(quote.getPrice());
         }
 
         if ("BUY".equals(command.getType())) {
@@ -449,35 +655,27 @@ public class SchedulerService {
                 strategyEngine.notifySellRejected(symbol);
             }
             riskManager.orderFailed(symbol);
-            logger.error("Order ERROR (EXCEPTION) for {} side={} -> treated as failed. msg={}",
+            logger.error("Order EXCEPTION for {} side={} msg={}",
                     symbol, command.getType(), e.getMessage());
             return;
         }
-        String respStatus = normalizeStatus(resp.getOrDefault("status", ""));
-        String respMsg    = String.valueOf(resp.getOrDefault("message", ""));
 
-        logger.info("Order response: symbol={} side={} price={} qty={} status={} session=- message={}",
+        String respStatus = normalizeStatus(resp.getOrDefault("status", ""));
+        String respMsg = String.valueOf(resp.getOrDefault("message", ""));
+
+        logger.info("Order response: symbol={} side={} price={} qty={} status={} message={}",
                 symbol, command.getType(), command.getPrice(),
                 command.getQuantity(), respStatus, respMsg);
 
-        String logReason = "Strategy | " + respStatus;
-        if (respMsg != null && !respMsg.isBlank()) {
-            String cleanMsg = respMsg.replaceAll("[\\r\\n]+", " ").trim();
-            if (cleanMsg.length() > 180) {
-                cleanMsg = cleanMsg.substring(0, 180);
-            }
-            logReason = logReason + " | " + cleanMsg;
-        }
+        String logReason = buildLogReason(respStatus, respMsg);
         autoTradingDao.saveOrderLog(
-                symbol, command.getType(), command.getQuantity(), command.getPrice(),
-                logReason);
+                symbol, command.getType(), command.getQuantity(), command.getPrice(), logReason);
 
-        // ── 9. 주문 결과 처리 ────────────────────────────────────────────────────
         if (STATUS_ACCEPTED.equals(respStatus)) {
-            handleAccepted(symbol, command, quantity, avgPrice);
+            handleAccepted(symbol, command, quantity, avgPrice, quote.getPrice(), orderExchange);
             riskManager.orderSucceeded(symbol);
         } else if (STATUS_REJECTED.equals(respStatus)) {
-            handleRejected(symbol, command, respMsg);
+            handleRejected(symbol, command, orderExchange, respMsg);
             riskManager.orderFailed(symbol);
         } else {
             handleError(symbol, command, respStatus, respMsg);
@@ -485,117 +683,775 @@ public class SchedulerService {
         }
     }
 
-    // ── 주문 결과 처리 메서드 ────────────────────────────────────────────────────
+    private boolean passesMarketSessionGate(String symbol,
+                                            com.autotrading.model.OrderCommand command,
+                                            String orderExchange) {
+        boolean defensiveExit = "SELL".equals(command.getType())
+                && (command.isMarketOrder()
+                || "STOP_LOSS".equalsIgnoreCase(command.getReason())
+                || "EMERGENCY_STOP".equalsIgnoreCase(command.getReason()));
 
-    /**
-     * ACCEPTED = 주문 접수 완료 (체결 완료 아님).
-     *
-     * BUY: 포지션 낙관적 업데이트.
-     *      pending은 유지하고 실제 체결은 confirmBuyFilled() / 다음 주기 실계좌 sync로 확정.
-     *
-     * SELL: 포지션 업데이트 후 notifySellAccepted()로 전략 상태 정리.
-     *       [수정 C] 기존에는 decide() 내부에서 clearPositionState()를 신호 생성과 동시에 호출했으나
-     *               REJECT/ERROR 시에도 상태가 초기화되는 버그 존재.
-     *               실제 ACCEPTED 확인 후에만 상태를 정리하도록 변경.
-     */
-    private void handleAccepted(String symbol,
-                                com.autotrading.model.OrderCommand command,
-                                int quantity, double avgPrice) {
-        if ("BUY".equals(command.getType())) {
-            int expectedQty = quantity + command.getQuantity();
-            logger.info("BUY accepted, waiting fill sync: symbol={} expectedQty={} orderPrice={}",
-                    symbol, expectedQty, command.getPrice());
-            // Do not optimistic-update position on BUY ACCEPTED.
-            // Position will be updated by async fill confirm or next execute-cycle live sync.
-            confirmBuyFilled(symbol, command.getExchange(), expectedQty);
+        if (defensiveExit) {
+            return true;
+        }
 
-        } else if ("SELL".equals(command.getType())) {
-            int newQty = Math.max(0, quantity - command.getQuantity());
-            positionService.updatePosition(symbol, newQty, newQty == 0 ? 0 : avgPrice);
+        MarketSessionStatus status = resolveMarketSessionStatus(symbol, orderExchange);
 
-            double pnl    = (command.getPrice() - avgPrice) * command.getQuantity();
-            double pnlPct = avgPrice > 0 ? pnl / (avgPrice * command.getQuantity()) * 100 : 0;
-            logger.info("Position updated SELL: symbol={} qty={} pnl={} ({}%)",
-                    symbol, newQty,
-                    String.format("%.0f", pnl),
-                    String.format("%.2f", pnlPct));
+        if (!status.tradable) {
+            logger.info("{} blocked (market session OFF) for {} exchange={} source={} detail={}",
+                    command.getType(), symbol, orderExchange, status.source, status.detail);
+            return false;
+        }
 
-            // [수정 C] ACCEPTED 확인 후에만 전략 포지션 상태 정리
-            strategyEngine.notifySellAccepted(symbol);
+        return true;
+    }
 
-            if (pnl < 0) {
-                stopLossTime.put(symbol, Instant.now());
-                riskManager.addLoss(Math.abs(pnl));
-                logger.info("Stop-loss cooldown started for {} ({}s)", symbol, COOLDOWN_STOPLOSS_SEC);
-            } else {
-                lastSellTime.put(symbol, Instant.now());
-                logger.info("Sell cooldown started for {} ({}s)", symbol, COOLDOWN_NORMAL_SEC);
+    private boolean passesRejectCooldown(String symbol, com.autotrading.model.OrderCommand command) {
+        long nowMs = System.currentTimeMillis();
+        Long until = rejectCooldownUntilMs.get(symbol);
+        if (until == null || nowMs >= until) {
+            return true;
+        }
+
+        String lastMsg = lastRejectMessage.getOrDefault(symbol, "");
+        long remaining = Math.max(0L, until - nowMs);
+        logger.warn("ORDER blocked (reject cooldown) symbol={} side={} remainingMs={} lastMsg={}",
+                symbol, command.getType(), remaining, lastMsg);
+        return false;
+    }
+
+    private MarketSessionStatus resolveMarketSessionStatus(String symbol, String orderExchange) {
+        long nowMs = System.currentTimeMillis();
+        String cacheKey = buildMarketSessionCacheKey(orderExchange);
+
+        SessionStatusCacheEntry cached = marketSessionCache.get(cacheKey);
+        if (cached != null && (nowMs - cached.checkedAtMs) < MARKET_SESSION_CACHE_TTL_MS) {
+            return cached.status;
+        }
+
+        try {
+            MarketSessionStatus apiStatus = tryResolveMarketSessionStatusFromApi(symbol, orderExchange);
+            if (apiStatus != null) {
+                marketSessionCache.put(cacheKey, new SessionStatusCacheEntry(apiStatus, nowMs));
+                return apiStatus;
+            }
+        } catch (Exception e) {
+            logger.warn("Market session API check failed for {}({}) -> fallback. msg={}",
+                    symbol, orderExchange, e.getMessage());
+        }
+
+        MarketSessionStatus fallback = fallbackMarketSessionStatus(orderExchange);
+        marketSessionCache.put(cacheKey, new SessionStatusCacheEntry(fallback, nowMs));
+        return fallback;
+    }
+
+    private String buildMarketSessionCacheKey(String orderExchange) {
+        StrategyEngine.Market market = resolveMarket(orderExchange);
+        if (market == StrategyEngine.Market.KRX) {
+            return "KRX";
+        }
+        return normalizeOverseasOrderExchange(orderExchange);
+    }
+
+    private MarketSessionStatus tryResolveMarketSessionStatusFromApi(String symbol, String orderExchange) {
+        MarketSessionStatus fromMarketData = tryReflectiveSessionCheck(
+                marketDataService, symbol, orderExchange);
+        if (fromMarketData != null) {
+            return fromMarketData;
+        }
+        return tryReflectiveSessionCheck(kisApiClient, symbol, orderExchange);
+    }
+
+    private MarketSessionStatus tryReflectiveSessionCheck(Object target, String symbol, String orderExchange) {
+        if (target == null) return null;
+
+        Object result;
+
+        result = invokeIfExists(target, "isTradableNow", new Class[]{String.class, String.class}, symbol, orderExchange);
+        if (result != null) return interpretSessionResult(result, target.getClass().getSimpleName(), "isTradableNow(symbol,exchange)");
+
+        result = invokeIfExists(target, "isTradableNow", new Class[]{String.class}, orderExchange);
+        if (result != null) return interpretSessionResult(result, target.getClass().getSimpleName(), "isTradableNow(exchange)");
+
+        result = invokeIfExists(target, "isMarketOpen", new Class[]{String.class}, orderExchange);
+        if (result != null) return interpretSessionResult(result, target.getClass().getSimpleName(), "isMarketOpen(exchange)");
+
+        result = invokeIfExists(target, "fetchMarketSessionStatus", new Class[]{String.class, String.class}, symbol, orderExchange);
+        if (result != null) return interpretSessionResult(result, target.getClass().getSimpleName(), "fetchMarketSessionStatus(symbol,exchange)");
+
+        result = invokeIfExists(target, "fetchMarketSessionStatus", new Class[]{String.class}, orderExchange);
+        if (result != null) return interpretSessionResult(result, target.getClass().getSimpleName(), "fetchMarketSessionStatus(exchange)");
+
+        result = invokeIfExists(target, "getMarketSessionStatus", new Class[]{String.class}, orderExchange);
+        if (result != null) return interpretSessionResult(result, target.getClass().getSimpleName(), "getMarketSessionStatus(exchange)");
+
+        return null;
+    }
+
+    private Object invokeIfExists(Object target, String methodName, Class<?>[] paramTypes, Object... args) {
+        try {
+            Method method = target.getClass().getMethod(methodName, paramTypes);
+            return method.invoke(target, args);
+        } catch (NoSuchMethodException e) {
+            return null;
+        } catch (Exception e) {
+            logger.warn("Session method invoke failed: {}.{} msg={}",
+                    target.getClass().getSimpleName(), methodName, e.getMessage());
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private MarketSessionStatus interpretSessionResult(Object result, String sourceClass, String sourceMethod) {
+        String source = "API";
+
+        if (result instanceof Boolean) {
+            boolean tradable = (Boolean) result;
+            return new MarketSessionStatus(tradable, source, sourceClass + "." + sourceMethod);
+        }
+
+        if (result instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) result;
+
+            Boolean tradable = pickBoolean(map,
+                    "tradable", "tradeable", "open", "marketOpen", "available", "isOpen", "isTradable");
+
+            String statusText = pickString(map,
+                    "status", "marketStatus", "sessionStatus", "tradingStatus", "market_status", "session_status");
+
+            String detail = pickString(map,
+                    "message", "reason", "detail", "desc", "status", "marketStatus", "sessionStatus");
+
+            if (tradable == null && StringUtils.hasText(statusText)) {
+                String upper = statusText.trim().toUpperCase();
+                if (upper.contains("OPEN") || upper.contains("NORMAL") || upper.contains("TRADING")) {
+                    tradable = true;
+                } else if (upper.contains("CLOSE") || upper.contains("CLOSED")
+                        || upper.contains("HOLIDAY") || upper.contains("HALT")
+                        || upper.contains("SUSPEND") || upper.contains("EARLY_CLOSE")) {
+                    tradable = false;
+                }
+            }
+
+            if (tradable != null) {
+                return new MarketSessionStatus(tradable, source,
+                        sourceClass + "." + sourceMethod + (StringUtils.hasText(detail) ? " | " + detail : ""));
+            }
+        }
+
+        if (result instanceof String) {
+            String text = ((String) result).trim().toUpperCase();
+            if (text.contains("OPEN") || text.contains("TRADING")) {
+                return new MarketSessionStatus(true, source, sourceClass + "." + sourceMethod + " | " + text);
+            }
+            if (text.contains("CLOSE") || text.contains("HOLIDAY") || text.contains("HALT")) {
+                return new MarketSessionStatus(false, source, sourceClass + "." + sourceMethod + " | " + text);
+            }
+        }
+
+        return null;
+    }
+
+    private MarketSessionStatus fallbackMarketSessionStatus(String orderExchange) {
+        StrategyEngine.Market market = resolveMarket(orderExchange);
+
+        if (market == StrategyEngine.Market.KRX) {
+            boolean open = isKrxRegularSessionOpen();
+            return new MarketSessionStatus(open, "FALLBACK", "time-based KRX session");
+        }
+
+        boolean open = isUsRegularSessionOpen();
+        return new MarketSessionStatus(open, "FALLBACK", "time-based US session");
+    }
+
+    private boolean isKrxRegularSessionOpen() {
+        ZonedDateTime now = ZonedDateTime.now(KST_ZONE);
+        switch (now.getDayOfWeek()) {
+            case SATURDAY:
+            case SUNDAY:
+                return false;
+            default:
+                LocalTime time = now.toLocalTime();
+                return !time.isBefore(KRX_OPEN_TIME) && time.isBefore(KRX_CLOSE_TIME);
+        }
+    }
+
+    private boolean isUsRegularSessionOpen() {
+        ZonedDateTime now = ZonedDateTime.now(NY_ZONE);
+        switch (now.getDayOfWeek()) {
+            case SATURDAY:
+            case SUNDAY:
+                return false;
+            default:
+                LocalTime time = now.toLocalTime();
+                return !time.isBefore(US_OPEN_TIME) && time.isBefore(US_CLOSE_TIME);
+        }
+    }
+
+    private double calculateDeltaVolume(String symbol, double rawVolume) {
+        double prev = prevVolume.getOrDefault(symbol, rawVolume);
+        prevVolume.put(symbol, rawVolume);
+
+        if (rawVolume < prev * VOLUME_RESET_RATIO) {
+            logger.warn("Volume reset detected for {}: prev={} raw={} -> using rawVol as delta",
+                    symbol, prev, rawVolume);
+            return rawVolume;
+        }
+        return Math.max(0.0, rawVolume - prev);
+    }
+
+    private double updateBarAccumulator(String symbol,
+                                        StockQuote quote,
+                                        String symbolName,
+                                        double deltaVolume) {
+        long nowMs = System.currentTimeMillis();
+        long bucketTs = BarAccumulator.bucketTs(nowMs);
+        double price = quote.getPrice();
+
+        BarAccumulator accum = barAccumMap.computeIfAbsent(symbol, k -> new BarAccumulator());
+
+        if (accum.isEmpty()) {
+            accum.startNewBar(bucketTs, price, deltaVolume);
+            return accum.volAccum;
+        }
+
+        if (accum.barStartMs != bucketTs) {
+            logger.debug("1m bar completed for {} @{} o={} h={} l={} c={} vol={}",
+                    symbol, accum.barStartMs,
+                    accum.open, accum.high, accum.low, accum.close, accum.volAccum);
+
+            autoTradingDao.savePriceLog(symbol, symbolName, accum.close, accum.volAccum, quote.getTimestamp());
+
+            strategyEngine.record(symbol,
+                    accum.open, accum.high, accum.low, accum.close,
+                    accum.volAccum, accum.barStartMs);
+
+            accum.startNewBar(bucketTs, price, deltaVolume);
+        } else {
+            accum.update(price, deltaVolume);
+        }
+        return accum.volAccum;
+    }
+
+    // =========================================================================
+    // 🔴 fix2: loadPositionSnapshot
+    //    - 캐시 갱신 실패 시 positionCacheUpdatedMs를 FAIL_RETRY 간격으로 설정해
+    //      다음 tick에서 재시도 강제 (기존: 실패해도 갱신 안 해서 stale 캐시 무한 사용)
+    //    - liveUnavailable=true 시 실거래 주문 차단 경고 추가
+    // =========================================================================
+    private PositionSnapshot loadPositionSnapshot(String symbol, String orderExchange) {
+        boolean overseas = isOverseasSymbol(symbol);
+        refreshPositionCacheIfNeeded("loadPositionSnapshot");
+
+        PositionSnapshot cached = positionCache.get(symbol);
+        if (cached != null) {
+            if (StringUtils.hasText(cached.exchange)) {
+                symbolExchange.put(symbol, cached.exchange);
+            }
+            if (cached.quantity > 0) {
+                syncPositionToDB(symbol, new RealPosition(cached.quantity, cached.avgPrice));
+            }
+            return cached;
+        }
+
+        boolean cacheFresh = overseas ? isUsCacheFresh() : isKrxCacheFresh();
+        AutoPosition dbPos = positionService.getPosition(symbol);
+        int qty = dbPos != null ? dbPos.getQuantity() : 0;
+        double avg = dbPos != null ? dbPos.getAvgPrice() : 0.0;
+        String name = dbPos != null ? dbPos.getSymbolName() : null;
+
+        if (!cacheFresh) {
+            // 🔴 fix2: stale 캐시인데 DB에 수량이 있으면 경고 - 중복 매도 가능성
+            if (qty > 0) {
+                logger.warn("[CAUTION] {} position cache stale and DB qty={} > 0 - sell orders may double if live position already closed",
+                        symbol, qty);
+            }
+            return new PositionSnapshot(qty, avg, true, orderExchange, name);
+        }
+
+        logger.warn("{} position cache miss for {}, using DB qty={}",
+                overseas ? "Overseas" : "Domestic", symbol, qty);
+        return new PositionSnapshot(qty, avg, false, orderExchange, name);
+    }
+
+    private void syncPositionToDB(String symbol, RealPosition real) {
+        AutoPosition dbPos = positionService.getPosition(symbol);
+        int dbQty = dbPos != null ? dbPos.getQuantity() : 0;
+        double dbAvg = dbPos != null ? dbPos.getAvgPrice() : 0.0;
+
+        if (dbQty != real.quantity || Math.abs(dbAvg - real.avgPrice) > 0.0001) {
+            logger.info("Position sync {}: DB qty={} avg={} -> live qty={} avg={}",
+                    symbol, dbQty, dbAvg, real.quantity, real.avgPrice);
+            positionService.updatePosition(symbol, real.quantity, real.avgPrice);
+        }
+    }
+
+    // =========================================================================
+    // 🔴 fix2: refreshPositionCacheIfNeeded
+    //    기존: 갱신 실패 시 positionCacheUpdatedMs 갱신 안 함 → TTL 지나면 다시 시도하나
+    //          krOk=false가 연속이면 stale 캐시 계속 사용 (중복 매도 위험)
+    //    수정: 실패 시 positionCacheUpdatedMs를 FAIL_RETRY_MS 후에 만료되도록 설정
+    //          → 다음 tick에서 빠르게 재시도하되 매 tick마다 API를 두드리지 않음
+    // =========================================================================
+    private void refreshPositionCacheIfNeeded(String reason) {
+        long now = System.currentTimeMillis();
+        if (now - positionCacheUpdatedMs < POSITION_CACHE_TTL_MS) {
+            return;
+        }
+        if (!positionCacheRefreshing.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            if (!ensureAccountConfigReady("positionCache:" + reason)) {
+                // 🔴 fix2: 실패 시 FAIL_RETRY_MS 뒤에 만료되도록 설정
+                positionCacheUpdatedMs = now - POSITION_CACHE_TTL_MS + POSITION_CACHE_FAIL_RETRY_MS;
+                return;
+            }
+
+            Map<String, LivePosition> liveKr = new HashMap<>();
+            Map<String, LivePosition> liveUs = new HashMap<>();
+            boolean krOk = collectDomesticPositions(liveKr);
+            boolean usOk = collectOverseasPositions(liveUs);
+
+            if (!krOk && !usOk) {
+                // 🔴 fix2: 두 시장 모두 실패 → 빠른 재시도를 위해 TTL 단축
+                positionCacheUpdatedMs = now - POSITION_CACHE_TTL_MS + POSITION_CACHE_FAIL_RETRY_MS;
+                logger.warn("Position cache refresh failed (krOk={}, usOk={}) - will retry in {}ms",
+                        krOk, usOk, POSITION_CACHE_FAIL_RETRY_MS);
+                return;
+            }
+
+            Map<String, PositionSnapshot> updated = new HashMap<>(positionCache);
+            if (krOk) {
+                applyCacheForMarket(updated, liveKr, true);
+                lastKrCacheOkMs = now;
+            }
+            if (usOk) {
+                applyCacheForMarket(updated, liveUs, false);
+                lastUsCacheOkMs = now;
+            }
+
+            positionCache.clear();
+            positionCache.putAll(updated);
+            // 🔴 fix2: 부분 성공이라도 타임스탬프 갱신 (기존 동일)
+            positionCacheUpdatedMs = now;
+
+        } finally {
+            positionCacheRefreshing.set(false);
+        }
+    }
+
+    private void applyCacheForMarket(Map<String, PositionSnapshot> target,
+                                     Map<String, LivePosition> livePositions,
+                                     boolean krxMarket) {
+        if (target == null) return;
+        if (livePositions == null) livePositions = new HashMap<>();
+
+        target.entrySet().removeIf(entry -> {
+            String symbol = entry.getKey();
+            PositionSnapshot snapshot = entry.getValue();
+            if (snapshot == null) return false;
+            if (krxMarket) {
+                return isKrxSymbol(symbol) || "KRX".equalsIgnoreCase(snapshot.exchange);
+            }
+            return !isKrxSymbol(symbol) && !"KRX".equalsIgnoreCase(snapshot.exchange);
+        });
+
+        for (LivePosition pos : livePositions.values()) {
+            if (pos.quantity <= 0) continue;
+            PositionSnapshot snapshot = new PositionSnapshot(
+                    pos.quantity,
+                    pos.avgPrice,
+                    false,
+                    pos.exchange,
+                    pos.symbolName
+            );
+            target.put(pos.symbol, snapshot);
+            if (StringUtils.hasText(pos.exchange)) {
+                symbolExchange.put(pos.symbol, pos.exchange);
+            }
+            if (StringUtils.hasText(pos.symbolName)) {
+                symbolNameCache.put(pos.symbol, pos.symbolName);
             }
         }
     }
 
-    // ── REJECTED 처리 ────────────────────────────────────────────────────────────
+    private boolean isKrxCacheFresh() {
+        if (lastKrCacheOkMs <= 0) return false;
+        return (System.currentTimeMillis() - lastKrCacheOkMs) <= POSITION_CACHE_MAX_STALE_MS;
+    }
+
+    private boolean isUsCacheFresh() {
+        if (lastUsCacheOkMs <= 0) return false;
+        return (System.currentTimeMillis() - lastUsCacheOkMs) <= POSITION_CACHE_MAX_STALE_MS;
+    }
+
+    private boolean passesBuyGate(String symbol,
+                                  com.autotrading.model.OrderCommand command,
+                                  String orderExchange,
+                                  PositionSnapshot pos) {
+        // 🔴 fix2: liveUnavailable 상태에서 매수 차단 (포지션 불확실 상태에서 진입 방지)
+        if (pos.liveUnavailable) {
+            logger.warn("BUY blocked (live position unavailable - cache stale) for {}", symbol);
+            return false;
+        }
+
+        Instant now = Instant.now();
+
+        if (isKrxSymbol(symbol)) {
+            if (isKrxOpeningBlocked()) {
+                logger.info("BUY blocked (opening window 09:00~09:05 KST) for {}", symbol);
+                return false;
+            }
+            if (isKrxOpeningCautious()) {
+                logger.info("BUY caution window 09:05~09:15 KST for {} - proceeding with care", symbol);
+            }
+        }
+
+        Instant slTime = stopLossTime.get(symbol);
+        if (slTime != null && now.isBefore(slTime.plusSeconds(COOLDOWN_STOPLOSS_SEC))) {
+            long rem = COOLDOWN_STOPLOSS_SEC - (now.getEpochSecond() - slTime.getEpochSecond());
+            logger.info("BUY blocked (stop-loss cooldown {}s remaining) for {}", rem, symbol);
+            return false;
+        }
+
+        Instant sellTime = lastSellTime.get(symbol);
+        if (sellTime != null && now.isBefore(sellTime.plusSeconds(COOLDOWN_NORMAL_SEC))) {
+            long rem = COOLDOWN_NORMAL_SEC - (now.getEpochSecond() - sellTime.getEpochSecond());
+            logger.info("BUY blocked (sell cooldown {}s remaining) for {}", rem, symbol);
+            return false;
+        }
+
+        if (buyFillConfirmTasks.containsKey(symbol)) {
+            logger.info("BUY blocked (fill confirm pending) for {}", symbol);
+            return false;
+        }
+
+        if (pos.quantity > 0) {
+            logger.info("BUY blocked (snapshot qty={} > 0) for {}", pos.quantity, symbol);
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean passesSellGate(String symbol,
+                                   com.autotrading.model.OrderCommand command,
+                                   String orderExchange) {
+        boolean defensiveExit = command.isMarketOrder()
+                || "STOP_LOSS".equalsIgnoreCase(command.getReason())
+                || "EMERGENCY_STOP".equalsIgnoreCase(command.getReason());
+
+        RealPosition livePos = isOverseasSymbol(symbol)
+                ? fetchOverseasRealPosition(symbol, orderExchange)
+                : fetchRealPosition(symbol);
+
+        AutoPosition dbPosNow = positionService.getPosition(symbol);
+        int dbQtyNow = dbPosNow != null ? dbPosNow.getQuantity() : 0;
+        double dbAvgNow = dbPosNow != null ? dbPosNow.getAvgPrice() : 0.0;
+
+        if (livePos == null && dbQtyNow <= 0 && defensiveExit) {
+            logger.warn("STOP_LOSS sell recheck for {} -> retry live position", symbol);
+            livePos = isOverseasSymbol(symbol)
+                    ? fetchOverseasRealPosition(symbol, orderExchange)
+                    : fetchRealPosition(symbol);
+
+            dbPosNow = positionService.getPosition(symbol);
+            dbQtyNow = dbPosNow != null ? dbPosNow.getQuantity() : 0;
+            dbAvgNow = dbPosNow != null ? dbPosNow.getAvgPrice() : 0.0;
+        }
+
+        if (livePos != null && (livePos.quantity != dbQtyNow
+                || Math.abs(livePos.avgPrice - dbAvgNow) > 0.0001)) {
+            logger.info("Pre-SELL position sync {}: DB qty={} -> live qty={} avg={}",
+                    symbol, dbQtyNow, livePos.quantity, livePos.avgPrice);
+            positionService.updatePosition(symbol, livePos.quantity, livePos.avgPrice);
+            dbQtyNow = livePos.quantity;
+        }
+
+        int availableQty = livePos != null ? livePos.quantity : dbQtyNow;
+        if (availableQty <= 0) {
+            logger.info("SELL blocked (no holding) for {} reason={}", symbol, command.getReason());
+            strategyEngine.clearStaleHoldState(symbol);
+            return false;
+        }
+
+        if (command.getQuantity() > availableQty) {
+            logger.info("SELL qty adjusted {}: requested={} -> available={}",
+                    symbol, command.getQuantity(), availableQty);
+            command.setQuantity(availableQty);
+        }
+
+        if (livePos == null) {
+            logger.warn("SELL pre-check unavailable for {} -> proceeding with DB qty={}", symbol, dbQtyNow);
+        }
+        return true;
+    }
+
+    private void handleAccepted(String symbol,
+                                com.autotrading.model.OrderCommand command,
+                                int quantity,
+                                double avgPrice,
+                                double lastSeenPrice,
+                                String orderExchange) {
+        rejectCooldownUntilMs.remove(symbol);
+        lastRejectMessage.remove(symbol);
+        if ("BUY".equals(command.getType())) {
+            int expectedQty = quantity + command.getQuantity();
+            logger.info("BUY accepted (fill confirm pending): symbol={} expectedQty={} price={}",
+                    symbol, expectedQty, command.getPrice());
+            confirmBuyFilled(symbol, command.getExchange(), expectedQty);
+
+        } else if ("SELL".equals(command.getType())) {
+            strategyEngine.notifySellAccepted(symbol);
+
+            int expectedRemainingQty = Math.max(0, quantity - command.getQuantity());
+            boolean defensiveExit = command.isMarketOrder();
+            double referencePrice = command.getPrice() > 0.0 ? command.getPrice() : lastSeenPrice;
+
+            logger.info("SELL accepted (fill confirm pending): symbol={} prevQty={} sellQty={} expectedRemaining={} refPrice={} defensive={}",
+                    symbol, quantity, command.getQuantity(), expectedRemainingQty, referencePrice, defensiveExit);
+
+            confirmSellFilled(new SellFillContext(
+                    symbol,
+                    orderExchange,
+                    quantity,
+                    command.getQuantity(),
+                    expectedRemainingQty,
+                    avgPrice,
+                    defensiveExit,
+                    referencePrice,
+                    command.getReason(),
+                    command.isMarketOrder()
+            ));
+        }
+    }
 
     private void handleRejected(String symbol,
                                 com.autotrading.model.OrderCommand command,
+                                String orderExchange,
                                 String respMsg) {
-        logger.warn("Order REJECTED for {} side={} → position NOT updated. msg={}",
-                symbol, command.getType(), respMsg);
+        logger.warn("Order REJECTED for {} side={} msg={}", symbol, command.getType(), respMsg);
+        long nowMs = System.currentTimeMillis();
+        String msg = respMsg != null ? respMsg : "";
+        boolean priceMissing = msg.contains("주문단가") || msg.contains("주문구분");
+        long cooldown = priceMissing ? REJECT_COOLDOWN_PRICE_MS : REJECT_COOLDOWN_MS;
+        rejectCooldownUntilMs.put(symbol, nowMs + cooldown);
+        lastRejectMessage.put(symbol, msg);
 
         if ("BUY".equals(command.getType())) {
             cancelBuyFillConfirmTask(symbol);
             strategyEngine.notifyBuyRejected(symbol);
         } else if ("SELL".equals(command.getType())) {
-            // [수정 C] 포지션 상태를 초기화하지 않음. 다음 사이클에서 notifySellRejected()로 재시도 가능.
+            cancelSellFillConfirmTask(symbol);
             strategyEngine.notifySellRejected(symbol);
 
-            // Refresh live position on SELL reject to reduce stale-state retry loops.
-            String orderExchange = resolveOrderExchangeForRuntime(symbol);
             RealPosition livePos = isOverseasSymbol(symbol)
                     ? fetchOverseasRealPosition(symbol, orderExchange)
                     : fetchRealPosition(symbol);
 
             if (livePos != null) {
-                AutoPosition dbPos = positionService.getPosition(symbol);
-                int dbQty = dbPos != null ? dbPos.getQuantity() : 0;
-                double dbAvg = dbPos != null ? dbPos.getAvgPrice() : 0.0;
-
-                if (livePos.quantity != dbQty || Math.abs(livePos.avgPrice - dbAvg) > 0.0001) {
-                    logger.info("Post-reject position sync {} : DB qty={} -> Real qty={} avgPrice={}",
-                            symbol, dbQty, livePos.quantity, livePos.avgPrice);
-                    positionService.updatePosition(symbol, livePos.quantity, livePos.avgPrice);
-                }
-
+                syncPositionToDB(symbol, livePos);
                 if (livePos.quantity <= 0) {
-                    logger.warn("SELL reject but no live holding for {} -> clearing stale hold state", symbol);
                     strategyEngine.clearStaleHoldState(symbol);
                 }
-            } else {
-                logger.warn("SELL reject sync skipped for {} (live position unavailable)", symbol);
             }
         }
     }
 
-    // ── ERROR 처리 ───────────────────────────────────────────────────────────────
-
     private void handleError(String symbol,
                              com.autotrading.model.OrderCommand command,
-                             String respStatus, String respMsg) {
-        // [수정 B] BUY ERROR: markBuyPending()이 이미 호출된 이후이므로 주문이 실패하더라도
-        //          pending을 해제. notifyBuyRejected()가 동일한 역할로 처리.
+                             String respStatus,
+                             String respMsg) {
         if ("BUY".equals(command.getType())) {
             cancelBuyFillConfirmTask(symbol);
             strategyEngine.notifyBuyRejected(symbol);
-            logger.error("Order ERROR (BUY) for {} status={} → pending cleared. msg={}",
+            logger.error("Order ERROR (BUY) for {} status={} -> pending cleared. msg={}",
                     symbol, respStatus, respMsg);
         } else {
-            // SELL ERROR: 포지션 상태 유지, 다음 사이클에서 재시도
-            logger.error("Order ERROR (SELL) for {} status={} → position state kept. msg={}",
+            cancelSellFillConfirmTask(symbol);
+            strategyEngine.notifySellRejected(symbol);
+            logger.error("Order ERROR (SELL) for {} status={} -> sell pending cleared. msg={}",
                     symbol, respStatus, respMsg);
         }
     }
 
-    // ── KIS API 잔고 조회 ────────────────────────────────────────────────────────
+    private void confirmBuyFilled(String symbol, String exchange, int expectedQty) {
+        cancelBuyFillConfirmTask(symbol);
+        AtomicInteger attempts = new AtomicInteger(0);
+
+        Runnable task = () -> {
+            int attempt = attempts.incrementAndGet();
+            RealPosition real = isOverseasSymbol(symbol)
+                    ? fetchOverseasRealPosition(symbol, exchange)
+                    : fetchRealPosition(symbol);
+
+            if (real != null && real.quantity >= expectedQty) {
+                syncPositionToDB(symbol, real);
+                strategyEngine.notifyBuyFilled(symbol);
+                cancelBuyFillConfirmTask(symbol);
+                logger.info("BUY fill confirmed for {} qty={} expected={}",
+                        symbol, real.quantity, expectedQty);
+                return;
+            }
+
+            if (attempt >= BUY_FILL_CONFIRM_MAX_ATTEMPTS) {
+                cancelBuyFillConfirmTask(symbol);
+                logger.warn("BUY fill not confirmed for {} (expectedQty={}) after {} attempts -> next live sync",
+                        symbol, expectedQty, attempt);
+            }
+        };
+
+        ScheduledFuture<?> future = buyFillConfirmExecutor.scheduleAtFixedRate(
+                task,
+                BUY_FILL_CONFIRM_INTERVAL_MS,
+                BUY_FILL_CONFIRM_INTERVAL_MS,
+                TimeUnit.MILLISECONDS
+        );
+        buyFillConfirmTasks.put(symbol, future);
+    }
+
+    private void cancelBuyFillConfirmTask(String symbol) {
+        ScheduledFuture<?> task = buyFillConfirmTasks.remove(symbol);
+        if (task != null) {
+            task.cancel(false);
+        }
+    }
+
+    // =========================================================================
+    // 🔴 fix3: confirmSellFilled - timeout 시 처리 강화
+    //    기존 문제:
+    //      1) notifySellRejected() 호출 → sellPending=false만 되고 entryState 남음
+    //      2) retryReal 실패 시 DB에 수량 불일치 방치
+    //    수정:
+    //      1) timeout 후 실포지션 기준으로 notifySellFilled 또는 clearStaleHoldState 호출
+    //      2) retryReal 조회도 실패하면 방어적으로 DB 수량을 0으로 초기화 + 경고 로그
+    //      3) defensiveExit(손절) 체결 확인 실패 시 한 번 더 retryReal 시도
+    // =========================================================================
+    private void confirmSellFilled(SellFillContext ctx) {
+        cancelSellFillConfirmTask(ctx.symbol);
+        AtomicInteger attempts = new AtomicInteger(0);
+
+        Runnable task = () -> {
+            int attempt = attempts.incrementAndGet();
+
+            RealPosition real = isOverseasSymbol(ctx.symbol)
+                    ? fetchOverseasRealPosition(ctx.symbol, ctx.exchange)
+                    : fetchRealPosition(ctx.symbol);
+
+            if (real != null) {
+                boolean confirmed = real.quantity <= ctx.expectedRemainingQty;
+
+                if (confirmed) {
+                    syncPositionToDB(ctx.symbol, real);
+                    strategyEngine.notifySellFilled(ctx.symbol, real.quantity);
+                    cancelSellFillConfirmTask(ctx.symbol);
+
+                    double soldQty = Math.max(0, ctx.previousQty - real.quantity);
+                    double pnl = (ctx.referencePrice - ctx.avgPrice) * soldQty;
+                    double pnlPct = ctx.avgPrice > 0.0
+                            ? ((ctx.referencePrice - ctx.avgPrice) / ctx.avgPrice) * 100.0
+                            : 0.0;
+
+                    logger.info("SELL fill confirmed for {} prevQty={} remainingQty={} soldQty={} refPnl={} ({}%) defensive={}",
+                            ctx.symbol, ctx.previousQty, real.quantity, soldQty,
+                            String.format("%.2f", pnl), String.format("%.2f", pnlPct), ctx.defensiveExit);
+
+                    if (ctx.defensiveExit) {
+                        stopLossTime.put(ctx.symbol, Instant.now());
+                        if (pnl < 0) {
+                            riskManager.addLoss(Math.abs(pnl));
+                        }
+                    } else {
+                        lastSellTime.put(ctx.symbol, Instant.now());
+                    }
+                    return;
+                }
+            }
+
+            if (attempt >= SELL_FILL_CONFIRM_MAX_ATTEMPTS) {
+                cancelSellFillConfirmTask(ctx.symbol);
+
+                // 🔴 fix3: timeout 후 실포지션 재조회 (손절이면 한 번 더)
+                RealPosition retryReal = isOverseasSymbol(ctx.symbol)
+                        ? fetchOverseasRealPosition(ctx.symbol, ctx.exchange)
+                        : fetchRealPosition(ctx.symbol);
+
+                if (ctx.defensiveExit && retryReal == null) {
+                    // 손절 체결 확인 불가 → 한 번만 추가 재시도
+                    try { Thread.sleep(500); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                    retryReal = isOverseasSymbol(ctx.symbol)
+                            ? fetchOverseasRealPosition(ctx.symbol, ctx.exchange)
+                            : fetchRealPosition(ctx.symbol);
+                }
+
+                if (retryReal != null) {
+                    syncPositionToDB(ctx.symbol, retryReal);
+                    if (retryReal.quantity <= 0) {
+                        // 🔴 fix3: 실제로 체결됨 → notifySellFilled로 entryState 정리
+                        strategyEngine.notifySellFilled(ctx.symbol, 0);
+                        double soldQty = Math.max(0, ctx.previousQty);
+                        double pnl = (ctx.referencePrice - ctx.avgPrice) * soldQty;
+                        if (ctx.defensiveExit) {
+                            stopLossTime.put(ctx.symbol, Instant.now());
+                            if (pnl < 0) {
+                                riskManager.addLoss(Math.abs(pnl));
+                            }
+                        } else {
+                            lastSellTime.put(ctx.symbol, Instant.now());
+                        }
+                        logger.info("SELL fill confirmed (timeout fallback) for {} - live qty=0", ctx.symbol);
+                    } else if (retryReal.quantity <= ctx.expectedRemainingQty) {
+                        // 부분 체결된 경우
+                        strategyEngine.notifySellFilled(ctx.symbol, retryReal.quantity);
+                        double soldQty = Math.max(0, ctx.previousQty - retryReal.quantity);
+                        double pnl = (ctx.referencePrice - ctx.avgPrice) * soldQty;
+                        lastSellTime.put(ctx.symbol, Instant.now());
+                        if (ctx.defensiveExit && pnl < 0) {
+                            riskManager.addLoss(Math.abs(pnl));
+                        }
+                        logger.info("SELL partial fill confirmed (timeout fallback) for {} remainingQty={}",
+                                ctx.symbol, retryReal.quantity);
+                    } else {
+                        // 체결 안 됨 - sellPending 해제만 하고 재시도 가능하게 둠
+                        // 🔴 fix3: 기존처럼 notifySellRejected X → notifySellRejected는 sellPending만 false로 만들고
+                        //           entryState(partialTakeProfitDone 등)는 유지되므로 전략이 다시 매도 시도 가능
+                        if (!ctx.defensiveExit && !ctx.marketOrder && isTakeProfitReason(ctx.reason)) {
+                            strategyEngine.markSellFallbackToMarket(ctx.symbol, ctx.reason);
+                            logger.warn("SELL fallback scheduled for {} reason={} (unfilled LIMIT)",
+                                    ctx.symbol, ctx.reason);
+                        }
+                        strategyEngine.notifySellRejected(ctx.symbol);
+                        logger.warn("SELL fill not confirmed for {} after {} attempts - live qty={} still holding, sell retry allowed",
+                                ctx.symbol, attempt, retryReal.quantity);
+                    }
+                } else {
+                    // 🔴 fix3: 실포지션 완전 조회 불가 → DB를 신뢰 기준으로 경고 후 sellPending 해제
+                    //   (기존: notifySellRejected 호출, entryState 남아서 재시도 가능 - 이 부분은 유지)
+                    strategyEngine.notifySellRejected(ctx.symbol);
+                    logger.error("[ACTION_NEEDED] SELL fill unresolvable for {} after {} attempts - live position unknown. Manual check required. DB qty={}",
+                            ctx.symbol, attempt,
+                            Optional.ofNullable(positionService.getPosition(ctx.symbol))
+                                    .map(AutoPosition::getQuantity).orElse(-1));
+                }
+            }
+        };
+
+        ScheduledFuture<?> future = sellFillConfirmExecutor.scheduleAtFixedRate(
+                task,
+                SELL_FILL_CONFIRM_INTERVAL_MS,
+                SELL_FILL_CONFIRM_INTERVAL_MS,
+                TimeUnit.MILLISECONDS
+        );
+        sellFillConfirmTasks.put(ctx.symbol, future);
+    }
+
+    private void cancelSellFillConfirmTask(String symbol) {
+        ScheduledFuture<?> task = sellFillConfirmTasks.remove(symbol);
+        if (task != null) {
+            task.cancel(false);
+        }
+    }
 
     private RealPosition fetchRealPosition(String symbol) {
         try {
@@ -612,207 +1468,130 @@ public class SchedulerService {
             for (Map<String, Object> item : output1) {
                 String pdno = String.valueOf(item.getOrDefault("pdno", ""));
                 if (!symbol.equalsIgnoreCase(pdno)) continue;
-                int    qty = parseIntSafe(item.get("hldg_qty"));
+                int qty = parseIntSafe(item.get("hldg_qty"));
                 double avg = parseDoubleSafe(item.get("pchs_avg_pric"));
-                logger.debug("Real position {} : qty={} avgPrice={}", symbol, qty, avg);
                 return new RealPosition(qty, avg);
             }
             return new RealPosition(0, 0.0);
-
         } catch (Exception e) {
             logger.warn("fetchRealPosition failed for {}: {}", symbol, e.getMessage());
             return null;
         }
     }
 
-    // ── 시세 조회 ────────────────────────────────────────────────────────────────
+    private RealPosition fetchOverseasRealPosition(String symbol, String exchange) {
+        List<String> exchanges = buildOverseasExchangeCandidates(exchange);
+        for (String ex : exchanges) {
+            try {
+                Map<String, Object> balResp = fetchOverseasBalanceWithRetry(ex, 2);
+                if (balResp == null || !"OK".equals(balResp.get("status"))) {
+                    String msg = balResp != null ? String.valueOf(balResp.get("message")) : "null response";
+                    logger.warn("fetchOverseasBalance non-OK for {}({}): {}", symbol, ex, msg);
+                    continue;
+                }
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> output1 =
+                        (List<Map<String, Object>>) balResp.get("output1");
+                if (output1 == null) continue;
 
-    private com.autotrading.model.StockQuote safeFetchQuote(String symbol, String quoteExchangeHint) {
+                for (Map<String, Object> item : output1) {
+                    String pdno = pickString(item, "ovrs_pdno", "pdno", "symbol", "item_cd");
+                    if (!symbol.equalsIgnoreCase(pdno)) continue;
+                    int qty = pickInt(item, "ovrs_cblc_qty", "hldg_qty", "hold_qty", "cblc_qty");
+                    double avg = pickDouble(item, "pchs_avg_pric", "avg_unpr", "pchs_unpr", "avg_pric");
+                    symbolExchange.put(symbol, ex);
+                    return new RealPosition(qty, avg);
+                }
+            } catch (Exception e) {
+                logger.warn("fetchOverseasRealPosition failed for {}({}): {}", symbol, ex, e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    private StockQuote safeFetchQuote(String symbol, String quoteExchangeHint) {
         try {
             return marketDataService.fetchPrice(symbol, quoteExchangeHint);
         } catch (IllegalStateException e) {
             int fail = quoteFailCount.merge(symbol, 1, Integer::sum);
-            String msg = String.valueOf(e.getMessage());
-
-            // 동일 오류 반복 시 로그 양을 줄이기 위해 초기/주기/임계 시점에만 경고 출력
-            if (fail == 1 || fail % 12 == 0 || fail == 24) {
-                logger.warn("Quote fetch failed for {} (count={}) : {}", symbol, fail, msg);
+            if (fail == 1 || fail % 12 == 0 || fail == OVERSEAS_QUOTE_FAIL_LIMIT) {
+                logger.warn("Quote fetch failed for {} (count={}): {}", symbol, fail, e.getMessage());
             }
-
-            // 해외 종목이 계속 시세를 받지 못하면 자동 중지 (약 2분 = 24회 * 5초)
-            if (isOverseasSymbol(symbol) && fail >= 24) {
-                logger.error("Auto-stop {} due to repeated overseas quote failures. Check symbol/exchange.", symbol);
+            if (isOverseasSymbol(symbol) && fail >= OVERSEAS_QUOTE_FAIL_LIMIT) {
+                logger.error("Auto-stop {} due to repeated overseas quote failures", symbol);
                 stopSymbol(symbol);
             }
             return null;
         }
     }
 
-    private String normalizeStatus(Object rawStatus) {
-        if (rawStatus == null) return STATUS_ERROR;
-        String s = rawStatus.toString().trim().toUpperCase();
-        if (s.equals("ACCEPTED") || s.equals("0") || s.equals("00") || s.equals("SUCCESS"))
-            return STATUS_ACCEPTED;
-        if (s.equals("REJECTED") || s.equals("1") || s.equals("REJECT"))
-            return STATUS_REJECTED;
-        return STATUS_ERROR;
+    private boolean isKrxOpeningBlocked() {
+        LocalTime now = LocalDateTime.now(KST_ZONE).toLocalTime();
+        return !now.isBefore(KRX_OPENING_BLOCK_START) && now.isBefore(KRX_OPENING_BLOCK_END);
     }
 
-    private int parseIntSafe(Object val) {
-        if (val == null) return 0;
-        try { return (int) Double.parseDouble(val.toString().replace(",", "")); }
-        catch (NumberFormatException e) { return 0; }
-    }
-
-    private double parseDoubleSafe(Object val) {
-        if (val == null) return 0.0;
-        try { return Double.parseDouble(val.toString().replace(",", "")); }
-        catch (NumberFormatException e) { return 0.0; }
-    }
-
-    private String resolveSymbolName(String symbol, StockQuote quote) {
-        String fromQuote = quote != null ? quote.getName() : null;
-        if (StringUtils.hasText(fromQuote)) {
-            String normalized = fromQuote.trim();
-            symbolNameCache.put(symbol, normalized);
-            return normalized;
+    private boolean ensureAccountConfigReady(String caller) {
+        if (kisApiClient.isAccountConfigValid()) {
+            return true;
         }
-
-        String cached = symbolNameCache.get(symbol);
-        if (StringUtils.hasText(cached)) {
-            return cached;
+        long now = System.currentTimeMillis();
+        if (now - lastAccountConfigWarnMs > 10_000L) {
+            lastAccountConfigWarnMs = now;
+            logger.error("KIS account config missing - blocking {} (set kis.accountNo/kis.accountProductCode)", caller);
         }
-
-        AutoPosition position = positionService.getPosition(symbol);
-        if (position != null && StringUtils.hasText(position.getSymbolName())) {
-            String normalized = position.getSymbolName().trim();
-            symbolNameCache.put(symbol, normalized);
-            return normalized;
-        }
-
-        return symbol;
+        return false;
     }
 
-    private static class RealPosition {
-        final int    quantity;
-        final double avgPrice;
-        RealPosition(int q, double a) { quantity=q; avgPrice=a; }
+    private boolean isTakeProfitReason(String reason) {
+        if (reason == null) return false;
+        return "TAKE_PROFIT_PARTIAL".equals(reason)
+                || "TAKE_PROFIT_PARTIAL_FULL".equals(reason)
+                || "TAKE_PROFIT_FINAL".equals(reason)
+                || "TRAILING_STOP".equals(reason);
+    }
+
+    private boolean isKrxOpeningCautious() {
+        LocalTime now = LocalDateTime.now(KST_ZONE).toLocalTime();
+        return !now.isBefore(KRX_OPENING_BLOCK_END) && now.isBefore(KRX_OPENING_CAUTION_END);
+    }
+
+    private boolean isKrxSymbol(String symbol) {
+        return symbol != null && symbol.matches("^\\d{5,6}$");
     }
 
     private boolean isOverseasSymbol(String symbol) {
-        if (!StringUtils.hasText(symbol)) {
-            return false;
-        }
+        if (!StringUtils.hasText(symbol)) return false;
         String normalized = symbol.trim().toUpperCase();
 
-        // If we already know the symbol exchange, trust it first.
-        String cachedExchange = symbolExchange.get(normalized);
-        if (StringUtils.hasText(cachedExchange)) {
-            String ex = cachedExchange.trim().toUpperCase();
-            if ("KRX".equals(ex) || "KR".equals(ex) || "KOSPI".equals(ex) || "KOSDAQ".equals(ex)) {
-                return false;
-            }
+        String cached = symbolExchange.get(normalized);
+        if (StringUtils.hasText(cached)) {
+            String ex = cached.trim().toUpperCase();
+            if ("KRX".equals(ex) || "KR".equals(ex) || "KOSPI".equals(ex) || "KOSDAQ".equals(ex)) return false;
             if ("NASD".equals(ex) || "NASDAQ".equals(ex) || "NAS".equals(ex)
                     || "NYSE".equals(ex) || "NYS".equals(ex)
-                    || "AMEX".equals(ex) || "AMS".equals(ex)) {
-                return true;
-            }
+                    || "AMEX".equals(ex) || "AMS".equals(ex)) return true;
         }
-
-        // Fallback heuristic only.
         return !normalized.matches("^\\d{5,6}$");
     }
 
-    private void cancelBuyFillConfirmTask(String symbol) {
-        ScheduledFuture<?> task = buyFillConfirmTasks.remove(symbol);
-        if (task != null) {
-            task.cancel(false);
-        }
-    }
-
-    private void confirmBuyFilled(String symbol, String exchange, int expectedQty) {
-        cancelBuyFillConfirmTask(symbol);
-
-        final AtomicInteger attempts = new AtomicInteger(0);
-        final String exchangeForTask = exchange;
-
-        Runnable confirmTask = () -> {
-            int attempt = attempts.incrementAndGet();
-            RealPosition real = isOverseasSymbol(symbol)
-                    ? fetchOverseasRealPosition(symbol, exchangeForTask)
-                    : fetchRealPosition(symbol);
-
-            if (real != null && real.quantity >= expectedQty) {
-                AutoPosition dbPos = positionService.getPosition(symbol);
-                int dbQty = dbPos != null ? dbPos.getQuantity() : 0;
-                double dbAvg = dbPos != null ? dbPos.getAvgPrice() : 0.0;
-
-                if (dbQty != real.quantity || Math.abs(dbAvg - real.avgPrice) > 0.0001) {
-                    positionService.updatePosition(symbol, real.quantity, real.avgPrice);
-                    logger.info("BUY fill sync applied: symbol={} qty={} avgPrice={}",
-                            symbol, real.quantity, real.avgPrice);
-                }
-
-                strategyEngine.notifyBuyFilled(symbol);
-                cancelBuyFillConfirmTask(symbol);
-                logger.info("BUY fill confirmed async for {} (qty={} expected={})",
-                        symbol, real.quantity, expectedQty);
-                return;
-            }
-
-            if (attempt >= BUY_FILL_CONFIRM_MAX_ATTEMPTS) {
-                // Keep pending state; next execute-cycle live sync can still confirm.
-                cancelBuyFillConfirmTask(symbol);
-                logger.warn("BUY fill not confirmed async for {} (expectedQty={}) -> waiting for next live sync",
-                        symbol, expectedQty);
-            }
-        };
-
-        ScheduledFuture<?> future = buyFillConfirmExecutor.scheduleAtFixedRate(
-                confirmTask,
-                BUY_FILL_CONFIRM_INTERVAL_MS,
-                BUY_FILL_CONFIRM_INTERVAL_MS,
-                TimeUnit.MILLISECONDS
-        );
-        buyFillConfirmTasks.put(symbol, future);
-    }
-
-    private RealPosition fetchOverseasRealPosition(String symbol, String exchange) {
-        try {
-            String ex = normalizeOverseasOrderExchange(exchange);
-            Map<String, Object> balResp = kisApiClient.fetchOverseasBalance(ex, "USD");
-            if (!"OK".equals(balResp.get("status"))) {
-                logger.warn("fetchOverseasBalance non-OK for {}({}): {}", symbol, ex, balResp.get("message"));
-                return null;
-            }
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> output1 =
-                    (List<Map<String, Object>>) balResp.get("output1");
-            if (output1 == null) return new RealPosition(0, 0.0);
-
-            for (Map<String, Object> item : output1) {
-                String pdno = pickString(item, "ovrs_pdno", "pdno", "symbol", "item_cd");
-                if (!symbol.equalsIgnoreCase(pdno)) continue;
-                int qty = pickInt(item, "ovrs_cblc_qty", "hldg_qty", "hold_qty", "cblc_qty");
-                double avg = pickDouble(item, "pchs_avg_pric", "avg_unpr", "pchs_unpr", "avg_pric");
-                logger.debug("Overseas real position {}({}) : qty={} avgPrice={}", symbol, ex, qty, avg);
-                return new RealPosition(qty, avg);
-            }
-            return new RealPosition(0, 0.0);
-        } catch (Exception e) {
-            logger.warn("fetchOverseasRealPosition failed for {}: {}", symbol, e.getMessage());
-            return null;
+    private StrategyEngine.Market resolveMarket(String exchUpper) {
+        if (exchUpper == null) return StrategyEngine.Market.KRX;
+        switch (exchUpper) {
+            case "KRX":
+            case "KR":
+            case "KOSPI":
+            case "KOSDAQ":
+                return StrategyEngine.Market.KRX;
+            default:
+                return StrategyEngine.Market.US;
         }
     }
 
     private String resolveOrderExchangeForStart(String symbol, String requestedExchange) {
-        if (!isOverseasSymbol(symbol)) {
-            return "KRX";
-        }
+        if (!isOverseasSymbol(symbol)) return "KRX";
         if (StringUtils.hasText(requestedExchange)) {
             return normalizeOverseasOrderExchange(requestedExchange);
         }
-
         WatchlistItem watch = watchlistDao.findBySymbol(symbol);
         if (watch != null && StringUtils.hasText(watch.getExchange())) {
             return normalizeOverseasOrderExchange(watch.getExchange());
@@ -821,13 +1600,9 @@ public class SchedulerService {
     }
 
     private String resolveOrderExchangeForRuntime(String symbol) {
-        if (!isOverseasSymbol(symbol)) {
-            return "KRX";
-        }
+        if (!isOverseasSymbol(symbol)) return "KRX";
         String cached = symbolExchange.get(symbol);
-        if (StringUtils.hasText(cached)) {
-            return normalizeOverseasOrderExchange(cached);
-        }
+        if (StringUtils.hasText(cached)) return normalizeOverseasOrderExchange(cached);
         String resolved = marketDataService.resolveExchangeForOrder(symbol);
         String normalized = normalizeOverseasOrderExchange(resolved);
         symbolExchange.put(symbol, normalized);
@@ -835,10 +1610,9 @@ public class SchedulerService {
     }
 
     private String syncOrderExchangeWithQuote(String symbol, String currentOrderExchange) {
-        if (!isOverseasSymbol(symbol)) {
-            return currentOrderExchange;
-        }
-        String resolved = normalizeOverseasOrderExchange(marketDataService.resolveExchangeForOrder(symbol));
+        if (!isOverseasSymbol(symbol)) return currentOrderExchange;
+        String resolved = normalizeOverseasOrderExchange(
+                marketDataService.resolveExchangeForOrder(symbol));
         if (!resolved.equals(currentOrderExchange)) {
             logger.info("Exchange auto-corrected for {}: {} -> {}", symbol, currentOrderExchange, resolved);
             symbolExchange.put(symbol, resolved);
@@ -849,8 +1623,7 @@ public class SchedulerService {
 
     private String normalizeOverseasOrderExchange(String exchange) {
         if (!StringUtils.hasText(exchange)) return "NASD";
-        String upper = exchange.trim().toUpperCase();
-        switch (upper) {
+        switch (exchange.trim().toUpperCase()) {
             case "NAS":
             case "NASDAQ":
             case "NASD":
@@ -862,7 +1635,7 @@ public class SchedulerService {
             case "AMEX":
                 return "AMEX";
             default:
-                return upper;
+                return exchange.trim().toUpperCase();
         }
     }
 
@@ -878,6 +1651,85 @@ public class SchedulerService {
             default:
                 return orderExchange;
         }
+    }
+
+    private String resolveSymbolName(String symbol, StockQuote quote) {
+        String fromQuote = quote != null ? quote.getName() : null;
+        if (StringUtils.hasText(fromQuote)) {
+            symbolNameCache.put(symbol, fromQuote.trim());
+            return fromQuote.trim();
+        }
+
+        String cached = symbolNameCache.get(symbol);
+        if (StringUtils.hasText(cached)) return cached;
+
+        AutoPosition position = positionService.getPosition(symbol);
+        if (position != null && StringUtils.hasText(position.getSymbolName())) {
+            symbolNameCache.put(symbol, position.getSymbolName().trim());
+            return position.getSymbolName().trim();
+        }
+        return symbol;
+    }
+
+    private String normalizeStatus(Object rawStatus) {
+        if (rawStatus == null) return STATUS_ERROR;
+        String s = rawStatus.toString().trim().toUpperCase();
+        if (s.equals("ACCEPTED") || s.equals("0") || s.equals("00") || s.equals("SUCCESS")) {
+            return STATUS_ACCEPTED;
+        }
+        if (s.equals("REJECTED") || s.equals("1") || s.equals("REJECT")) {
+            return STATUS_REJECTED;
+        }
+        return STATUS_ERROR;
+    }
+
+    private String buildLogReason(String respStatus, String respMsg) {
+        String reason = "Strategy | " + respStatus;
+        if (respMsg != null && !respMsg.isBlank()) {
+            String clean = respMsg.replaceAll("[\\r\\n]+", " ").trim();
+            if (clean.length() > 180) clean = clean.substring(0, 180);
+            reason = reason + " | " + clean;
+        }
+        return reason;
+    }
+
+    private int parseIntSafe(Object val) {
+        if (val == null) return 0;
+        try {
+            return (int) Double.parseDouble(val.toString().replace(",", ""));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private double parseDoubleSafe(Object val) {
+        if (val == null) return 0.0;
+        try {
+            return Double.parseDouble(val.toString().replace(",", ""));
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
+    private Boolean pickBoolean(Map<String, Object> row, String... keys) {
+        if (row == null) return null;
+        for (String key : keys) {
+            Object v = row.get(key);
+            if (v == null) continue;
+
+            if (v instanceof Boolean) {
+                return (Boolean) v;
+            }
+
+            String s = String.valueOf(v).trim().toUpperCase();
+            if ("TRUE".equals(s) || "Y".equals(s) || "YES".equals(s) || "1".equals(s) || "OPEN".equals(s)) {
+                return true;
+            }
+            if ("FALSE".equals(s) || "N".equals(s) || "NO".equals(s) || "0".equals(s) || "CLOSED".equals(s)) {
+                return false;
+            }
+        }
+        return null;
     }
 
     private String pickString(Map<String, Object> row, String... keys) {
@@ -900,29 +1752,18 @@ public class SchedulerService {
         return parseDoubleSafe(pickString(row, keys));
     }
 
-    // ── 스케줄러 시작/중지 ───────────────────────────────────────────────────────
-
-    /**
-     * [수정 D] 개별 종목 중지 기능 추가.
-     *
-     * 기존 stop()은 전체 종목을 중지하므로 toggle(enable=false)에서 호출하면
-     * 다른 종목도 함께 중지되는 문제가 있었음.
-     * 이 메서드는 특정 종목만 중지하고 해당 상태만 초기화한다.
-     *
-     * ApiController.toggleSymbol(enable=false)에서 stop() 대신 이 메서드를 호출하도록
-     * AutoTradingService 등에서 연결 필요.
-     * stop()은 전체 중지 전용으로 유지.
-     */
     public synchronized String stopSymbol(String symbol) {
         if (symbol == null || symbol.isBlank()) return "Invalid symbol";
         String sym = symbol.trim().toUpperCase();
 
-        Timer t = timers.remove(sym);
-        if (t != null) {
-            t.cancel();
-        }
+        ScheduledFuture<?> task = tickTasks.remove(sym);
+        if (task != null) task.cancel(false);
+
+        ScheduledExecutorService exec = schedulers.remove(sym);
+        if (exec != null) exec.shutdownNow();
 
         cancelBuyFillConfirmTask(sym);
+        cancelSellFillConfirmTask(sym);
         strategyEngine.resetSymbol(sym);
 
         barAccumMap.remove(sym);
@@ -932,27 +1773,39 @@ public class SchedulerService {
         symbolExchange.remove(sym);
         quoteFailCount.remove(sym);
         symbolNameCache.remove(sym);
+        // 🔴 fix(운영): stopSymbol 시에도 reject 쿨다운 정리
+        rejectCooldownUntilMs.remove(sym);
+        lastRejectMessage.remove(sym);
+        marketSessionCache.clear();
 
-        if (t == null) return "Not Running: " + sym;
-
-        logger.info("Auto-trading scheduler stopped for {} → symbol state cleared", sym);
+        if (exec == null) return "Not Running: " + sym;
+        logger.info("Scheduler stopped for {} -> state cleared", sym);
         return "Stopped " + sym;
     }
 
     public synchronized String stop() {
-        if (timers.isEmpty()) {
+        if (schedulers.isEmpty()) {
             buyFillConfirmTasks.values().forEach(f -> f.cancel(false));
             buyFillConfirmTasks.clear();
+            sellFillConfirmTasks.values().forEach(f -> f.cancel(false));
+            sellFillConfirmTasks.clear();
             return "Not Running";
         }
-        List<String> running = new ArrayList<>(timers.keySet());
-        timers.values().forEach(Timer::cancel);
-        timers.clear();
+
+        List<String> running = new ArrayList<>(schedulers.keySet());
+        tickTasks.values().forEach(f -> f.cancel(false));
+        tickTasks.clear();
+        schedulers.values().forEach(ScheduledExecutorService::shutdownNow);
+        schedulers.clear();
+
         for (String sym : running) {
             cancelBuyFillConfirmTask(sym);
+            cancelSellFillConfirmTask(sym);
             strategyEngine.resetSymbol(sym);
         }
+
         buyFillConfirmTasks.clear();
+        sellFillConfirmTasks.clear();
         barAccumMap.clear();
         prevVolume.clear();
         lastSellTime.clear();
@@ -960,19 +1813,24 @@ public class SchedulerService {
         symbolExchange.clear();
         quoteFailCount.clear();
         symbolNameCache.clear();
-        logger.info("Auto-trading scheduler stopped (all symbols) → all state cleared");
+        marketSessionCache.clear();
+        // 🔴 fix(운영): stop() 전체 정지 시 reject 쿨다운도 정리
+        rejectCooldownUntilMs.clear();
+        lastRejectMessage.clear();
+
+        logger.info("Scheduler stopped (all symbols) -> all state cleared");
         return "Stopped";
     }
 
     public String status() {
-        return timers.isEmpty()
+        return schedulers.isEmpty()
                 ? "STOPPED"
-                : "RUNNING (" + String.join(",", timers.keySet()) + ")";
+                : "RUNNING (" + String.join(",", schedulers.keySet()) + ")";
     }
 
     public List<Map<String, String>> runningSymbols() {
         List<Map<String, String>> rows = new ArrayList<>();
-        for (String symbol : timers.keySet()) {
+        for (String symbol : schedulers.keySet()) {
             Map<String, String> row = new HashMap<>();
             row.put("symbol", symbol);
             row.put("exchange", resolveOrderExchangeForRuntime(symbol));

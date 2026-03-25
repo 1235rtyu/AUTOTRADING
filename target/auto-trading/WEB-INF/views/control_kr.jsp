@@ -63,7 +63,7 @@ body{font-family:var(--sans);font-size:13px;color:var(--t1);min-height:100vh;}
 .clk-d{font-family:var(--mono);font-size:7px;color:var(--t3);letter-spacing:.8px;}
 
 /* ── LAYOUT ── */
-.page{position:relative;z-index:1;display:grid;grid-template-columns:340px 1fr;gap:10px;padding:10px;min-height:calc(100vh - var(--topbar-h));}
+.page{position:relative;z-index:1;display:grid;grid-template-columns:415px 1fr;gap:10px;padding:10px;min-height:calc(100vh - var(--topbar-h));}
 @media(max-width:1100px){.page{grid-template-columns:1fr;}}
 .col{display:flex;flex-direction:column;gap:10px;}
 
@@ -177,7 +177,7 @@ body{font-family:var(--sans);font-size:13px;color:var(--t1);min-height:100vh;}
   border-radius:var(--r);color:var(--t1);font-family:var(--mono);font-size:10px;padding:0 7px;outline:none;}
 
 /* ── TOP 종목 리스트 ── */
-.top-scroll{overflow-y:auto;max-height:300px;padding:2px 0;
+.top-scroll{overflow-y:auto;max-height:500px;padding:2px 0;
   scrollbar-width:thin;scrollbar-color:var(--rim-hi) transparent;}
 .top-scroll::-webkit-scrollbar{width:3px;}
 .top-scroll::-webkit-scrollbar-thumb{background:var(--rim-hi);border-radius:2px;}

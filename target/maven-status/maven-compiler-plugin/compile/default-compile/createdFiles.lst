@@ -1,6 +1,9 @@
 com\autotrading\model\AccountCredential.class
 com\autotrading\service\impl\MonitorServiceImpl.class
+com\autotrading\scheduler\SchedulerService$MarketSessionStatus.class
 com\autotrading\market\MarketDataService.class
+com\autotrading\scheduler\SchedulerService$PositionSnapshot.class
+com\autotrading\scheduler\SchedulerService$SessionStatusCacheEntry.class
 com\autotrading\dao\AutoTradingDao.class
 com\autotrading\strategy\StrategyEngine$BuySignal.class
 com\autotrading\controller\AutoTradingController.class
@@ -8,6 +11,7 @@ com\autotrading\market\KoreaInvestmentApiClient$AccountInfo.class
 com\autotrading\model\OrderLog.class
 com\autotrading\mapper\WatchlistMapper.class
 com\autotrading\controller\WatchlistController.class
+com\autotrading\scheduler\SchedulerService$SellFillContext.class
 com\autotrading\controller\DashboardController.class
 com\autotrading\model\PriceLog.class
 com\autotrading\service\MonitorService.class
@@ -26,10 +30,13 @@ com\autotrading\controller\ApiController.class
 com\autotrading\dao\impl\AutoTradingDaoImpl.class
 com\autotrading\controller\HomeController.class
 com\autotrading\order\OrderService.class
+com\autotrading\strategy\StrategyEngine$SellDecision.class
 com\autotrading\controller\AutoControlController.class
 com\autotrading\service\impl\DashboardServiceImpl.class
 com\autotrading\dao\impl\WatchlistDaoImpl.class
 com\autotrading\model\MonitorAggregateRow.class
+com\autotrading\service\impl\MarketInsightServiceImpl$RowSupplier.class
+com\autotrading\market\KoreaInvestmentApiClient$OverseasOrderParams.class
 com\autotrading\controller\BalanceController.class
 com\autotrading\service\HistoryService.class
 com\autotrading\model\DashboardData.class
@@ -40,7 +47,6 @@ com\autotrading\config\WebMvcConfig.class
 com\autotrading\strategy\StrategyEngine$SymbolState.class
 com\autotrading\service\MarketInsightService.class
 com\autotrading\config\MyBatisConfig.class
-com\autotrading\scheduler\SchedulerService$2.class
 com\autotrading\service\impl\MarketInsightServiceImpl.class
 com\autotrading\model\WatchlistItem.class
 com\autotrading\strategy\StrategyEngine.class
@@ -65,6 +71,8 @@ com\autotrading\scheduler\SchedulerService$1.class
 com\autotrading\service\RiskManager.class
 com\autotrading\controller\HistoryController.class
 com\autotrading\model\OrderCommand.class
+com\autotrading\service\impl\AuthServiceImpl$AccountParts.class
 com\autotrading\model\StockQuote.class
+com\autotrading\scheduler\SchedulerService$LivePosition.class
 com\autotrading\service\impl\HistoryServiceImpl.class
 com\autotrading\strategy\PriceHistory.class

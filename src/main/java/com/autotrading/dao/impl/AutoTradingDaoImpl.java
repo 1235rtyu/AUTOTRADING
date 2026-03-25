@@ -42,6 +42,11 @@ public class AutoTradingDaoImpl implements AutoTradingDao {
     }
 
     @Override
+    public List<AutoPosition> findAllPositions() {
+        return mapper.findAllPositions();
+    }
+
+    @Override
     public void saveStrategyRecord(String symbol, String strategyType, String status) {
         mapper.insertStrategy(symbol, strategyType, status);
     }

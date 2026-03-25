@@ -30,6 +30,7 @@ public interface AutoTradingMapper {
                         @Param("avgPrice") double avgPrice);
 
     AutoPosition findPosition(@Param("symbol") String symbol);
+    List<AutoPosition> findAllPositions();
 
     void insertStrategy(@Param("symbol") String symbol,
                         @Param("strategyType") String strategyType,
