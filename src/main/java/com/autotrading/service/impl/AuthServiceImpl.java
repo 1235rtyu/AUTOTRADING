@@ -2,6 +2,7 @@ package com.autotrading.service.impl;
 
 import com.autotrading.config.KisProperties;
 import com.autotrading.model.AuthSession;
+import com.autotrading.scheduler.SchedulerService;
 import com.autotrading.service.AuthService;
 import com.autotrading.util.AccountCredentialStore;
 import org.slf4j.Logger;
@@ -19,11 +20,15 @@ public class AuthServiceImpl implements AuthService {
     private static final String SESSION_PROD = "KIS_PRDT_CD";
     private final AccountCredentialStore credentialStore;
     private final KisProperties kisProperties;
+    private final SchedulerService schedulerService;
     private final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
 
-    public AuthServiceImpl(AccountCredentialStore credentialStore, KisProperties kisProperties) {
+    public AuthServiceImpl(AccountCredentialStore credentialStore,
+                           KisProperties kisProperties,
+                           SchedulerService schedulerService) {
         this.credentialStore = credentialStore;
         this.kisProperties = kisProperties;
+        this.schedulerService = schedulerService;
     }
 
     @Override
@@ -44,6 +49,9 @@ public class AuthServiceImpl implements AuthService {
             logger.info("KIS account config updated from login: canoPresent={} prodPresent={}",
                     StringUtils.hasText(parts.cano),
                     StringUtils.hasText(parts.productCode));
+        }
+        if (schedulerService != null) {
+            schedulerService.onAccountLogin("dashboard");
         }
     }
 

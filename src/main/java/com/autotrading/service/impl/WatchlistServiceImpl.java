@@ -23,22 +23,42 @@ public class WatchlistServiceImpl implements WatchlistService {
 
     @Override
     public void addSymbol(String symbol) {
-        addSymbol(symbol, null);
+        addSymbol(symbol, null, null);
     }
 
     @Override
     public void addSymbol(String symbol, String exchange) {
+        addSymbol(symbol, exchange, null);
+    }
+
+    @Override
+    public void addSymbol(String symbol, String exchange, String folder) {
         if (!StringUtils.hasText(symbol)) {
             return;
         }
         String normalizedSymbol = symbol.trim().toUpperCase();
         String normalizedExchange = normalizeExchange(normalizedSymbol, exchange);
+        String normalizedFolder = StringUtils.hasText(folder) ? folder.trim() : null;
         // Prevent duplicate rows for the same symbol (case-insensitive by normalization).
         WatchlistItem exists = watchlistDao.findBySymbol(normalizedSymbol);
         if (exists != null) {
             return;
         }
-        watchlistDao.add(normalizedSymbol, normalizedExchange);
+        watchlistDao.add(normalizedSymbol, normalizedExchange, normalizedFolder);
+    }
+
+    @Override
+    public void setFolder(int id, String folder) {
+        String normalizedFolder = StringUtils.hasText(folder) ? folder.trim() : null;
+        watchlistDao.setFolder(id, normalizedFolder);
+    }
+
+    @Override
+    public void clearFolder(String folder) {
+        if (!StringUtils.hasText(folder)) {
+            return;
+        }
+        watchlistDao.clearFolder(folder.trim());
     }
 
     @Override

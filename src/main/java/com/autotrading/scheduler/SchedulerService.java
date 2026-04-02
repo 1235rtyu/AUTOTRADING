@@ -39,7 +39,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
 
     private static final Logger logger = LoggerFactory.getLogger(SchedulerService.class);
 
-    // ── 공통 상수 ─────────────────────────────────────────────────────────────
+    // ???? ?⑤벏???怨몃땾 ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     private static final long   COOLDOWN_NORMAL_SEC            = 120;
     private static final long   COOLDOWN_STOPLOSS_SEC          = 600;
     private static final long   TICK_INTERVAL_MS               = 5_000L;
@@ -57,14 +57,14 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     private static final long   REJECT_COOLDOWN_MS             = 30_000L;
     private static final long   REJECT_COOLDOWN_PRICE_MS       = 60_000L;
 
-    // 🔴 fix2: 캐시 갱신 실패 시 재시도 간격 (정상 TTL보다 짧게)
+    // ?逾?fix2: 筌?Ŋ??揶쏄퉮????쎈솭 ???????揶쏄쑨爰?(?類ㅺ맒 TTL癰귣???筌욁룓苡?
     private static final long   POSITION_CACHE_FAIL_RETRY_MS   = 1_500L;
 
     private static final String STATUS_ACCEPTED = "ACCEPTED";
     private static final String STATUS_REJECTED = "REJECTED";
     private static final String STATUS_ERROR    = "ERROR";
 
-    // ── 장 시간 관련 ─────────────────────────────────────────────────────────
+    // ???? ????볦퍢 ?온????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     private static final ZoneId KST_ZONE = ZoneId.of("Asia/Seoul");
     private static final ZoneId NY_ZONE  = ZoneId.of("America/New_York");
 
@@ -77,9 +77,15 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     private static final LocalTime US_OPEN_TIME             = LocalTime.of(9, 30);
     private static final LocalTime US_CLOSE_TIME            = LocalTime.of(16, 0);
 
+    private static final String KRX_MARKET_PROXY = "229200";
+    private static final String US_MARKET_PROXY  = "QQQ";
+
+    private static final String KRX_MARKET_PROXY_EXCHANGE = "KRX";
+    private static final String US_MARKET_PROXY_EXCHANGE  = "NASD";
+
     private static final long MARKET_SESSION_CACHE_TTL_MS   = 15_000L;
 
-    // ── 의존성 ───────────────────────────────────────────────────────────────
+    // ???? ??뤵????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     private final MarketDataService marketDataService;
     private final StrategyEngine strategyEngine;
     private final OrderService orderService;
@@ -89,7 +95,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     private final RiskManager riskManager;
     private final KoreaInvestmentApiClient kisApiClient;
 
-    // ── 상태 맵 ───────────────────────────────────────────────────────────────
+    // ???? ?怨밴묶 筌???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     private final Map<String, ScheduledExecutorService> schedulers       = new ConcurrentHashMap<>();
     private final Map<String, ScheduledFuture<?>>       tickTasks        = new ConcurrentHashMap<>();
     private final Map<String, Double>                   prevVolume       = new ConcurrentHashMap<>();
@@ -101,6 +107,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     private final Map<String, String>                   symbolNameCache  = new ConcurrentHashMap<>();
     private final Map<String, Long>                     rejectCooldownUntilMs = new ConcurrentHashMap<>();
     private final Map<String, String>                   lastRejectMessage     = new ConcurrentHashMap<>();
+    private final Map<String, Integer>                  positionSyncFailCount = new ConcurrentHashMap<>();
 
     private final Map<String, ScheduledFuture<?>>       buyFillConfirmTasks  = new ConcurrentHashMap<>();
     private final Map<String, ScheduledFuture<?>>       sellFillConfirmTasks = new ConcurrentHashMap<>();
@@ -135,7 +142,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     private volatile long lastUsCacheOkMs = 0L;
     private volatile long lastAccountConfigWarnMs = 0L;
 
-    // ── 내부 클래스 ───────────────────────────────────────────────────────────
+    // ???? ??? ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     private static class BarAccumulator {
         double open       = 0;
         double high       = 0;
@@ -274,7 +281,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         }
     }
 
-    // ── 생성자 ───────────────────────────────────────────────────────────────
+    // ???? ??밴쉐????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     public SchedulerService(MarketDataService marketDataService,
                             StrategyEngine strategyEngine,
                             OrderService orderService,
@@ -299,9 +306,34 @@ public class SchedulerService implements InitializingBean, DisposableBean {
             logger.error("KIS account config missing at startup - scheduler will remain disabled until configured.");
             return;
         }
+        startPositionSyncLoop("startup");
+        try {
+            syncAllPositions("startup");
+        } catch (Exception e) {
+            logger.warn("Startup position sync failed: {}", e.getMessage());
+        }
+        ensureMarketProxySchedulers();
+    }
+
+    public void onAccountLogin(String caller) {
+        if (!ensureAccountConfigReady("login:" + caller)) {
+            logger.error("KIS account config still missing after login - sync not started.");
+            return;
+        }
+        startPositionSyncLoop("login");
+        try {
+            syncAllPositions("login");
+        } catch (Exception e) {
+            logger.warn("Login position sync failed: {}", e.getMessage());
+        }
+        ensureMarketProxySchedulers();
+    }
+
+    private void startPositionSyncLoop(String reason) {
         if (!positionSyncStarted.compareAndSet(false, true)) {
             return;
         }
+        logger.info("Position sync loop started ({})", reason);
         positionSyncExecutor.scheduleWithFixedDelay(
                 () -> {
                     try {
@@ -314,15 +346,9 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                 POSITION_SYNC_INTERVAL_SEC,
                 TimeUnit.SECONDS
         );
-
-        try {
-            syncAllPositions("startup");
-        } catch (Exception e) {
-            logger.warn("Startup position sync failed: {}", e.getMessage());
-        }
     }
 
-    // 🔴 fix (운영이슈): 앱 종료 시 모든 executor 정리
+    // ?逾?fix (??곸겫??곷뭼): ???ル굝利???筌뤴뫀諭?executor ?類ｂ봺
     public void shutdown() {
         logger.info("SchedulerService shutdown initiated");
         try { stop(); } catch (Exception e) { logger.warn("stop() on shutdown error: {}", e.getMessage()); }
@@ -436,11 +462,16 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                 logger.warn("Position sync: domestic balance non-OK: {}", balResp.get("message"));
                 return false;
             }
+            logger.info("Fetched domestic balance");
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> output1 =
                     (List<Map<String, Object>>) balResp.get("output1");
-            if (output1 == null) return true;
+            if (output1 == null) {
+                logger.info("Live position loaded (KRX) count=0");
+                return true;
+            }
 
+            int loaded = 0;
             for (Map<String, Object> item : output1) {
                 String symbol = pickString(item, "pdno", "item_cd", "symbol", "stck_shrn_iscd");
                 if (!StringUtils.hasText(symbol)) continue;
@@ -450,7 +481,9 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                 String name = normalizeSymbolName(pickString(item,
                         "prdt_name", "prdt_nm", "stck_isnm", "hts_kor_isnm", "name"));
                 target.put(symbol, new LivePosition(symbol, name, qty, avg, "KRX"));
+                loaded++;
             }
+            logger.info("Live position loaded (KRX) count={}", loaded);
             return true;
         } catch (Exception e) {
             logger.warn("Position sync: domestic balance error: {}", e.getMessage());
@@ -570,7 +603,43 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         return list;
     }
 
-    // ── 실행 루프 ─────────────────────────────────────────────────────────────
+    private boolean isMarketProxy(String symbol) {
+        if (symbol == null) return false;
+        return KRX_MARKET_PROXY.equalsIgnoreCase(symbol) || US_MARKET_PROXY.equalsIgnoreCase(symbol);
+    }
+
+    private void updateMarketContextIfProxy(String symbol) {
+        if (KRX_MARKET_PROXY.equalsIgnoreCase(symbol)) {
+            strategyEngine.updateMarketContextFromSymbol(symbol, StrategyEngine.Market.KRX);
+            logger.info("Market context updated from KRX proxy={}", symbol);
+            return;
+        }
+        if (US_MARKET_PROXY.equalsIgnoreCase(symbol)) {
+            strategyEngine.updateMarketContextFromSymbol(symbol, StrategyEngine.Market.US);
+            logger.info("Market context updated from US proxy={}", symbol);
+        }
+    }
+
+    private void ensureMarketProxySchedulers() {
+        try {
+            if (!schedulers.containsKey(KRX_MARKET_PROXY)) {
+                start(KRX_MARKET_PROXY, KRX_MARKET_PROXY_EXCHANGE, null);
+                logger.info("Market proxy scheduler started for KRX: {}", KRX_MARKET_PROXY);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to start KRX market proxy {}: {}", KRX_MARKET_PROXY, e.getMessage());
+        }
+
+        try {
+            if (!schedulers.containsKey(US_MARKET_PROXY)) {
+                start(US_MARKET_PROXY, US_MARKET_PROXY_EXCHANGE, null);
+                logger.info("Market proxy scheduler started for US: {}", US_MARKET_PROXY);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to start US market proxy {}: {}", US_MARKET_PROXY, e.getMessage());
+        }
+    }
+    // ???? ??쎈뻬 ?룐뫂遊???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     private void execute(String symbol) {
         if (!ensureAccountConfigReady("execute")) {
             return;
@@ -594,9 +663,23 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         String symbolName = resolveSymbolName(symbol, quote);
         double currentVolume1m = updateBarAccumulator(symbol, quote, symbolName, deltaVolume);
 
+        if (isMarketProxy(symbol)) {
+            updateMarketContextIfProxy(symbol);
+            return;
+        }
+
         PositionSnapshot pos = loadPositionSnapshot(symbol, orderExchange);
         int quantity = pos.quantity;
         double avgPrice = pos.avgPrice;
+        if (pos.liveUnavailable) {
+            int fails = positionSyncFailCount.merge(symbol, 1, Integer::sum);
+            if (fails == 3) {
+                logger.warn("[CAUTION] {} position sync failed {} times consecutively - new entries temporarily blocked",
+                        symbol, fails);
+            }
+        } else {
+            positionSyncFailCount.remove(symbol);
+        }
 
         if (quantity > 0) {
             cancelBuyFillConfirmTask(symbol);
@@ -934,10 +1017,10 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     }
 
     // =========================================================================
-    // 🔴 fix2: loadPositionSnapshot
-    //    - 캐시 갱신 실패 시 positionCacheUpdatedMs를 FAIL_RETRY 간격으로 설정해
-    //      다음 tick에서 재시도 강제 (기존: 실패해도 갱신 안 해서 stale 캐시 무한 사용)
-    //    - liveUnavailable=true 시 실거래 주문 차단 경고 추가
+    // ?逾?fix2: loadPositionSnapshot
+    //    - 筌?Ŋ??揶쏄퉮????쎈솭 ??positionCacheUpdatedMs??FAIL_RETRY 揶쏄쑨爰??곗쨮 ??쇱젟??
+    //      ??쇱벉 tick?癒?퐣 ?????揶쏅벡??(疫꿸퀣?? ??쎈솭??猷?揶쏄퉮??????곴퐣 stale 筌?Ŋ???얜똾釉?????
+    //    - liveUnavailable=true ????브탢??雅뚯눖揆 筌△뫀??野껋럡???곕떽?
     // =========================================================================
     private PositionSnapshot loadPositionSnapshot(String symbol, String orderExchange) {
         boolean overseas = isOverseasSymbol(symbol);
@@ -961,7 +1044,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         String name = dbPos != null ? dbPos.getSymbolName() : null;
 
         if (!cacheFresh) {
-            // 🔴 fix2: stale 캐시인데 DB에 수량이 있으면 경고 - 중복 매도 가능성
+            // ?逾?fix2: stale 筌?Ŋ??紐껊쑓 DB????롮쎗????됱몵筌?野껋럡??- 餓λ쵎??筌띲끇猷?揶쎛?關苑?
             if (qty > 0) {
                 logger.warn("[CAUTION] {} position cache stale and DB qty={} > 0 - sell orders may double if live position already closed",
                         symbol, qty);
@@ -969,7 +1052,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
             return new PositionSnapshot(qty, avg, true, orderExchange, name);
         }
 
-        logger.warn("{} position cache miss for {}, using DB qty={}",
+        logger.debug("{} position cache miss for {}, using DB qty={} (cache fresh)",
                 overseas ? "Overseas" : "Domestic", symbol, qty);
         return new PositionSnapshot(qty, avg, false, orderExchange, name);
     }
@@ -987,11 +1070,11 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     }
 
     // =========================================================================
-    // 🔴 fix2: refreshPositionCacheIfNeeded
-    //    기존: 갱신 실패 시 positionCacheUpdatedMs 갱신 안 함 → TTL 지나면 다시 시도하나
-    //          krOk=false가 연속이면 stale 캐시 계속 사용 (중복 매도 위험)
-    //    수정: 실패 시 positionCacheUpdatedMs를 FAIL_RETRY_MS 후에 만료되도록 설정
-    //          → 다음 tick에서 빠르게 재시도하되 매 tick마다 API를 두드리지 않음
+    // ?逾?fix2: refreshPositionCacheIfNeeded
+    //    疫꿸퀣?? 揶쏄퉮????쎈솭 ??positionCacheUpdatedMs 揶쏄퉮????????TTL 筌왖??롢늺 ??쇰뻻 ??뺣즲??롪돌
+    //          krOk=false揶쎛 ?怨쀫꺗????stale 筌?Ŋ???④쑴??????(餓λ쵎??筌띲끇猷??袁る퓮)
+    //    ??륁젟: ??쎈솭 ??positionCacheUpdatedMs??FAIL_RETRY_MS ?袁⑸퓠 筌띾슢利??롫즲嚥???쇱젟
+    //          ????쇱벉 tick?癒?퐣 ??쥓?ㅵ칰?????袁る릭??筌?tick筌띾뜄??API???癒?굡?귐? ??놁벉
     // =========================================================================
     private void refreshPositionCacheIfNeeded(String reason) {
         long now = System.currentTimeMillis();
@@ -1003,7 +1086,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         }
         try {
             if (!ensureAccountConfigReady("positionCache:" + reason)) {
-                // 🔴 fix2: 실패 시 FAIL_RETRY_MS 뒤에 만료되도록 설정
+                // ?逾?fix2: ??쎈솭 ??FAIL_RETRY_MS ??쇰퓠 筌띾슢利??롫즲嚥???쇱젟
                 positionCacheUpdatedMs = now - POSITION_CACHE_TTL_MS + POSITION_CACHE_FAIL_RETRY_MS;
                 return;
             }
@@ -1014,7 +1097,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
             boolean usOk = collectOverseasPositions(liveUs);
 
             if (!krOk && !usOk) {
-                // 🔴 fix2: 두 시장 모두 실패 → 빠른 재시도를 위해 TTL 단축
+                // ?逾?fix2: ????뽰삢 筌뤴뫀紐???쎈솭 ????쥓??????袁? ?袁る퉸 TTL ??ν뀧
                 positionCacheUpdatedMs = now - POSITION_CACHE_TTL_MS + POSITION_CACHE_FAIL_RETRY_MS;
                 logger.warn("Position cache refresh failed (krOk={}, usOk={}) - will retry in {}ms",
                         krOk, usOk, POSITION_CACHE_FAIL_RETRY_MS);
@@ -1033,7 +1116,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
 
             positionCache.clear();
             positionCache.putAll(updated);
-            // 🔴 fix2: 부분 성공이라도 타임스탬프 갱신 (기존 동일)
+            // ?逾?fix2: ?봔???源껊궗????????袁⑸뮞??遊?揶쏄퉮??(疫꿸퀣????덉뵬)
             positionCacheUpdatedMs = now;
 
         } finally {
@@ -1090,9 +1173,16 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                                   com.autotrading.model.OrderCommand command,
                                   String orderExchange,
                                   PositionSnapshot pos) {
-        // 🔴 fix2: liveUnavailable 상태에서 매수 차단 (포지션 불확실 상태에서 진입 방지)
+        Integer failCount = positionSyncFailCount.get(symbol);
+        if (failCount != null && failCount >= 3) {
+            logger.warn("BUY blocked (position sync failed {}x) for {}", failCount, symbol);
+            return false;
+        }
+
+        // ?逾?fix2: liveUnavailable ?怨밴묶?癒?퐣 筌띲끉??筌△뫀??(??????븍뜇????怨밴묶?癒?퐣 筌욊쑴??獄쎻뫗?)
         if (pos.liveUnavailable) {
-            logger.warn("BUY blocked (live position unavailable - cache stale) for {}", symbol);
+            logger.warn("BUY blocked (live position unavailable - cache stale) for {} exchange={} qty={} avg={}",
+                    symbol, pos.exchange, pos.quantity, pos.avgPrice);
             return false;
         }
 
@@ -1234,7 +1324,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         logger.warn("Order REJECTED for {} side={} msg={}", symbol, command.getType(), respMsg);
         long nowMs = System.currentTimeMillis();
         String msg = respMsg != null ? respMsg : "";
-        boolean priceMissing = msg.contains("주문단가") || msg.contains("주문구분");
+        boolean priceMissing = msg.contains("雅뚯눖揆???") || msg.contains("雅뚯눖揆?닌됲뀋");
         long cooldown = priceMissing ? REJECT_COOLDOWN_PRICE_MS : REJECT_COOLDOWN_MS;
         rejectCooldownUntilMs.put(symbol, nowMs + cooldown);
         lastRejectMessage.put(symbol, msg);
@@ -1319,14 +1409,14 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     }
 
     // =========================================================================
-    // 🔴 fix3: confirmSellFilled - timeout 시 처리 강화
-    //    기존 문제:
-    //      1) notifySellRejected() 호출 → sellPending=false만 되고 entryState 남음
-    //      2) retryReal 실패 시 DB에 수량 불일치 방치
-    //    수정:
-    //      1) timeout 후 실포지션 기준으로 notifySellFilled 또는 clearStaleHoldState 호출
-    //      2) retryReal 조회도 실패하면 방어적으로 DB 수량을 0으로 초기화 + 경고 로그
-    //      3) defensiveExit(손절) 체결 확인 실패 시 한 번 더 retryReal 시도
+    // ?逾?fix3: confirmSellFilled - timeout ??筌ｌ꼶??揶쏅벤??
+    //    疫꿸퀣???얜챷??
+    //      1) notifySellRejected() ?紐꾪뀱 ??sellPending=false筌???랁?entryState ??μ벉
+    //      2) retryReal ??쎈솭 ??DB????롮쎗 ?븍뜆?ょ㎉?獄쎻뫗??
+    //    ??륁젟:
+    //      1) timeout ????쎈７筌왖??疫꿸퀣???곗쨮 notifySellFilled ?癒?뮉 clearStaleHoldState ?紐꾪뀱
+    //      2) retryReal 鈺곌퀬?????쎈솭??롢늺 獄쎻뫗堉?怨몄몵嚥?DB ??롮쎗??0??곗쨮 ?λ뜃由??+ 野껋럡??嚥≪뮄??
+    //      3) defensiveExit(?癒?쟿) 筌ｋ떯猿??類ㅼ뵥 ??쎈솭 ????甕???retryReal ??뺣즲
     // =========================================================================
     private void confirmSellFilled(SellFillContext ctx) {
         cancelSellFillConfirmTask(ctx.symbol);
@@ -1372,13 +1462,13 @@ public class SchedulerService implements InitializingBean, DisposableBean {
             if (attempt >= SELL_FILL_CONFIRM_MAX_ATTEMPTS) {
                 cancelSellFillConfirmTask(ctx.symbol);
 
-                // 🔴 fix3: timeout 후 실포지션 재조회 (손절이면 한 번 더)
+                // ?逾?fix3: timeout ????쎈７筌왖???????(?癒?쟿??????甕???
                 RealPosition retryReal = isOverseasSymbol(ctx.symbol)
                         ? fetchOverseasRealPosition(ctx.symbol, ctx.exchange)
                         : fetchRealPosition(ctx.symbol);
 
                 if (ctx.defensiveExit && retryReal == null) {
-                    // 손절 체결 확인 불가 → 한 번만 추가 재시도
+                    // ?癒?쟿 筌ｋ떯猿??類ㅼ뵥 ?븍뜃? ????甕곕뜄彛??곕떽? ?????
                     try { Thread.sleep(500); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
                     retryReal = isOverseasSymbol(ctx.symbol)
                             ? fetchOverseasRealPosition(ctx.symbol, ctx.exchange)
@@ -1388,7 +1478,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                 if (retryReal != null) {
                     syncPositionToDB(ctx.symbol, retryReal);
                     if (retryReal.quantity <= 0) {
-                        // 🔴 fix3: 실제로 체결됨 → notifySellFilled로 entryState 정리
+                        // ?逾?fix3: ??쇱젫嚥?筌ｋ떯猿????notifySellFilled嚥?entryState ?類ｂ봺
                         strategyEngine.notifySellFilled(ctx.symbol, 0);
                         double soldQty = Math.max(0, ctx.previousQty);
                         double pnl = (ctx.referencePrice - ctx.avgPrice) * soldQty;
@@ -1402,7 +1492,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                         }
                         logger.info("SELL fill confirmed (timeout fallback) for {} - live qty=0", ctx.symbol);
                     } else if (retryReal.quantity <= ctx.expectedRemainingQty) {
-                        // 부분 체결된 경우
+                        // ?봔??筌ｋ떯猿??野껋럩??
                         strategyEngine.notifySellFilled(ctx.symbol, retryReal.quantity);
                         double soldQty = Math.max(0, ctx.previousQty - retryReal.quantity);
                         double pnl = (ctx.referencePrice - ctx.avgPrice) * soldQty;
@@ -1413,9 +1503,9 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                         logger.info("SELL partial fill confirmed (timeout fallback) for {} remainingQty={}",
                                 ctx.symbol, retryReal.quantity);
                     } else {
-                        // 체결 안 됨 - sellPending 해제만 하고 재시도 가능하게 둠
-                        // 🔴 fix3: 기존처럼 notifySellRejected X → notifySellRejected는 sellPending만 false로 만들고
-                        //           entryState(partialTakeProfitDone 등)는 유지되므로 전략이 다시 매도 시도 가능
+                        // 筌ｋ떯猿?????- sellPending ??곸젫筌???랁??????揶쎛?館釉?칰???
+                        // ?逾?fix3: 疫꿸퀣?덌㎗?롮쓥 notifySellRejected X ??notifySellRejected??sellPending筌?false嚥?筌띾슢諭얏?
+                        //           entryState(partialTakeProfitDone ?????醫????嚥??袁⑥셽????쇰뻻 筌띲끇猷???뺣즲 揶쎛??
                         if (!ctx.defensiveExit && !ctx.marketOrder && isTakeProfitReason(ctx.reason)) {
                             strategyEngine.markSellFallbackToMarket(ctx.symbol, ctx.reason);
                             logger.warn("SELL fallback scheduled for {} reason={} (unfilled LIMIT)",
@@ -1426,8 +1516,8 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                                 ctx.symbol, attempt, retryReal.quantity);
                     }
                 } else {
-                    // 🔴 fix3: 실포지션 완전 조회 불가 → DB를 신뢰 기준으로 경고 후 sellPending 해제
-                    //   (기존: notifySellRejected 호출, entryState 남아서 재시도 가능 - 이 부분은 유지)
+                    // ?逾?fix3: ??쎈７筌왖???袁⑹읈 鈺곌퀬???븍뜃? ??DB???醫듚?疫꿸퀣???곗쨮 野껋럡????sellPending ??곸젫
+                    //   (疫꿸퀣?? notifySellRejected ?紐꾪뀱, entryState ??λ툡???????揶쎛??- ???봔?브쑴? ?醫?)
                     strategyEngine.notifySellRejected(ctx.symbol);
                     logger.error("[ACTION_NEEDED] SELL fill unresolvable for {} after {} attempts - live position unknown. Manual check required. DB qty={}",
                             ctx.symbol, attempt,
@@ -1755,6 +1845,9 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     public synchronized String stopSymbol(String symbol) {
         if (symbol == null || symbol.isBlank()) return "Invalid symbol";
         String sym = symbol.trim().toUpperCase();
+        if (isMarketProxy(sym)) {
+            return "Market proxy stop is blocked: " + sym;
+        }
 
         ScheduledFuture<?> task = tickTasks.remove(sym);
         if (task != null) task.cancel(false);
@@ -1773,9 +1866,10 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         symbolExchange.remove(sym);
         quoteFailCount.remove(sym);
         symbolNameCache.remove(sym);
-        // 🔴 fix(운영): stopSymbol 시에도 reject 쿨다운 정리
+        // ?逾?fix(??곸겫): stopSymbol ??뽯퓠??reject ?묅뫀????類ｂ봺
         rejectCooldownUntilMs.remove(sym);
         lastRejectMessage.remove(sym);
+        positionSyncFailCount.remove(sym);
         marketSessionCache.clear();
 
         if (exec == null) return "Not Running: " + sym;
@@ -1814,9 +1908,10 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         quoteFailCount.clear();
         symbolNameCache.clear();
         marketSessionCache.clear();
-        // 🔴 fix(운영): stop() 전체 정지 시 reject 쿨다운도 정리
+        // ?逾?fix(??곸겫): stop() ?袁⑷퍥 ?類? ??reject ?묅뫀???猷??類ｂ봺
         rejectCooldownUntilMs.clear();
         lastRejectMessage.clear();
+        positionSyncFailCount.clear();
 
         logger.info("Scheduler stopped (all symbols) -> all state cleared");
         return "Stopped";
@@ -1840,3 +1935,4 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         return rows;
     }
 }
+

@@ -6,7 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Control US — AUTO TRADING</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
 :root{
   --void:#07090f;--base:#0d0f18;--panel:#13161f;--panel-hi:#181b27;--hover:#1d2130;
@@ -17,7 +18,7 @@
   --blue:#5ba3ff;--blue-d:rgba(91,163,255,.08);--blue-b:rgba(91,163,255,.22);
   --rim:rgba(255,255,255,.07);--rim-hi:rgba(255,255,255,.13);
   --t1:#dde4f0;--t2:#8592ad;--t3:#444d63;--t4:#1a1e2c;
-  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+  --mono:'JetBrains Mono','Pretendard',monospace;--sans:'Pretendard',sans-serif;
   --r:6px;--r2:10px;--r3:12px;
   --topbar-h:50px;
 }
@@ -93,6 +94,7 @@ body{font-family:var(--sans);font-size:13px;color:var(--t1);min-height:100vh;}
 .eng-state.run{color:var(--emerald);}
 .eng-state.stop{color:var(--t2);}
 .eng-sub{font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:2px;}
+.eng-sub.run{color:#ff9c2a;text-shadow:0 0 8px rgba(255,156,42,.35);}
 .eng-time{font-family:var(--mono);font-size:9px;color:var(--t3);text-align:right;flex-shrink:0;}
 
 /* ── RUNNING SYMBOLS ── */
@@ -107,7 +109,9 @@ body{font-family:var(--sans);font-size:13px;color:var(--t1);min-height:100vh;}
 .no-run{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:.5px;padding:4px 0;}
 
 /* ── MANUAL INPUT ── */
-.input-row{display:flex;gap:6px;align-items:center;}
+.input-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.manual-row{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap;}
+.manual-row .tb-sel{min-width:160px;}
 .suggest-wrap{position:relative;flex:1;min-width:0;}
 .tb-input{flex:1;height:32px;background:var(--base);border:1px solid var(--rim-hi);
   border-radius:var(--r);color:var(--t1);font-family:var(--mono);font-size:11px;
@@ -365,6 +369,13 @@ tbody tr:hover td{background:var(--hover);}
             추가
           </button>
         </div>
+        <div class="manual-row">
+          <select class="tb-sel" id="wlFolderSel"></select>
+          <button class="btn btn-ghost" onclick="loadWatchlistToManual()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3z"/><path d="M5 7v14h14V7"/></svg>
+            Watchlist 불러오기
+          </button>
+        </div>
         <div class="manual-chips" id="manualChips">
           <span class="empty-hint">종목을 추가하세요</span>
         </div>
@@ -403,10 +414,6 @@ tbody tr:hover td{background:var(--hover);}
           <span class="empty-hint" style="margin-left:auto;" id="topSelCount">선택 0개</span>
         </div>
         <div class="btn-row">
-          <button class="btn btn-ghost btn-full" onclick="addTopWatchlist()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            Watchlist 추가
-          </button>
           <button class="btn btn-blue btn-full" onclick="startTop()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Top 시작
@@ -672,6 +679,12 @@ function fetchName(sym){
     .then(d=>{nameCache[sym]=d.symbolName||'';return nameCache[sym];})
     .catch(()=>{nameCache[sym]='';return '';});
 }
+function detectMarketForControl(item){
+  const ex=String(item.exchange||'').toUpperCase();
+  if(ex==='KRX'||ex==='KR') return 'KR';
+  if(['NAS','NYS','AMS','US','NASD','NYSE','AMEX'].includes(ex)) return 'US';
+  return /^[A-Za-z]/.test(item.symbol) ? 'US' : 'KR';
+}
 
 /* ── Engine Status ── */
 function setEngine(status,msg){
@@ -681,7 +694,10 @@ function setEngine(status,msg){
   ind.className='eng-indicator '+(run?'run':'stop');
   st.className='eng-state '+(run?'run':'stop');
   st.textContent=status||'UNKNOWN';
-  document.getElementById('engMsg').textContent=msg||(run?'자동매매 엔진 실행 중':'엔진이 정지되어 있습니다');
+  const engMsg=document.getElementById('engMsg');
+  engMsg.className='eng-sub'+(run?' run':'');
+  const count=Number(document.getElementById('runCount')?.textContent||0);
+  engMsg.textContent=msg||(run?('자동매매 실행 중 · '+count+'종목'):'엔진이 정지되어 있습니다');
   document.getElementById('engTime').textContent=p2(new Date().getHours())+':'+p2(new Date().getMinutes())+':'+p2(new Date().getSeconds());
 }
 function fetchStatus(){get('/api/control/status').then(d=>setEngine(d.status,'')).catch(()=>{});}
@@ -690,6 +706,10 @@ function fetchStatus(){get('/api/control/status').then(d=>setEngine(d.status,'')
 function renderRunning(rows){
   const arr=Array.isArray(rows)?rows:[];
   document.getElementById('runCount').textContent=arr.length;
+  const engMsg=document.getElementById('engMsg');
+  if(engMsg && engMsg.classList.contains('run')){
+    engMsg.textContent='자동매매 실행 중 · '+arr.length+'종목';
+  }
   const list=document.getElementById('runList');
   if(!arr.length){list.innerHTML='<span class="no-run">실행 중인 종목 없음</span>';return;}
   Promise.all(arr.map(r=>fetchName(r.symbol||'').then(nm=>({...r,nm})))).then(items=>{
@@ -729,6 +749,41 @@ window.addManual=function(){
   renderManual();
 };
 window.removeManual=function(sym){manualSyms=manualSyms.filter(v=>v!==sym);renderManual();};
+window.loadWatchlistToManual=function(){
+  return get('/api/watchlist')
+    .then(items=>{
+      const rows=Array.isArray(items)?items:[];
+      const folder=(document.getElementById('wlFolderSel')||{}).value||'';
+      if(folder===''){ toast('폴더를 선택하세요','err'); return; }
+      const syms=rows
+        .filter(it=>detectMarketForControl(it)===MARKET)
+        .filter(it=>{
+          const f=(it.folder||'').trim();
+          return folder==='ALL' || f===folder;
+        })
+        .map(it=>String(it.symbol||'').trim())
+        .filter(Boolean);
+      manualSyms=Array.from(new Set(syms));
+      renderManual();
+      toast('Watchlist 불러오기 완료: '+manualSyms.length+'개','ok');
+    })
+    .catch(()=>toast('Watchlist 불러오기 실패','err'));
+};
+function renderWatchlistFolders(rows){
+  const sel=document.getElementById('wlFolderSel');
+  if(!sel)return;
+  const folderSet=new Set();
+  rows.forEach(it=>{
+    const f=(it.folder||'').trim();
+    if(f) folderSet.add(f);
+  });
+  sel.innerHTML='<option value="" selected>폴더 선택</option><option value="ALL">전체</option>';
+  Array.from(folderSet).sort().forEach(f=>{
+    const opt=document.createElement('option');
+    opt.value=f; opt.textContent=f;
+    sel.appendChild(opt);
+  });
+}
 symInputEl.addEventListener('input',()=>{
   queueSuggest(symInputEl.value);
 });
@@ -763,12 +818,8 @@ window.startManual=function(){
   Promise.all(manualSyms.map(sym=>{
     const body={symbol:sym};if(MARKET==='US')body.exchange=EXCH;
     if (buyAmount != null) body.buyAmount = buyAmount;
-    return post('/api/watchlist',body).catch(()=>{});
-  })).then(()=>Promise.all(manualSyms.map(sym=>{
-    const body={symbol:sym};if(MARKET==='US')body.exchange=EXCH;
-    if (buyAmount != null) body.buyAmount = buyAmount;
     return post('/api/control/start',body);
-  }))).then(res=>{
+  })).then(res=>{
     const last=res[res.length-1]||{};
     setEngine(last.status,last.message||'');fetchRunning(true);
     toast('시작 완료: '+manualSyms.join(', '),'ok');
@@ -816,26 +867,24 @@ window.fetchTop=function(){
     .then(d=>{topRows=(d.data||d.output||[]).slice(0,40);renderTop();})
     .catch(()=>{topRows=[];renderTop();});
 };
-window.addTopWatchlist=function(){
-  const n=document.getElementById('topN').value||3;
-  const mr=document.getElementById('minRate').value||0;
-  post('/api/watchlist/add-top?n='+n+'&minRate='+mr+'&market='+encodeURIComponent(MARKET)+'&exch='+encodeURIComponent(EXCH),{})
-    .then(d=>toast(d.message||'완료','ok')).catch(e=>toast('실패: '+(e.message||''),'err'));
-};
 window.startTop=function(){
   const buyAmount = resolveBuyAmount();
   if (buyAmount === undefined) return;
   if(topSel.size>0){
-    const sels=Array.from(topSel);
+    const raw=Array.from(topSel);
+    const sels=raw.filter(s=>/^[A-Z][A-Z0-9.\-]{0,9}$/.test(String(s||'')));
+    if(!sels.length){
+      toast('선택된 종목 코드가 올바르지 않습니다','err');
+      return;
+    }
+    if(sels.length !== raw.length){
+      toast('잘못된 코드가 제외되었습니다','err');
+    }
     Promise.all(sels.map(sym=>{
       const body={symbol:sym};if(MARKET==='US')body.exchange=EXCH;
       if (buyAmount != null) body.buyAmount = buyAmount;
-      return post('/api/watchlist',body).catch(()=>{});
-    })).then(()=>Promise.all(sels.map(sym=>{
-      const body={symbol:sym};if(MARKET==='US')body.exchange=EXCH;
-      if (buyAmount != null) body.buyAmount = buyAmount;
       return post('/api/control/start',body);
-    }))).then(res=>{
+    })).then(res=>{
       const last=res[res.length-1]||{};
       setEngine(last.status,last.message||'');fetchRunning(true);
       toast('선택 종목 시작: '+sels.join(', '),'ok');
@@ -921,6 +970,9 @@ fetchStatus();
 fetchRunning(false);
 fetchTop();
 fetchOrders(false);
+get('/api/watchlist')
+  .then(items=>{const rows=Array.isArray(items)?items:[];renderWatchlistFolders(rows);})
+  .catch(()=>{});
 
 /* ── 폴링 ── */
 setInterval(()=>{fetchStatus();fetchRunning(true);fetchOrders(true);},5000);
@@ -928,4 +980,3 @@ setInterval(fetchTop,60000);
 </script>
 </body>
 </html>
-

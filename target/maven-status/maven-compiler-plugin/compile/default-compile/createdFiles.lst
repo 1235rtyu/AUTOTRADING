@@ -36,6 +36,7 @@ com\autotrading\service\impl\DashboardServiceImpl.class
 com\autotrading\dao\impl\WatchlistDaoImpl.class
 com\autotrading\model\MonitorAggregateRow.class
 com\autotrading\service\impl\MarketInsightServiceImpl$RowSupplier.class
+com\autotrading\strategy\StrategyEngine$MarketContext.class
 com\autotrading\market\KoreaInvestmentApiClient$OverseasOrderParams.class
 com\autotrading\controller\BalanceController.class
 com\autotrading\service\HistoryService.class
@@ -49,12 +50,14 @@ com\autotrading\service\MarketInsightService.class
 com\autotrading\config\MyBatisConfig.class
 com\autotrading\service\impl\MarketInsightServiceImpl.class
 com\autotrading\model\WatchlistItem.class
+com\autotrading\strategy\MinuteBarHistory$MinuteBar.class
 com\autotrading\strategy\StrategyEngine.class
 com\autotrading\position\PositionService.class
 com\autotrading\scheduler\SchedulerService.class
 com\autotrading\service\AutoTradingService.class
 com\autotrading\service\DashboardService.class
 com\autotrading\model\AutoPosition.class
+com\autotrading\strategy\StrategyEngine$EntryMode.class
 com\autotrading\market\MarketDataService$PriceSnapshot.class
 com\autotrading\market\KoreaInvestmentApiClient$Lot.class
 com\autotrading\model\MonitorSummary.class
@@ -76,3 +79,4 @@ com\autotrading\model\StockQuote.class
 com\autotrading\scheduler\SchedulerService$LivePosition.class
 com\autotrading\service\impl\HistoryServiceImpl.class
 com\autotrading\strategy\PriceHistory.class
+com\autotrading\strategy\MinuteBarHistory.class

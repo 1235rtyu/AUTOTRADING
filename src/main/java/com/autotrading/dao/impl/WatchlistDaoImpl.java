@@ -26,8 +26,18 @@ public class WatchlistDaoImpl implements WatchlistDao {
     }
 
     @Override
-    public int add(String symbol, String exchange) {
-        return mapper.insert(symbol, exchange);
+    public int add(String symbol, String exchange, String folder) {
+        return mapper.insert(symbol, exchange, folder);
+    }
+
+    @Override
+    public int setFolder(int id, String folder) {
+        return mapper.updateFolder(id, folder);
+    }
+
+    @Override
+    public int clearFolder(String folder) {
+        return mapper.clearFolder(folder);
     }
 
     @Override

@@ -1,5 +1,6 @@
 @echo off
 setlocal
+chcp 65001 >nul
 
 set "PROJECT_DIR=%~dp0"
 set "TOMCAT_HOME=D:\apache-tomcat-9.0.115"
@@ -9,6 +10,7 @@ set "JAVA_HOME=C:\Program Files\Java\jdk-11"
 set "WAR_NAME=auto-trading.war"
 set "APP_DIR=auto-trading"
 set "MVN_CMD="
+set "CATALINA_OPTS=-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8 %CATALINA_OPTS%"
 set "MAVEN_USER_HOME=%PROJECT_DIR%.m2home"
 set "MAVEN_REPO_LOCAL=%PROJECT_DIR%.m2repo"
 set "BUILD_LOG=%PROJECT_DIR%redeploy-build.log"

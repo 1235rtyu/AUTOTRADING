@@ -11,6 +11,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,33 +24,63 @@ public class StrategyEngine {
 
     public enum Market { KRX, US }
 
+    private enum EntryMode { NONE, PULLBACK, BREAKOUT, VOLUME_BREAKOUT }
+
     private static final ZoneId KST_ZONE = ZoneId.of("Asia/Seoul");
+    private static final ZoneId NY_ZONE = ZoneId.of("America/New_York");
 
-    private static final int HISTORY_CAPACITY = 150;           // 🔴 fix1: 50→150 (tick 드랍 대비 여유)
-    private static final int MIN_HISTORY_TICKS = 36;
-    private static final int MIN_HISTORY_SPAN_SECONDS = 180;
+    // =========================
+    // History
+    // =========================
+    private static final int TICK_HISTORY_CAPACITY = 180;
+    private static final int MINUTE_HISTORY_CAPACITY = 150;
+    private static final int MIN_HISTORY_BARS = 8;
+    private static final int MIN_HISTORY_SPAN_SECONDS = 300;
 
-    private static final int VELOCITY_WINDOW_MIN_SECONDS = 30;
-    private static final int VELOCITY_WINDOW_MAX_SECONDS = 90;
+    private static final int VELOCITY_WINDOW_MIN_SECONDS = 180;
+    private static final int VELOCITY_WINDOW_MAX_SECONDS = 300;
 
-    private static final int TREND_SHORT_MIN_SECONDS = 10;
-    private static final int TREND_SHORT_MAX_SECONDS = 20;
-    private static final int TREND_MID_MIN_SECONDS = 20;
-    private static final int TREND_MID_MAX_SECONDS = 40;
-    private static final int TREND_LONG_MIN_SECONDS = 40;
-    private static final int TREND_LONG_MAX_SECONDS = 80;
+    private static final int TREND_SHORT_MIN_SECONDS = 120;
+    private static final int TREND_SHORT_MAX_SECONDS = 180;
+    private static final int TREND_MID_MIN_SECONDS = 180;
+    private static final int TREND_MID_MAX_SECONDS = 300;
+    private static final int TREND_LONG_MIN_SECONDS = 300;
+    private static final int TREND_LONG_MAX_SECONDS = 480;
 
-    private static final double MOMENTUM_PRICE_NEAR_HIGH = 0.992;
-    private static final double MOMENTUM_VOLUME_MULT = 1.3;
-    private static final double STRONG_BREAKOUT_VOLUME_MULT = 1.5;
-    private static final double PULLBACK_UPPER_FROM_HIGH = 0.995;
-    private static final double PULLBACK_LOWER_FROM_HIGH = 0.98;
-    private static final double PULLBACK_VOLUME_MULT = 0.8;
-    private static final double VOLUME_BREAKOUT_VOLUME_MULT = 1.5;
-    private static final double VOLUME_SURGE_MULT_FOR_SIZE_UP = 2.0;
-    private static final double LOW_VOLUME_SKIP_MULT_KRX = 0.3;
-    private static final double LOW_VOLUME_SKIP_MULT_US = 0.10;
+    // =========================
+    // Entry timing
+    // =========================
+    private static final long ENTRY_READY_TTL_MS = 35_000L;
+    private static final long ENTRY_READY_MIN_DELAY_MS = 2_000L;
+    private static final int BUY_RECENT_RANGE_BARS = 6;
 
+    // =========================
+    // Momentum / breakout
+    // =========================
+    private static final double MOMENTUM_PRICE_NEAR_HIGH = 0.9985;
+    private static final double MOMENTUM_VOLUME_MULT = 1.8;
+    private static final double STRONG_BREAKOUT_VOLUME_MULT = 1.9;
+    private static final double VOLUME_BREAKOUT_VOLUME_MULT = 2.0;
+    private static final double VOLUME_SURGE_MULT_FOR_SIZE_UP = 2.3;
+
+    // =========================
+    // Pullback zone
+    // =========================
+    // 최근 고점 대비 너무 얕은 눌림만 잡던 문제를 완화
+    private static final double PULLBACK_UPPER_FROM_HIGH_US = 0.988;
+    private static final double PULLBACK_LOWER_FROM_HIGH_US = 0.965;
+    private static final double PULLBACK_UPPER_FROM_HIGH_KRX = 0.986;
+    private static final double PULLBACK_LOWER_FROM_HIGH_KRX = 0.968;
+
+    private static final double PULLBACK_VOLUME_MULT_US = 0.75;
+    private static final double PULLBACK_VOLUME_MULT_KRX = 0.80;
+
+    private static final double LOW_VOLUME_SKIP_MULT_KRX = 0.35;
+    private static final double LOW_VOLUME_SKIP_MULT_US = 0.15;
+
+    // =========================
+    // Liquidity / price filter
+    // =========================
     private static final double MIN_KRX_PRICE = 1000.0;
 
     private static final double MIN_KRX_LATEST_TURNOVER = 30_000_000.0;
@@ -57,37 +89,85 @@ public class StrategyEngine {
     private static final double MIN_US_LATEST_TURNOVER = 10_000.0;
     private static final double MIN_US_AVG_TURNOVER = 6_000.0;
 
-    private static final double STOP_LOSS_MULT_KRX = 0.978;
-    private static final double STOP_LOSS_MULT_US  = 0.975;
+    // =========================
+    // Risk / Exit
+    // =========================
+    private static final double STOP_LOSS_MULT_KRX_PULLBACK = 0.986;
+    private static final double STOP_LOSS_MULT_KRX_BREAKOUT = 0.984;
+    private static final double STOP_LOSS_MULT_US_PULLBACK  = 0.985;
+    private static final double STOP_LOSS_MULT_US_BREAKOUT  = 0.982;
 
     private static final double EMERGENCY_STOP_MULT_KRX = 0.945;
     private static final double EMERGENCY_STOP_MULT_US  = 0.945;
 
-    private static final double TAKE_PROFIT_PARTIAL_MULT = 1.020;
-    private static final double TAKE_PROFIT_FINAL_MULT   = 1.035;
-    private static final long   SELL_MARKET_FALLBACK_TTL_MS = 60_000L;
+    private static final double TAKE_PROFIT_PARTIAL_MULT_PULLBACK = 1.024;
+    private static final double TAKE_PROFIT_FINAL_MULT_PULLBACK   = 1.045;
 
-    private static final double BASE_SIZE = 1.0;
-    private static final double SIZE_UP_MULT = 1.5;
+    private static final double TAKE_PROFIT_PARTIAL_MULT_BREAKOUT = 1.017;
+    private static final double TAKE_PROFIT_FINAL_MULT_BREAKOUT   = 1.031;
 
-    private static final long BUY_COOLDOWN_MS = 60_000L;
+    private static final long SELL_MARKET_FALLBACK_TTL_MS = 60_000L;
+
+    private static final double TRAIL_PROTECT_ARM_MULT_PULLBACK = 1.028;
+    private static final double TRAIL_PROTECT_ARM_MULT_BREAKOUT = 1.015;
+
+    private static final double TRAIL_PROTECT_FROM_HIGH_MULT_PULLBACK = 0.992;
+    private static final double TRAIL_PROTECT_FROM_HIGH_MULT_BREAKOUT = 0.989;
+
+    private static final double TRAIL_AFTER_PARTIAL_FROM_HIGH_MULT_PULLBACK = 0.995;
+    private static final double TRAIL_AFTER_PARTIAL_FROM_HIGH_MULT_BREAKOUT = 0.994;
+
+    // =========================
+    // Sizing
+    // =========================
+    private static final double BASE_SIZE_PULLBACK = 1.20;
+    private static final double BASE_SIZE_BREAKOUT = 0.80;
+    private static final double SIZE_UP_MULT = 1.50;
+
+    // =========================
+    // Execution control
+    // =========================
+    private static final long BUY_COOLDOWN_MS = 90_000L;
     private static final long PENDING_TIMEOUT_MS = 30_000L;
     private static final long SELL_RETRY_COOLDOWN_MS = 5_000L;
     private static final long SELL_PENDING_TIMEOUT_MS = 15_000L;
 
-    private static final long MAX_HOLD_WITHOUT_PROFIT_MS_KRX = 360_000L;
-    private static final long MAX_HOLD_WITHOUT_PROFIT_MS_US  = 480_000L;
+    private static final long REENTER_PROFIT_COOLDOWN_MS = 300_000L;
+    private static final long REENTER_STOPLOSS_COOLDOWN_MS = 900_000L;
+
+    private static final int MAX_DAILY_ENTRY_COUNT = 2;
+    private static final int MAX_SAME_PATTERN_ENTRY_COUNT = 1;
+
+    // =========================
+    // Time stop
+    // =========================
+    private static final long MAX_HOLD_WITHOUT_PROFIT_MS_KRX = 180_000L;
+    private static final long MAX_HOLD_WITHOUT_PROFIT_MS_US  = 240_000L;
     private static final double TIME_STOP_MIN_PROFIT_MULT = 1.002;
-    private static final double TIME_STOP_NEG_VELOCITY_KRX = -0.0005;
-    private static final double TIME_STOP_NEG_VELOCITY_US  = -0.0005;
+    private static final double TIME_STOP_NEG_VELOCITY_KRX = 0.0;
+    private static final double TIME_STOP_NEG_VELOCITY_US  = 0.0;
 
     private static final int FIXED_BUY_QTY = 1;
+    private static final long MARKET_CONTEXT_TTL_MS = 300_000L;
 
     private final MarketDataService marketDataService;
     private final Map<String, SymbolState> states = new ConcurrentHashMap<>();
+    private final Map<Market, MarketContext> marketContext = new ConcurrentHashMap<>();
+
+    private static class MarketContext {
+        boolean choppyMarket;
+        boolean marketWeak;
+        double velocityShort;
+        double shortAvg;
+        double longAvg;
+        double lastPrice;
+        long updatedAtMs;
+        String sourceSymbol;
+    }
 
     private static class SymbolState {
-        final PriceHistory history = new PriceHistory(HISTORY_CAPACITY);
+        final PriceHistory tickHistory = new PriceHistory(TICK_HISTORY_CAPACITY);
+        final MinuteBarHistory minuteHistory = new MinuteBarHistory(MINUTE_HISTORY_CAPACITY);
 
         Market market;
 
@@ -108,9 +188,26 @@ public class StrategyEngine {
         double entryPriceSnapshot;
         double lastKnownProfitRate;
 
+        BuySignal entrySignal;
+        long entryReadyAtMs;
+        long entryReadyUntilMs;
+        double entryReadyClose;
+        String entryReadyPatternKey;
+        LocalDateTime lastEntryReadyBarTs;      // actual ENTRY_READY success bar
+        LocalDateTime lastHistoryRebuildBarTs;  // history rebuild attempt bar
+
+        long lastProfitExitTimeMs;
+        long lastStopLossExitTimeMs;
+        int dailyEntryCount;
+        java.time.LocalDate lastEntryDay;
+        String lastEntryPatternKey;
+        int samePatternEntryCount;
+
         boolean forceMarketOnNextSell;
         long forceMarketUntilMs;
         String forceMarketReason;
+
+        EntryMode entryMode = EntryMode.NONE;
     }
 
     private static class BuySignal {
@@ -139,10 +236,12 @@ public class StrategyEngine {
         double averageTurnover;
 
         boolean lowVolumeSkip;
+
         boolean momentumBreakout;
         boolean pullbackEntry;
         boolean volumeBreakout;
         boolean strongBreakout;
+
         boolean momentumNearHigh;
         boolean momentumVelocityOk;
         boolean momentumVolumeOk;
@@ -153,10 +252,14 @@ public class StrategyEngine {
         boolean pullbackVolumeOk;
         double pullbackAvgShort;
         double pullbackAvgLong;
+        double pullbackDepthFromHigh;
 
         boolean volumeBreakNearHigh;
         boolean volumeBreakVelocityOk;
         boolean volumeBreakVolumeOk;
+
+        boolean choppyMarket;
+        boolean marketWeak;
 
         int signalScore;
         int signalCount;
@@ -168,6 +271,8 @@ public class StrategyEngine {
         boolean absoluteLiquidityPassed;
 
         String rejectReason;
+        String patternKey;
+        EntryMode entryMode = EntryMode.NONE;
 
         boolean isBuyCandidate(Market market) {
             if (!enoughHistory) return false;
@@ -176,15 +281,25 @@ public class StrategyEngine {
             if (cheapStockBlocked) return false;
             if (!turnoverFilterPassed) return false;
             if (!absoluteLiquidityPassed) return false;
+            if (lowVolumeSkip) return false;
 
-            if (signalCount >= 2) {
-                return true;
+            // 메인: 눌림 반등
+            if (pullbackEntry && (multiUptrend || trendScore >= 1)) {
+                if (market == Market.US) {
+                    return signalScore >= 60;
+                }
+                return signalScore >= 58;
             }
 
-            if (pullbackEntry && multiUptrend && velocityShort >= 0.0) {
-                return market == Market.US ? signalScore >= 45 : signalScore >= 50;
+            // 서브: 강한 돌파만 허용
+           if ((volumeBreakout || strongBreakout) && multiUptrend) {
+            if (market == Market.US) {
+                return signalCount >= 2 && signalScore >= 58;
             }
+            return signalCount >= 2 && signalScore >= 55;
+        }
 
+            // 단순 모멘텀 단독 진입은 억제
             return false;
         }
     }
@@ -213,6 +328,7 @@ public class StrategyEngine {
 
     public void resetAll() {
         states.clear();
+        marketContext.clear();
     }
 
     public void resetSymbol(String symbol) {
@@ -360,6 +476,47 @@ public class StrategyEngine {
         }
     }
 
+    public void updateMarketContextFromSymbol(String marketProxySymbol, Market market) {
+        String normalized = normalizeSymbol(marketProxySymbol);
+        if (normalized == null) return;
+
+        SymbolState st = state(normalized);
+        MinuteBarHistory.MinuteBar latest;
+        double shortAvg;
+        double longAvg;
+        double velocityShort;
+
+        synchronized (st) {
+            latest = st.minuteHistory.latest();
+            shortAvg = st.minuteHistory.averagePrice(3);
+            longAvg = st.minuteHistory.averagePrice(6);
+            velocityShort = st.minuteHistory.velocitySeconds(TREND_SHORT_MIN_SECONDS, TREND_SHORT_MAX_SECONDS);
+        }
+
+        if (latest == null || latest.getClose() <= 0.0) return;
+        double price = latest.getClose();
+
+        boolean choppy = Math.abs(velocityShort) < 0.0005
+                && Math.abs(shortAvg - longAvg) < (price * 0.001);
+        boolean weak = velocityShort <= -0.001
+                && shortAvg < longAvg;
+
+        MarketContext ctx = marketContext.computeIfAbsent(market, m -> new MarketContext());
+        synchronized (ctx) {
+            ctx.choppyMarket = choppy;
+            ctx.marketWeak = weak;
+            ctx.velocityShort = velocityShort;
+            ctx.shortAvg = shortAvg;
+            ctx.longAvg = longAvg;
+            ctx.lastPrice = price;
+            ctx.updatedAtMs = System.currentTimeMillis();
+            ctx.sourceSymbol = normalized;
+        }
+
+        logger.info("MARKET_CONTEXT [{}] proxy={} velShort={} shortAvg={} longAvg={} choppy={} weak={}",
+                market, normalized, fmtPct(velocityShort), fmt(shortAvg), fmt(longAvg), choppy, weak);
+    }
+
     public void record(String symbol,
                        double open,
                        double high,
@@ -371,19 +528,75 @@ public class StrategyEngine {
         if (normalized == null || close <= 0.0) return;
 
         SymbolState st = state(normalized);
+        Market market = detectMarket(normalized, st);
+        // Use market timezone for bar timestamps (avoid system default drift)
+        ZoneId zone = market == Market.KRX ? KST_ZONE : NY_ZONE;
         LocalDateTime ts = Instant.ofEpochMilli(timestamp)
-                .atZone(ZoneId.systemDefault())
+                .atZone(zone)
                 .toLocalDateTime();
+        long nowMs = System.currentTimeMillis();
 
         synchronized (st) {
-            st.history.addTick(close, Math.max(0.0, volume), ts);
+            st.minuteHistory.addBar(open, high, low, close, Math.max(0.0, volume), ts);
+
+            logger.info("MINUTE_BAR_CREATED {} o={} h={} l={} c={} v={} ts={}",
+                    normalized, fmt(open), fmt(high), fmt(low), fmt(close), fmt(volume), timestamp);
+
+            BuySignal signal = buildBuySignal(st, market, close, Math.max(0.0, volume), ts);
+
+            if (isEntryReady(signal, market)) {
+                st.entrySignal = signal;
+                st.entryReadyAtMs = nowMs;
+                st.entryReadyUntilMs = nowMs + ENTRY_READY_TTL_MS;
+                st.entryReadyClose = close;
+                st.entryReadyPatternKey = signal.patternKey;
+                st.lastEntryReadyBarTs = ts;
+
+                logger.info("ENTRY_READY [{}] {} mode={} price={} pattern={} score={} TTL={}ms",
+                        market,
+                        normalized,
+                        signal.entryMode,
+                        fmt(st.entryReadyClose),
+                        st.entryReadyPatternKey,
+                        signal.signalScore,
+                        ENTRY_READY_TTL_MS);
+                logger.info("ENTRY_READY [{}] {} mode={} score={} count={} multiUp={} weak={} choppy={}",
+                        market,
+                        normalized,
+                        signal.entryMode,
+                        signal.signalScore,
+                        signal.signalCount,
+                        signal.multiUptrend,
+                        signal.marketWeak,
+                        signal.choppyMarket);
+            } else {
+                logger.info(
+                        "ENTRY_REJECT (minute) [{}] {} reason={} mode={} signals={} score={} uptrend={} price={} high={} low={} pbDepth={} volume={}/{} turnover={}/{} vel(short/mid/long)={}/{}/{}",
+                        market,
+                        normalized,
+                        signal.rejectReason,
+                        signal.entryMode,
+                        signal.signalCount,
+                        signal.signalScore,
+                        signal.multiUptrend,
+                        fmt(signal.price),
+                        fmt(signal.recentHigh),
+                        fmt(signal.recentLow),
+                        fmtPct(signal.pullbackDepthFromHigh),
+                        fmt(signal.volume),
+                        fmt(signal.averageVolume),
+                        fmt(signal.latestTurnover),
+                        fmt(signal.averageTurnover),
+                        fmtPct(signal.velocityShort),
+                        fmtPct(signal.velocityMid),
+                        fmtPct(signal.velocityLong)
+                );
+
+                clearEntryReadyState(st);
+            }
         }
     }
 
-    // =========================================================================
-    // 🔴 fix1: shouldBuy - fetchPrice를 synchronized 블록 밖으로 이동
-    //    (네트워크 I/O를 lock 안에서 호출하면 응답 지연 시 tick 루프 전체가 블로킹됨)
-    // =========================================================================
     public boolean shouldBuy(String symbol) {
         String normalized = normalizeSymbol(symbol);
         if (normalized == null) return false;
@@ -392,7 +605,6 @@ public class StrategyEngine {
         Market market = detectMarket(normalized, st);
         LocalDateTime now = nowByMarket(market);
 
-        // 🔴 fix1: lock 밖에서 네트워크 호출
         StockQuote quote;
         try {
             quote = marketDataService.fetchPrice(normalized, market == Market.KRX ? "KRX" : null);
@@ -401,27 +613,31 @@ public class StrategyEngine {
             return false;
         }
 
-        // lock 안에서는 순수 상태 계산만 수행
         synchronized (st) {
-            st.history.addTick(
+            st.tickHistory.addTick(
                     quote.getPrice(),
                     Math.max(0.0, quote.getVolume()),
                     normalizeTimestamp(quote.getTimestamp(), market)
             );
 
-            BuySignal signal = buildBuySignal(st, market, quote.getPrice(), quote.getVolume(), now);
-            if (!canBuy(st, normalized, market, now, signal)) {
+            long nowMs = System.currentTimeMillis();
+            if (!ensureEntryReady(st, market, normalized, nowMs)) {
                 return false;
             }
 
-            st.lastBuySignalMs = System.currentTimeMillis();
+            if (!canBuy(st, normalized, market, now, st.entrySignal)) {
+                return false;
+            }
+
+            if (!passesTickEntryGate(st, normalized, market, quote.getPrice())) {
+                return false;
+            }
+
+            st.lastBuySignalMs = nowMs;
             return true;
         }
     }
 
-    // =========================================================================
-    // 🔴 fix1: shouldSell - fetchPrice를 synchronized 블록 밖으로 이동
-    // =========================================================================
     public boolean shouldSell(String symbol, double buyPrice) {
         String normalized = normalizeSymbol(symbol);
         if (normalized == null || buyPrice <= 0.0) return false;
@@ -429,7 +645,6 @@ public class StrategyEngine {
         SymbolState st = state(normalized);
         Market market = detectMarket(normalized, st);
 
-        // 🔴 fix1: lock 밖에서 네트워크 호출
         StockQuote quote;
         try {
             quote = marketDataService.fetchPrice(normalized, market == Market.KRX ? "KRX" : null);
@@ -439,7 +654,7 @@ public class StrategyEngine {
         }
 
         synchronized (st) {
-            st.history.addTick(
+            st.tickHistory.addTick(
                     quote.getPrice(),
                     Math.max(0.0, quote.getVolume()),
                     normalizeTimestamp(quote.getTimestamp(), market)
@@ -450,11 +665,6 @@ public class StrategyEngine {
         }
     }
 
-    // =========================================================================
-    // 🔴 fix1: decide - 호출자(SchedulerService.execute)에서 이미 lock 밖에서
-    //    fetchPrice를 완료한 뒤 price/volume을 인자로 넘겨주므로 여기는 순수 계산만.
-    //    (기존 코드도 인자 방식이라 구조는 유지, addTick도 lock 안에서 처리)
-    // =========================================================================
     public Optional<OrderCommand> decide(String symbol,
                                          double currentPrice,
                                          double currentVolume1m,
@@ -471,9 +681,9 @@ public class StrategyEngine {
         LocalDateTime now = nowByMarket(market);
 
         synchronized (st) {
-            st.history.addTick(currentPrice, Math.max(0.0, currentVolume1m), now);
+            st.tickHistory.addTick(currentPrice, Math.max(0.0, currentVolume1m), now);
 
-            logger.info("DECIDE [{}] {} price={} qty={} avgPrice={} vol1m={} buyPending={} sellPending={}",
+            logger.debug("DECIDE [{}] {} price={} qty={} avgPrice={} vol1m={} buyPending={} sellPending={}",
                     market,
                     normalized,
                     fmt(currentPrice),
@@ -486,15 +696,59 @@ public class StrategyEngine {
             if (currentQuantity <= 0) {
                 resetEntryState(st);
 
-                BuySignal signal = buildBuySignal(st, market, currentPrice, currentVolume1m, now);
+                if (!ensureEntryReady(st, market, normalized, nowMs)) {
+                    return Optional.empty();
+                }
+
+                BuySignal signal = st.entrySignal;
+                if (signal == null) {
+                    return Optional.empty();
+                }
+
+                logger.info("ENTRY_EVAL [{}] {} ready={} pending={} weak={} choppy={} cheap={} turnoverFail={} volumeSkip={} multiUp={} score={} count={} mode={}",
+                        market,
+                        normalized,
+                        st.entrySignal != null,
+                        st.buyPending,
+                        signal.marketWeak,
+                        signal.choppyMarket,
+                        signal.cheapStockBlocked,
+                        !signal.turnoverFilterPassed,
+                        signal.lowVolumeSkip,
+                        signal.multiUptrend,
+                        signal.signalScore,
+                        signal.signalCount,
+                        signal.entryMode
+                );
+
                 if (!canBuy(st, normalized, market, now, signal)) {
+                    logger.info("ENTRY_RESULT [{}] {} result=SKIP reason=CANNOT_BUY score={} count={} weak={} multiUp={}",
+                            market,
+                            normalized,
+                            signal.signalScore,
+                            signal.signalCount,
+                            signal.marketWeak,
+                            signal.multiUptrend
+                    );
+                    return Optional.empty();
+                }
+
+                if (!passesTickEntryGate(st, normalized, market, currentPrice)) {
+                    logger.info("ENTRY_RESULT [{}] {} result=WAIT reason=TICK_GATE score={} count={} weak={} multiUp={}",
+                            market,
+                            normalized,
+                            signal.signalScore,
+                            signal.signalCount,
+                            signal.marketWeak,
+                            signal.multiUptrend
+                    );
                     return Optional.empty();
                 }
 
                 double positionSize = determinePositionSize(signal, market);
                 if (positionSize <= 0.0) {
-                    logger.info("BUY WAIT [{}] {} reason=POSITION_SIZE_ZERO count={} score={}",
-                            market, normalized, signal.signalCount, signal.signalScore);
+                    logger.info("BUY WAIT [{}] {} reason=POSITION_SIZE_ZERO mode={} count={} score={}",
+                            market, normalized, signal.entryMode, signal.signalCount, signal.signalScore);
                     return Optional.empty();
                 }
 
@@ -511,10 +765,35 @@ public class StrategyEngine {
                 }
 
                 st.lastBuySignalMs = nowMs;
-                logger.info(
-                        "BUY [{}] {} price={} qty={} size={} count={} score={} m={} p={} v={} strong={} multi={} trendScore={} vel={} v1={} v2={} v3={} high={} low={} vol={}/{} turnover={}/{} absLiq={} reason={}",
+                updateEntryCounters(st, signal, now.toLocalDate());
+                st.entryMode = signal.entryMode;
+                String executedPatternKey = st.entryReadyPatternKey;
+                clearEntryReadyState(st);
+                st.buyPending = true;
+                st.buyPendingSinceMs = nowMs;
+
+                logger.info("ENTRY_EXECUTED [{}] {} mode={} buyFilled price={} qty={} pattern={} reason={}",
                         market,
                         normalized,
+                        st.entryMode,
+                        fmt(orderPrice),
+                        qty,
+                        executedPatternKey,
+                        "conditions_met");
+                logger.info("ENTRY_RESULT [{}] {} result=BUY reason=CONDITIONS_MET score={} count={} weak={} multiUp={}",
+                        market,
+                        normalized,
+                        signal.signalScore,
+                        signal.signalCount,
+                        signal.marketWeak,
+                        signal.multiUptrend
+                );
+
+                logger.info(
+                        "BUY [{}] {} mode={} price={} qty={} size={} count={} score={} m={} p={} v={} strong={} multi={} trendScore={} vel={} v1={} v2={} v3={} high={} low={} pbDepth={} vol={}/{} turnover={}/{} absLiq={} reason={}",
+                        market,
+                        normalized,
+                        signal.entryMode,
                         fmt(orderPrice),
                         qty,
                         fmt(positionSize),
@@ -532,6 +811,7 @@ public class StrategyEngine {
                         fmtPct(signal.velocityLong),
                         fmt(signal.recentHigh),
                         fmt(signal.recentLow),
+                        fmtPct(signal.pullbackDepthFromHigh),
                         fmt(signal.volume),
                         fmt(signal.averageVolume),
                         fmt(signal.latestTurnover),
@@ -582,33 +862,36 @@ public class StrategyEngine {
 
             SellDecision sellDecision = evaluateSellDecision(st, market, currentPrice, currentQuantity, avgPrice, nowMs);
 
-            logger.info("SELL_CHECK [{}] {} price={} avgPrice={} qty={} decision={} reason={} marketOrder={} pnl={} partialDone={} highSinceEntry={}",
+            long holdMs = st.entryTimeMs > 0 ? (nowMs - st.entryTimeMs) : 0L;
+            logger.info("SELL_CHECK [{}] {} mode={} decision={} reason={} pnl={} holdMs={} highSinceEntry={} price={}",
                     market,
                     normalized,
-                    fmt(currentPrice),
-                    fmt(avgPrice),
-                    currentQuantity,
+                    st.entryMode,
                     sellDecision.shouldSell,
                     sellDecision.reason,
-                    sellDecision.marketOrder,
                     fmtPct((currentPrice - avgPrice) / avgPrice),
-                    st.partialTakeProfitDone,
-                    fmt(st.highestSinceEntry));
+                    holdMs,
+                    fmt(st.highestSinceEntry),
+                    fmt(currentPrice));
 
             if (!sellDecision.shouldSell) {
                 return Optional.empty();
             }
 
+            if (isProfitExitReason(sellDecision.reason)) {
+                st.lastProfitExitTimeMs = nowMs;
+            } else if (isStopLossExitReason(sellDecision.reason)) {
+                st.lastStopLossExitTimeMs = nowMs;
+            }
+
             boolean forceMarket = false;
-            synchronized (st) {
-                if (st.forceMarketOnNextSell) {
-                    if (nowMs <= st.forceMarketUntilMs) {
-                        forceMarket = true;
-                    }
-                    st.forceMarketOnNextSell = false;
-                    st.forceMarketUntilMs = 0L;
-                    st.forceMarketReason = null;
+            if (st.forceMarketOnNextSell) {
+                if (nowMs <= st.forceMarketUntilMs) {
+                    forceMarket = true;
                 }
+                st.forceMarketOnNextSell = false;
+                st.forceMarketUntilMs = 0L;
+                st.forceMarketReason = null;
             }
 
             boolean marketOrder = sellDecision.marketOrder;
@@ -626,21 +909,17 @@ public class StrategyEngine {
             st.sellPending = true;
             st.sellPendingSinceMs = nowMs;
 
-            double orderPrice = marketOrder
-                    ? 0.0
-                    : roundToTickSize(currentPrice, market);
+            double orderPrice = marketOrder ? 0.0 : roundToTickSize(currentPrice, market);
+            double logPrice = marketOrder ? currentPrice : orderPrice;
 
-            logger.info("SELL {} [{}] {} mode={} price={} buyPrice={} qty={} pnl={} partialDone={} highSinceEntry={}",
-                    sellDecision.reason,
+            logger.info("SELL_EXECUTED [{}] {} mode={} sellFilled price={} qty={} reason={} pnl={}",
                     market,
                     normalized,
-                    marketOrder ? "MARKET" : "LIMIT",
-                    marketOrder ? "MKT" : fmt(orderPrice),
-                    fmt(avgPrice),
+                    st.entryMode,
+                    fmt(logPrice),
                     sellDecision.quantity,
-                    fmtPct((currentPrice - avgPrice) / avgPrice),
-                    st.partialTakeProfitDone,
-                    fmt(st.highestSinceEntry));
+                    sellDecision.reason,
+                    fmtPct((currentPrice - avgPrice) / avgPrice));
 
             return Optional.of(new OrderCommand(
                     normalized,
@@ -659,17 +938,18 @@ public class StrategyEngine {
                                      double volume,
                                      LocalDateTime now) {
         BuySignal signal = new BuySignal();
-        signal.ticks = st.history.size();
-        signal.spanSeconds = historySpanSeconds(st.history);
-        signal.enoughHistory = st.history.hasEnoughHistory(MIN_HISTORY_TICKS, MIN_HISTORY_SPAN_SECONDS);
+        signal.ticks = st.minuteHistory.size();
+        signal.spanSeconds = historySpanSeconds(st.minuteHistory);
+        signal.enoughHistory = st.minuteHistory.hasEnoughHistory(MIN_HISTORY_BARS, MIN_HISTORY_SPAN_SECONDS);
+
         signal.price = price;
         signal.volume = Math.max(0.0, volume);
-        signal.averageVolume = st.history.averageVolume();
+        signal.averageVolume = st.minuteHistory.averageVolume(20);
 
-        signal.velocityShort = st.history.velocitySeconds(TREND_SHORT_MIN_SECONDS, TREND_SHORT_MAX_SECONDS);
-        signal.velocityMid = st.history.velocitySeconds(TREND_MID_MIN_SECONDS, TREND_MID_MAX_SECONDS);
-        signal.velocityLong = st.history.velocitySeconds(TREND_LONG_MIN_SECONDS, TREND_LONG_MAX_SECONDS);
-        signal.velocity = st.history.velocitySeconds(VELOCITY_WINDOW_MIN_SECONDS, VELOCITY_WINDOW_MAX_SECONDS);
+        signal.velocityShort = st.minuteHistory.velocitySeconds(TREND_SHORT_MIN_SECONDS, TREND_SHORT_MAX_SECONDS);
+        signal.velocityMid = st.minuteHistory.velocitySeconds(TREND_MID_MIN_SECONDS, TREND_MID_MAX_SECONDS);
+        signal.velocityLong = st.minuteHistory.velocitySeconds(TREND_LONG_MIN_SECONDS, TREND_LONG_MAX_SECONDS);
+        signal.velocity = st.minuteHistory.velocitySeconds(VELOCITY_WINDOW_MIN_SECONDS, VELOCITY_WINDOW_MAX_SECONDS);
 
         signal.shortUp = signal.velocityShort >= multiTrendShortMin(market);
         signal.midUp = signal.velocityMid >= multiTrendMidMin(market);
@@ -680,14 +960,12 @@ public class StrategyEngine {
         if (signal.midUp) signal.trendScore++;
         if (signal.longUp) signal.trendScore++;
 
-        signal.multiUptrend = (market == Market.US)
-                ? (signal.trendScore >= 2 && (signal.shortUp || signal.midUp))
-                : (signal.trendScore >= 2 && (signal.shortUp || signal.midUp));
+        signal.multiUptrend = signal.trendScore >= 2 && (signal.shortUp || signal.midUp);
 
-        signal.recentHigh = st.history.recentHigh();
-        signal.recentLow = st.history.recentLow();
-        signal.latestTurnover = st.history.latestTurnover();
-        signal.averageTurnover = st.history.averageTurnover(20);
+        signal.recentHigh = st.minuteHistory.recentHigh(BUY_RECENT_RANGE_BARS);
+        signal.recentLow = st.minuteHistory.recentLow(BUY_RECENT_RANGE_BARS);
+        signal.latestTurnover = st.minuteHistory.latestTurnover();
+        signal.averageTurnover = st.minuteHistory.averageTurnover(20);
 
         if (!signal.enoughHistory) {
             signal.rejectReason = "HISTORY_SHORT";
@@ -709,11 +987,250 @@ public class StrategyEngine {
         signal.volumeBreakout = evaluateVolumeBreakout(signal, market);
         signal.strongBreakout = evaluateStrongBreakout(signal, market);
 
-        signal.signalCount = countSignals(signal.momentumBreakout, signal.pullbackEntry, signal.volumeBreakout);
+        signal.signalCount = countSignals(signal.momentumBreakout, signal.pullbackEntry, signal.volumeBreakout, signal.strongBreakout);
         signal.signalScore = calculateSignalScore(signal, market);
         signal.rejectReason = deriveRejectReason(signal, market);
+        signal.entryMode = deriveEntryMode(signal);
+        signal.patternKey = buildPatternKey(market, signal, now);
+
+        double shortAvg = st.minuteHistory.averagePrice(3);
+        double longAvg = st.minuteHistory.averagePrice(6);
+        signal.choppyMarket = Math.abs(signal.velocityShort) < 0.0005
+                && Math.abs(shortAvg - longAvg) < (signal.price * 0.001);
+        signal.marketWeak = signal.velocityShort <= -0.001
+                && shortAvg < longAvg;
 
         return signal;
+    }
+
+    private boolean isEntryReady(BuySignal signal, Market market) {
+        if (!signal.enoughHistory) return false;
+        if (signal.timeWindowBlocked) return false;
+        if (!signal.marketFilterPassed) return false;
+        if (signal.cheapStockBlocked) return false;
+        if (!signal.turnoverFilterPassed) return false;
+        if (!signal.absoluteLiquidityPassed) return false;
+        if (signal.lowVolumeSkip) return false;
+
+        MarketContext ctx = marketContext.get(market);
+        if (ctx != null && !isMarketContextExpired(ctx) && ctx.choppyMarket && signal.pullbackEntry) {
+            signal.rejectReason = "MARKET_CHOPPY_PULLBACK";
+            return false;
+        }
+
+        return signal.isBuyCandidate(market);
+    }
+
+    // Avoid NO_ENTRY_READY spam when record() lags behind tick calls
+    private boolean ensureEntryReady(SymbolState st,
+                                     Market market,
+                                     String symbol,
+                                     long nowMs) {
+        if (st.entrySignal == null) {
+            MinuteBarHistory.MinuteBar latest = st.minuteHistory.latest();
+            if (latest != null
+                    && st.lastHistoryRebuildBarTs != null
+                    && st.lastHistoryRebuildBarTs.equals(latest.getTimestamp())) {
+                logger.info("BUY_WAIT [{}] {} reason=REBUILD_ALREADY barTs={}", market, symbol, latest.getTimestamp());
+                return false;
+            }
+            if (!tryBuildEntryReadyFromHistory(st, market, symbol, nowMs)) {
+                if (st.minuteHistory.hasEnoughHistory(MIN_HISTORY_BARS, MIN_HISTORY_SPAN_SECONDS)) {
+                    logger.info("BUY_WAIT [{}] {} reason=ENTRY_NOT_BUILT", market, symbol);
+                    logger.info("BUY_SKIP [{}] {} reason=NO_ENTRY_READY", market, symbol);
+                }
+                return false;
+            }
+        }
+
+        if (st.entryReadyUntilMs > 0 && nowMs > st.entryReadyUntilMs) {
+            logger.info("BUY_WAIT [{}] {} reason=ENTRY_EXPIRED", market, symbol);
+            clearEntryReadyState(st);
+            return false;
+        }
+
+        if (nowMs < st.entryReadyAtMs + ENTRY_READY_MIN_DELAY_MS) {
+            logger.info("BUY_WAIT [{}] {} reason=MIN_DELAY", market, symbol);
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean tryBuildEntryReadyFromHistory(SymbolState st,
+                                                  Market market,
+                                                  String symbol,
+                                                  long nowMs) {
+        MinuteBarHistory.MinuteBar latest = st.minuteHistory.latest();
+        if (latest == null) {
+            return false;
+        }
+        if (st.lastHistoryRebuildBarTs != null && st.lastHistoryRebuildBarTs.equals(latest.getTimestamp())) {
+            return false;
+        }
+        st.lastHistoryRebuildBarTs = latest.getTimestamp();
+
+        BuySignal signal = buildBuySignal(st, market, latest.getClose(), latest.getVolume(), latest.getTimestamp());
+        if (!isEntryReady(signal, market)) {
+            return false;
+        }
+
+        st.entrySignal = signal;
+        st.entryReadyAtMs = nowMs;
+        st.entryReadyUntilMs = nowMs + ENTRY_READY_TTL_MS;
+        st.entryReadyClose = latest.getClose();
+        st.entryReadyPatternKey = signal.patternKey;
+        st.lastEntryReadyBarTs = latest.getTimestamp();
+
+        logger.info("ENTRY_READY [{}] {} mode={} price={} pattern={} score={} TTL={}ms",
+                market,
+                symbol,
+                signal.entryMode,
+                fmt(st.entryReadyClose),
+                st.entryReadyPatternKey,
+                signal.signalScore,
+                ENTRY_READY_TTL_MS);
+
+        return true;
+    }
+
+    private void clearEntryReadyState(SymbolState st) {
+        st.entrySignal = null;
+        st.entryReadyAtMs = 0L;
+        st.entryReadyUntilMs = 0L;
+        st.entryReadyClose = 0.0;
+        st.entryReadyPatternKey = null;
+        // lastEntryReadyBarTs is kept to avoid re-evaluating the same bar repeatedly
+    }
+
+    private boolean passesTickEntryGate(SymbolState st,
+                                        String symbol,
+                                        Market market,
+                                        double currentPrice) {
+        BuySignal signal = st.entrySignal;
+        if (signal == null) {
+            return false;
+        }
+
+        if (signal.velocityShort <= 0.0) {
+            logEntryWait(market, symbol, "VEL_SHORT_NOT_POSITIVE", currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+            return false;
+        }
+
+        // 눌림 매수는 "너무 위로 튄 뒤"에 쫓아가면 의미가 없어짐
+        if (signal.entryMode == EntryMode.PULLBACK) {
+            double minPrice = st.entryReadyClose * 0.9990;
+            double maxPrice = st.entryReadyClose * 1.0040;
+
+            if (currentPrice < minPrice) {
+                logEntryWait(market, symbol,
+                        "PULLBACK_PRICE_TOO_WEAK(min=" + fmt(minPrice) + ")",
+                        currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+                return false;
+            }
+
+            if (currentPrice > maxPrice) {
+                logEntryWait(market, symbol,
+                        "PULLBACK_CHASE_BLOCK(max=" + fmt(maxPrice) + ")",
+                        currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+                return false;
+            }
+        } else {
+            double minPrice = st.entryReadyClose * 1.0002;
+            if (currentPrice < minPrice) {
+                logEntryWait(market, symbol,
+                        "BREAKOUT_NOT_CONFIRMED(min=" + fmt(minPrice) + ")",
+                        currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+                return false;
+            }
+        }
+
+        int tickCount = st.tickHistory.size();
+        int n = tickCount >= 6 ? 3 : (tickCount >= 4 ? 2 : 0);
+        if (n == 0) {
+            logEntryWait(market, symbol, "TICK_HISTORY_SHORT", currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+            return false;
+        }
+
+        List<PriceHistory.Tick> avgTicks = st.tickHistory.latestTicks(n * 2);
+        if (avgTicks.size() < n * 2) {
+            logEntryWait(market, symbol, "TICK_HISTORY_SHORT", currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+            return false;
+        }
+
+        double prevAvg = 0.0;
+        double recentAvg = 0.0;
+        for (int i = 0; i < avgTicks.size(); i++) {
+            if (i < n) {
+                prevAvg += avgTicks.get(i).getPrice();
+            } else {
+                recentAvg += avgTicks.get(i).getPrice();
+            }
+        }
+        prevAvg /= n;
+        recentAvg /= n;
+
+        if (signal.entryMode == EntryMode.PULLBACK) {
+            if (recentAvg < prevAvg * 1.0001) {
+                logEntryWait(market, symbol,
+                        "PULLBACK_REBOUND_WEAK(prev=" + fmt(prevAvg) + ", recent=" + fmt(recentAvg) + ")",
+                        currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+                return false;
+            }
+        } else {
+            if (!(recentAvg > prevAvg)) {
+                logEntryWait(market, symbol,
+                        "AVG_NOT_UP(prev=" + fmt(prevAvg) + ", recent=" + fmt(recentAvg) + ")",
+                        currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+                return false;
+            }
+        }
+
+        List<PriceHistory.Tick> lowTicks = st.tickHistory.latestTicks(4);
+        if (lowTicks.size() < 4) {
+            logEntryWait(market, symbol, "LOW_TICKS_SHORT", currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+            return false;
+        }
+
+        double prevLow = Math.min(lowTicks.get(0).getPrice(), lowTicks.get(1).getPrice());
+        double recentLow = Math.min(lowTicks.get(2).getPrice(), lowTicks.get(3).getPrice());
+
+        if (recentLow < prevLow) {
+            logEntryWait(market, symbol,
+                    "LOW_NOT_HIGHER(prev=" + fmt(prevLow) + ", recent=" + fmt(recentLow) + ")",
+                    currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+            return false;
+        }
+
+        List<PriceHistory.Tick> volTicks = st.tickHistory.latestTicks(6);
+        if (volTicks.size() < 3) {
+            logEntryWait(market, symbol, "VOL_DELTA_SHORT", currentPrice, st.entryReadyClose, signal.velocityShort, 0.0);
+            return false;
+        }
+
+        double latestDelta = 0.0;
+        double sumPrevDelta = 0.0;
+        int prevDeltaCount = 0;
+        for (int i = 1; i < volTicks.size(); i++) {
+            double delta = Math.max(0.0, volTicks.get(i).getVolume() - volTicks.get(i - 1).getVolume());
+            if (i == volTicks.size() - 1) {
+                latestDelta = delta;
+            } else {
+                sumPrevDelta += delta;
+                prevDeltaCount++;
+            }
+        }
+
+        double avgPrevDelta = prevDeltaCount > 0 ? (sumPrevDelta / prevDeltaCount) : 0.0;
+        boolean volOk = avgPrevDelta > 0.0 ? latestDelta >= avgPrevDelta * 0.85 : latestDelta > 0.0;
+        if (!volOk) {
+            logEntryWait(market, symbol,
+                    "VOL_DELTA_WEAK(latest=" + fmt(latestDelta) + ", avg=" + fmt(avgPrevDelta) + ")",
+                    currentPrice, st.entryReadyClose, signal.velocityShort, latestDelta);
+            return false;
+        }
+
+        return true;
     }
 
     private boolean canBuy(SymbolState st,
@@ -722,12 +1239,48 @@ public class StrategyEngine {
                            LocalDateTime now,
                            BuySignal signal) {
         if (!signal.enoughHistory) {
-            logger.info("BUY WAIT [{}] {} reason=HISTORY_SHORT ticks={} spanSec={} reqTicks={} reqSpanSec={}",
-                    market, symbol, signal.ticks, signal.spanSeconds, MIN_HISTORY_TICKS, MIN_HISTORY_SPAN_SECONDS);
+            logger.info("BUY WAIT [{}] {} reason=HISTORY_SHORT bars={} spanSec={} reqBars={} reqSpanSec={}",
+                    market, symbol, signal.ticks, signal.spanSeconds, MIN_HISTORY_BARS, MIN_HISTORY_SPAN_SECONDS);
             return false;
         }
 
         long nowMs = System.currentTimeMillis();
+        resetDailyEntryIfNeeded(st, now.toLocalDate());
+
+        if (st.dailyEntryCount >= MAX_DAILY_ENTRY_COUNT) {
+            long profitGap = st.lastProfitExitTimeMs > 0 ? (nowMs - st.lastProfitExitTimeMs) : -1L;
+            long stopGap = st.lastStopLossExitTimeMs > 0 ? (nowMs - st.lastStopLossExitTimeMs) : -1L;
+            logger.info("BUY_SKIP [{}] {} reason=REENTER_LIMIT profitGapMs={} stopGapMs={} dailyCount={}",
+                    market, symbol, profitGap, stopGap, st.dailyEntryCount);
+            return false;
+        }
+
+        if (st.lastProfitExitTimeMs > 0 && nowMs - st.lastProfitExitTimeMs < REENTER_PROFIT_COOLDOWN_MS) {
+            long profitGap = nowMs - st.lastProfitExitTimeMs;
+            long stopGap = st.lastStopLossExitTimeMs > 0 ? (nowMs - st.lastStopLossExitTimeMs) : -1L;
+            logger.info("BUY_SKIP [{}] {} reason=REENTER_LIMIT profitGapMs={} stopGapMs={} dailyCount={}",
+                    market, symbol, profitGap, stopGap, st.dailyEntryCount);
+            return false;
+        }
+
+        if (st.lastStopLossExitTimeMs > 0 && nowMs - st.lastStopLossExitTimeMs < REENTER_STOPLOSS_COOLDOWN_MS) {
+            long profitGap = st.lastProfitExitTimeMs > 0 ? (nowMs - st.lastProfitExitTimeMs) : -1L;
+            long stopGap = nowMs - st.lastStopLossExitTimeMs;
+            logger.info("BUY_SKIP [{}] {} reason=REENTER_LIMIT profitGapMs={} stopGapMs={} dailyCount={}",
+                    market, symbol, profitGap, stopGap, st.dailyEntryCount);
+            return false;
+        }
+
+        if (signal.patternKey != null
+                && signal.patternKey.equals(st.lastEntryPatternKey)
+                && st.samePatternEntryCount >= MAX_SAME_PATTERN_ENTRY_COUNT) {
+            long profitGap = st.lastProfitExitTimeMs > 0 ? (nowMs - st.lastProfitExitTimeMs) : -1L;
+            long stopGap = st.lastStopLossExitTimeMs > 0 ? (nowMs - st.lastStopLossExitTimeMs) : -1L;
+            logger.info("BUY_SKIP [{}] {} reason=REENTER_LIMIT profitGapMs={} stopGapMs={} dailyCount={} pattern={}",
+                    market, symbol, profitGap, stopGap, st.dailyEntryCount, signal.patternKey);
+            return false;
+        }
+
         if (st.buyPending) {
             long elapsed = nowMs - st.buyPendingSinceMs;
             if (elapsed < PENDING_TIMEOUT_MS) {
@@ -745,16 +1298,18 @@ public class StrategyEngine {
             return false;
         }
 
-        if (market == Market.KRX && isKrMarketCautiousWindow(now)) {
+        // 장초반은 돌파 추격을 특히 억제하고, 눌림은 조금 더 허용
+        if (market == Market.KRX && isKrMarketCautiousWindow(now) && signal.entryMode != EntryMode.PULLBACK) {
             boolean cautiousPassed = (signal.signalCount >= 2 || signal.strongBreakout)
                     && signal.multiUptrend
                     && signal.velocity >= strongVelocityMin(market)
                     && signal.volume >= signal.averageVolume * STRONG_BREAKOUT_VOLUME_MULT;
 
             if (!cautiousPassed) {
-                logger.info("BUY WAIT [{}] {} reason=OPENING_CAUTION count={} multi={} trendScore={} vel={} v1={} v2={} v3={} vol={}/{}",
+                logger.info("BUY WAIT [{}] {} reason=OPENING_CAUTION mode={} count={} multi={} trendScore={} vel={} v1={} v2={} v3={} vol={}/{}",
                         market,
                         symbol,
+                        signal.entryMode,
                         signal.signalCount,
                         signal.multiUptrend,
                         signal.trendScore,
@@ -804,10 +1359,11 @@ public class StrategyEngine {
 
         if (!signal.isBuyCandidate(market)) {
             logger.info(
-                    "BUY WAIT [{}] {} reason={} count={} score={} m={} p={} v={} strong={} multi={} trendScore={} vel={} v1={} v2={} v3={} price={} high={} low={} vol={}/{} absLiq={} pbZone={} pbRec={} pbVelOk={} pbVolOk={} pbAvgS={} pbAvgL={} momNear={} momVelOk={} momVolOk={}",
+                    "BUY WAIT [{}] {} reason={} mode={} count={} score={} m={} p={} v={} strong={} multi={} trendScore={} vel={} v1={} v2={} v3={} price={} high={} low={} pbDepth={} vol={}/{} absLiq={} pbZone={} pbRec={} pbVelOk={} pbVolOk={} pbAvgS={} pbAvgL={} momNear={} momVelOk={} momVolOk={}",
                     market,
                     symbol,
                     signal.rejectReason,
+                    signal.entryMode,
                     signal.signalCount,
                     signal.signalScore,
                     signal.momentumBreakout,
@@ -823,6 +1379,7 @@ public class StrategyEngine {
                     fmt(signal.price),
                     fmt(signal.recentHigh),
                     fmt(signal.recentLow),
+                    fmtPct(signal.pullbackDepthFromHigh),
                     fmt(signal.volume),
                     fmt(signal.averageVolume),
                     signal.absoluteLiquidityPassed,
@@ -852,7 +1409,7 @@ public class StrategyEngine {
             return SellDecision.none();
         }
 
-        double stopLossMult = stopLossMult(market);
+        double stopLossMult = stopLossMult(market, st.entryMode);
         double emergencyStopMult = emergencyStopMult(market);
 
         if (currentPrice <= avgPrice * emergencyStopMult) {
@@ -863,7 +1420,42 @@ public class StrategyEngine {
             return new SellDecision(true, currentQuantity, "STOP_LOSS", true);
         }
 
-        if (!st.partialTakeProfitDone && currentPrice >= avgPrice * TAKE_PROFIT_PARTIAL_MULT) {
+        double trailArm = trailProtectArmMult(st.entryMode);
+        double trailFromHigh = trailProtectFromHighMult(st.entryMode);
+        double trailAfterPartial = trailAfterPartialFromHighMult(st.entryMode);
+
+        if (st.highestSinceEntry > 0.0 && avgPrice > 0.0) {
+            if (st.highestSinceEntry >= avgPrice * trailArm) {
+                double protectLevel = st.highestSinceEntry * trailFromHigh;
+                if (currentPrice <= protectLevel) {
+                    logger.info("TRAILING_PROTECT triggered mode={} price={} highSinceEntry={} protectLevel={} pnl={}",
+                            st.entryMode,
+                            fmt(currentPrice),
+                            fmt(st.highestSinceEntry),
+                            fmt(protectLevel),
+                            fmtPct((st.highestSinceEntry - avgPrice) / avgPrice));
+                    return new SellDecision(true, currentQuantity, "TRAILING_PROTECT", true);
+                }
+            }
+
+            if (st.partialTakeProfitDone) {
+                double tightenLevel = st.highestSinceEntry * trailAfterPartial;
+                if (currentPrice <= tightenLevel) {
+                    logger.info("TRAILING_STOP triggered mode={} price={} highSinceEntry={} tightenLevel={} pnl={}",
+                            st.entryMode,
+                            fmt(currentPrice),
+                            fmt(st.highestSinceEntry),
+                            fmt(tightenLevel),
+                            fmtPct((st.highestSinceEntry - avgPrice) / avgPrice));
+                    return new SellDecision(true, currentQuantity, "TRAILING_STOP", true);
+                }
+            }
+        }
+
+        double partialTp = takeProfitPartialMult(st.entryMode);
+        double finalTp = takeProfitFinalMult(st.entryMode);
+
+        if (!st.partialTakeProfitDone && currentPrice >= avgPrice * partialTp) {
             int partialQty = Math.max(1, currentQuantity / 2);
             if (partialQty >= currentQuantity) {
                 return new SellDecision(true, currentQuantity, "TAKE_PROFIT_PARTIAL_FULL", true);
@@ -871,14 +1463,22 @@ public class StrategyEngine {
             return new SellDecision(true, partialQty, "TAKE_PROFIT_PARTIAL", true);
         }
 
-        if (currentPrice >= avgPrice * TAKE_PROFIT_FINAL_MULT) {
+        if (currentPrice >= avgPrice * finalTp) {
             return new SellDecision(true, currentQuantity, "TAKE_PROFIT_FINAL", true);
         }
 
         long holdMs = nowMs - st.entryTimeMs;
         long maxHoldMs = maxHoldWithoutProfitMs(market);
         double timeStopNegVelocity = timeStopNegVelocity(market);
-        double latestVelocity = st.history.velocitySeconds(10, 30);
+        double latestVelocity = st.tickHistory.velocitySeconds(10, 30);
+
+        long earlyStopMs = 180_000L;
+        if (st.entryTimeMs > 0
+                && holdMs >= earlyStopMs
+                && currentPrice < avgPrice * 1.002
+                && latestVelocity <= 0.0) {
+            return new SellDecision(true, currentQuantity, "EARLY_TIME_STOP", true);
+        }
 
         if (st.entryTimeMs > 0
                 && holdMs >= maxHoldMs
@@ -901,15 +1501,19 @@ public class StrategyEngine {
     }
 
     private boolean passesMarketFilter(Market market) {
-        return true;
+        MarketContext ctx = marketContext.get(market);
+        if (ctx == null) return true;
+        if (isMarketContextExpired(ctx)) return true;
+        return !ctx.marketWeak;
+    }
+
+    private boolean isMarketContextExpired(MarketContext ctx) {
+        return ctx == null || (System.currentTimeMillis() - ctx.updatedAtMs > MARKET_CONTEXT_TTL_MS);
     }
 
     private boolean passesTurnoverFilter(BuySignal signal, Market market) {
         if (signal.averageTurnover <= 0.0) {
             return true;
-        }
-        if (market == Market.US) {
-            return signal.latestTurnover >= signal.averageTurnover * 0.25;
         }
         return signal.latestTurnover >= signal.averageTurnover * 0.25;
     }
@@ -937,22 +1541,31 @@ public class StrategyEngine {
     }
 
     private boolean evaluatePullbackEntry(SymbolState st, BuySignal signal, Market market) {
-        signal.pullbackZone = signal.recentHigh > 0.0
-                && signal.price <= signal.recentHigh * PULLBACK_UPPER_FROM_HIGH
-                && signal.price >= signal.recentHigh * PULLBACK_LOWER_FROM_HIGH;
+        double pullbackUpper = pullbackUpperFromHigh(market);
+        double pullbackLower = pullbackLowerFromHigh(market);
 
-        signal.pullbackAvgShort = st.history.averagePrice(3);
-        signal.pullbackAvgLong = st.history.averagePrice(6);
+        signal.pullbackZone = signal.recentHigh > 0.0
+                && signal.price <= signal.recentHigh * pullbackUpper
+                && signal.price >= signal.recentHigh * pullbackLower;
+
+        signal.pullbackAvgShort = st.minuteHistory.averagePrice(3);
+        signal.pullbackAvgLong = st.minuteHistory.averagePrice(6);
+
         signal.pullbackRecovering = signal.pullbackAvgShort > 0.0
                 && signal.pullbackAvgLong > 0.0
                 && signal.pullbackAvgShort >= signal.pullbackAvgLong
-                && signal.price >= signal.pullbackAvgShort;
+                && signal.price >= signal.pullbackAvgShort * 0.999;
 
-        signal.pullbackVelocityOk = signal.velocityShort >= 0.0;
+        signal.pullbackVelocityOk = signal.velocityShort >= 0.0008;
+
         signal.pullbackVolumeOk = signal.averageVolume > 0.0
-                && signal.volume >= signal.averageVolume * PULLBACK_VOLUME_MULT;
+                && signal.volume >= signal.averageVolume * pullbackVolumeMult(market);
 
-        boolean trendOk = (signal.shortUp || signal.midUp || st.history.isShortTermUptrend(5, 15));
+        signal.pullbackDepthFromHigh = signal.recentHigh > 0.0
+                ? ((signal.recentHigh - signal.price) / signal.recentHigh)
+                : 0.0;
+
+        boolean trendOk = signal.shortUp || signal.midUp || st.minuteHistory.isShortTermUptrend(5, 15);
 
         return signal.pullbackZone
                 && signal.pullbackRecovering
@@ -963,7 +1576,7 @@ public class StrategyEngine {
 
     private boolean evaluateVolumeBreakout(BuySignal signal, Market market) {
         signal.volumeBreakNearHigh = signal.recentHigh > 0.0
-                && signal.price >= signal.recentHigh * MOMENTUM_PRICE_NEAR_HIGH;
+                && signal.price >= signal.recentHigh * 0.999;
         signal.volumeBreakVelocityOk = signal.velocity >= volumeBreakVelocityMin(market);
         signal.volumeBreakVolumeOk = signal.averageVolume > 0.0
                 && signal.volume >= signal.averageVolume * VOLUME_BREAKOUT_VOLUME_MULT;
@@ -980,39 +1593,51 @@ public class StrategyEngine {
                 && signal.averageVolume > 0.0
                 && signal.volume >= signal.averageVolume * STRONG_BREAKOUT_VOLUME_MULT
                 && signal.recentHigh > 0.0
-                && signal.price >= signal.recentHigh * 0.997;
+                && signal.price >= signal.recentHigh * 0.9992;
     }
 
-    private int countSignals(boolean momentumBreakout, boolean pullbackEntry, boolean volumeBreakout) {
+    private int countSignals(boolean momentumBreakout, boolean pullbackEntry, boolean volumeBreakout, boolean strongBreakout) {
         int count = 0;
         if (momentumBreakout) count++;
         if (pullbackEntry) count++;
-        if (volumeBreakout) count++;
+        if (volumeBreakout || strongBreakout) count++;
         return count;
     }
 
     private int calculateSignalScore(BuySignal signal, Market market) {
         int score = 0;
 
-        if (signal.pullbackEntry) score += 40;
-        if (signal.volumeBreakout) score += 20;
-        if (signal.momentumBreakout) score += 10;
-        if (signal.strongBreakout) score += 10;
+        // 눌림 우선
+        if (signal.pullbackEntry) score += 55;
+        if (signal.volumeBreakout) score += 16;
+        if (signal.momentumBreakout) score += 6;
+        if (signal.strongBreakout) score += 8;
 
         if (signal.turnoverFilterPassed) score += 8;
         if (signal.absoluteLiquidityPassed) score += 8;
+
         score += signal.trendScore * 6;
 
-        if (signal.pullbackRecovering) score += 8;
-        if (signal.pullbackVelocityOk) score += 6;
+        if (signal.pullbackRecovering) score += 10;
+        if (signal.pullbackVelocityOk) score += 8;
 
-        if (signal.velocity >= strongVelocityMin(market)) score += 6;
-        else if (signal.velocity >= momentumVelocityMin(market)) score += 3;
+        if (signal.velocity >= strongVelocityMin(market)) score += 5;
+        else if (signal.velocity >= momentumVelocityMin(market)) score += 2;
 
         if (signal.volume > 0.0 && signal.averageVolume > 0.0) {
             double volRatio = signal.volume / signal.averageVolume;
-            if (volRatio >= 2.0) score += 8;
+            if (volRatio >= 2.0) score += 7;
             else if (volRatio >= 1.0) score += 4;
+        }
+
+        // 깊게 눌렸는데 추세 유지되면 약간 가산
+        if (signal.pullbackDepthFromHigh >= 0.015 && signal.pullbackDepthFromHigh <= 0.040) {
+            score += 6;
+        }
+
+        // 단순 모멘텀만으로는 점수 깎기
+        if (signal.momentumBreakout && !signal.pullbackEntry && !signal.volumeBreakout) {
+            score -= 8;
         }
 
         return score;
@@ -1021,23 +1646,55 @@ public class StrategyEngine {
     private String deriveRejectReason(BuySignal signal, Market market) {
         if (!signal.multiUptrend) return "MULTI_UPTREND_FAIL";
         if (signal.signalCount == 0) return "NO_ENTRY";
-        if (signal.signalCount == 1 && !signal.pullbackEntry) return "SINGLE_SIGNAL_NO_PULLBACK";
-        if (signal.signalCount == 1 && signal.pullbackEntry && signal.signalScore < (market == Market.US ? 45 : 50)) {
-            return "SCORE_LOW";
+
+        if (signal.pullbackEntry) {
+            int min = (market == Market.US) ? 60 : 64;
+            if (signal.signalScore < min) return "PULLBACK_SCORE_LOW";
+            return "FILTERED";
         }
-        if (market != Market.US && signal.signalCount < 2) return "SIGNAL_COUNT_LOW";
-        return "FILTERED";
+
+        if (signal.volumeBreakout || signal.strongBreakout) {
+            int min = (market == Market.US) ? 58 : 60;
+            if (signal.signalScore < min) return "BREAKOUT_SCORE_LOW";
+            if (signal.signalCount < 2) return "BREAKOUT_SIGNAL_COUNT_LOW";
+            return "FILTERED";
+        }
+
+        return "MOMENTUM_ONLY_BLOCKED";
+    }
+
+    private EntryMode deriveEntryMode(BuySignal signal) {
+        if (signal.pullbackEntry) return EntryMode.PULLBACK;
+        if (signal.volumeBreakout) return EntryMode.VOLUME_BREAKOUT;
+        if (signal.strongBreakout || signal.momentumBreakout) return EntryMode.BREAKOUT;
+        return EntryMode.NONE;
     }
 
     private double determinePositionSize(BuySignal signal, Market market) {
-        if (signal.strongBreakout
-                && signal.volume > 0.0
-                && signal.averageVolume > 0.0
-                && signal.volume >= signal.averageVolume * VOLUME_SURGE_MULT_FOR_SIZE_UP) {
-            return SIZE_UP_MULT;
+        if (!signal.isBuyCandidate(market)) {
+            return 0.0;
         }
 
-        return signal.isBuyCandidate(market) ? BASE_SIZE : 0.0;
+        if (signal.entryMode == EntryMode.PULLBACK) {
+            if (signal.volume > 0.0
+                    && signal.averageVolume > 0.0
+                    && signal.volume >= signal.averageVolume * VOLUME_SURGE_MULT_FOR_SIZE_UP) {
+                return SIZE_UP_MULT;
+            }
+            return BASE_SIZE_PULLBACK;
+        }
+
+        if (signal.entryMode == EntryMode.VOLUME_BREAKOUT || signal.entryMode == EntryMode.BREAKOUT) {
+            if (signal.strongBreakout
+                    && signal.volume > 0.0
+                    && signal.averageVolume > 0.0
+                    && signal.volume >= signal.averageVolume * VOLUME_SURGE_MULT_FOR_SIZE_UP) {
+                return 1.0;
+            }
+            return BASE_SIZE_BREAKOUT;
+        }
+
+        return 0.0;
     }
 
     private int resolveBuyQuantity(SymbolState st, double orderPrice, double positionSize) {
@@ -1078,6 +1735,35 @@ public class StrategyEngine {
         st.partialTakeProfitDone = false;
         st.entryPriceSnapshot = 0.0;
         st.lastKnownProfitRate = 0.0;
+        st.entryMode = EntryMode.NONE;
+    }
+
+    private void resetDailyEntryIfNeeded(SymbolState st, java.time.LocalDate today) {
+        if (today == null) return;
+        if (st.lastEntryDay == null || !st.lastEntryDay.equals(today)) {
+            st.lastEntryDay = today;
+            st.dailyEntryCount = 0;
+            st.lastEntryPatternKey = null;
+            st.samePatternEntryCount = 0;
+        }
+    }
+
+    private void updateEntryCounters(SymbolState st, BuySignal signal, java.time.LocalDate entryDay) {
+        resetDailyEntryIfNeeded(st, entryDay);
+        st.dailyEntryCount++;
+
+        if (signal == null || signal.patternKey == null) {
+            st.lastEntryPatternKey = null;
+            st.samePatternEntryCount = 0;
+            return;
+        }
+
+        if (signal.patternKey.equals(st.lastEntryPatternKey)) {
+            st.samePatternEntryCount++;
+        } else {
+            st.lastEntryPatternKey = signal.patternKey;
+            st.samePatternEntryCount = 1;
+        }
     }
 
     private SymbolState state(String symbol) {
@@ -1109,7 +1795,7 @@ public class StrategyEngine {
         return LocalDateTime.now();
     }
 
-    private long historySpanSeconds(PriceHistory history) {
+    private long historySpanSeconds(MinuteBarHistory history) {
         return history.spanSeconds();
     }
 
@@ -1128,15 +1814,27 @@ public class StrategyEngine {
     }
 
     private double momentumVelocityMin(Market market) {
-        return market == Market.US ? 0.006 : 0.004;
+        return market == Market.US ? 0.009 : 0.006;
     }
 
     private double volumeBreakVelocityMin(Market market) {
-        return market == Market.US ? 0.010 : 0.006;
+        return market == Market.US ? 0.013 : 0.009;
     }
 
     private double strongVelocityMin(Market market) {
-        return market == Market.US ? 0.012 : 0.008;
+        return market == Market.US ? 0.014 : 0.010;
+    }
+
+    private double pullbackUpperFromHigh(Market market) {
+        return market == Market.US ? PULLBACK_UPPER_FROM_HIGH_US : PULLBACK_UPPER_FROM_HIGH_KRX;
+    }
+
+    private double pullbackLowerFromHigh(Market market) {
+        return market == Market.US ? PULLBACK_LOWER_FROM_HIGH_US : PULLBACK_LOWER_FROM_HIGH_KRX;
+    }
+
+    private double pullbackVolumeMult(Market market) {
+        return market == Market.US ? PULLBACK_VOLUME_MULT_US : PULLBACK_VOLUME_MULT_KRX;
     }
 
     private double multiTrendShortMin(Market market) {
@@ -1151,12 +1849,45 @@ public class StrategyEngine {
         return market == Market.US ? 0.0035 : 0.0020;
     }
 
-    private double stopLossMult(Market market) {
-        return market == Market.US ? STOP_LOSS_MULT_US : STOP_LOSS_MULT_KRX;
+    private double stopLossMult(Market market, EntryMode entryMode) {
+        if (market == Market.US) {
+            return entryMode == EntryMode.PULLBACK ? STOP_LOSS_MULT_US_PULLBACK : STOP_LOSS_MULT_US_BREAKOUT;
+        }
+        return entryMode == EntryMode.PULLBACK ? STOP_LOSS_MULT_KRX_PULLBACK : STOP_LOSS_MULT_KRX_BREAKOUT;
     }
 
     private double emergencyStopMult(Market market) {
         return market == Market.US ? EMERGENCY_STOP_MULT_US : EMERGENCY_STOP_MULT_KRX;
+    }
+
+    private double takeProfitPartialMult(EntryMode mode) {
+        return mode == EntryMode.PULLBACK
+                ? TAKE_PROFIT_PARTIAL_MULT_PULLBACK
+                : TAKE_PROFIT_PARTIAL_MULT_BREAKOUT;
+    }
+
+    private double takeProfitFinalMult(EntryMode mode) {
+        return mode == EntryMode.PULLBACK
+                ? TAKE_PROFIT_FINAL_MULT_PULLBACK
+                : TAKE_PROFIT_FINAL_MULT_BREAKOUT;
+    }
+
+    private double trailProtectArmMult(EntryMode mode) {
+        return mode == EntryMode.PULLBACK
+                ? TRAIL_PROTECT_ARM_MULT_PULLBACK
+                : TRAIL_PROTECT_ARM_MULT_BREAKOUT;
+    }
+
+    private double trailProtectFromHighMult(EntryMode mode) {
+        return mode == EntryMode.PULLBACK
+                ? TRAIL_PROTECT_FROM_HIGH_MULT_PULLBACK
+                : TRAIL_PROTECT_FROM_HIGH_MULT_BREAKOUT;
+    }
+
+    private double trailAfterPartialFromHighMult(EntryMode mode) {
+        return mode == EntryMode.PULLBACK
+                ? TRAIL_AFTER_PARTIAL_FROM_HIGH_MULT_PULLBACK
+                : TRAIL_AFTER_PARTIAL_FROM_HIGH_MULT_BREAKOUT;
     }
 
     private long maxHoldWithoutProfitMs(Market market) {
@@ -1189,20 +1920,67 @@ public class StrategyEngine {
         return "TAKE_PROFIT_PARTIAL".equals(reason)
                 || "TAKE_PROFIT_PARTIAL_FULL".equals(reason)
                 || "TAKE_PROFIT_FINAL".equals(reason)
-                || "TRAILING_STOP".equals(reason);
+                || "TRAILING_STOP".equals(reason)
+                || "TRAILING_PROTECT".equals(reason);
+    }
+
+    private boolean isProfitExitReason(String reason) {
+        if (reason == null) return false;
+        return reason.startsWith("TAKE_PROFIT")
+                || "TRAILING_STOP".equals(reason)
+                || "TRAILING_PROTECT".equals(reason);
+    }
+
+    private boolean isStopLossExitReason(String reason) {
+        if (reason == null) return false;
+        return "STOP_LOSS".equals(reason)
+                || "EMERGENCY_STOP".equals(reason)
+                || "TIME_STOP".equals(reason)
+                || "EARLY_TIME_STOP".equals(reason);
     }
 
     private String entryReason(BuySignal signal) {
-        if (signal.pullbackEntry) {
+        if (signal.entryMode == EntryMode.PULLBACK) {
             return "PULLBACK_REBOUND";
         }
-        if (signal.volumeBreakout) {
+        if (signal.entryMode == EntryMode.VOLUME_BREAKOUT) {
             return "VOLUME_BREAKOUT";
         }
-        if (signal.momentumBreakout) {
-            return "MOMENTUM";
+        if (signal.entryMode == EntryMode.BREAKOUT) {
+            return "BREAKOUT";
         }
         return "ENTRY";
+    }
+
+    private void logEntryWait(Market market,
+                              String symbol,
+                              String reason,
+                              double currentPrice,
+                              double basePrice,
+                              double velocityShort,
+                              double volumeDelta) {
+        logger.info("ENTRY_WAIT (tick) [{}] {} reason={} price={} readyClose={} velShort={} volDelta={}",
+                market,
+                symbol,
+                reason,
+                fmt(currentPrice),
+                fmt(basePrice),
+                fmtPct(velocityShort),
+                fmt(volumeDelta));
+    }
+
+    private String buildPatternKey(Market market, BuySignal signal, LocalDateTime barTime) {
+        LocalDateTime ts = barTime != null ? barTime : LocalDateTime.now();
+        String timeKey = ts.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
+        StringBuilder sb = new StringBuilder();
+        sb.append(timeKey).append("|");
+        if (signal.pullbackEntry) sb.append("P");
+        if (signal.momentumBreakout) sb.append("M");
+        if (signal.volumeBreakout) sb.append("V");
+        if (signal.strongBreakout) sb.append("S");
+        sb.append("|").append(signal.entryMode);
+        sb.append("|").append(market);
+        return sb.toString();
     }
 
     private String fmt(double value) {

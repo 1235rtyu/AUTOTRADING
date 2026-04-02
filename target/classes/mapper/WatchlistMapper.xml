@@ -5,13 +5,13 @@
 <mapper namespace="com.autotrading.mapper.WatchlistMapper">
 
     <select id="findAll" resultType="com.autotrading.model.WatchlistItem">
-        SELECT id, symbol, exchange, created_at
+        SELECT id, symbol, exchange, folder, created_at
         FROM tb_auto_watchlist
         ORDER BY id DESC
     </select>
 
     <select id="findBySymbol" resultType="com.autotrading.model.WatchlistItem">
-        SELECT id, symbol, exchange, created_at
+        SELECT id, symbol, exchange, folder, created_at
         FROM tb_auto_watchlist
         WHERE symbol = #{symbol}
         ORDER BY id DESC
@@ -19,9 +19,21 @@
     </select>
 
     <insert id="insert">
-        INSERT INTO tb_auto_watchlist(symbol, exchange, created_at)
-        VALUES(#{symbol}, #{exchange}, CURRENT_TIMESTAMP)
+        INSERT INTO tb_auto_watchlist(symbol, exchange, folder, created_at)
+        VALUES(#{symbol}, #{exchange}, #{folder}, CURRENT_TIMESTAMP)
     </insert>
+
+    <update id="updateFolder">
+        UPDATE tb_auto_watchlist
+        SET folder = #{folder}
+        WHERE id = #{id}
+    </update>
+
+    <update id="clearFolder">
+        UPDATE tb_auto_watchlist
+        SET folder = NULL
+        WHERE folder = #{folder}
+    </update>
 
     <delete id="delete">
         DELETE FROM tb_auto_watchlist WHERE id = #{id}

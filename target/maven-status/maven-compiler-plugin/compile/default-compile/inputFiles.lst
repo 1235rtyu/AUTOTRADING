@@ -13,6 +13,7 @@ C:\workspace\autotrading\src\main\java\com\autotrading\dao\impl\WatchlistDaoImpl
 C:\workspace\autotrading\src\main\java\com\autotrading\model\DailyProfitPoint.java
 C:\workspace\autotrading\src\main\java\com\autotrading\service\impl\MarketInsightServiceImpl.java
 C:\workspace\autotrading\src\main\java\com\autotrading\config\SchemaPatchRunner.java
+C:\workspace\autotrading\src\main\java\com\autotrading\strategy\MinuteBarHistory.java
 C:\workspace\autotrading\src\main\java\com\autotrading\model\DashboardData.java
 C:\workspace\autotrading\src\main\java\com\autotrading\dao\WatchlistDao.java
 C:\workspace\autotrading\src\main\java\com\autotrading\model\MonitorAggregateRow.java

@@ -269,6 +269,60 @@ public class ApiController {
         return watchlistService.getWatchlist();
     }
 
+    @GetMapping("/watchlist/search")
+    public Map<String, Object> watchlistSearch(
+            @RequestParam(name="q", defaultValue="") String q,
+            @RequestParam(name="limit", defaultValue="50") int limit) {
+        String query = (q == null ? "" : q.trim()).toLowerCase();
+        if (query.isEmpty()) {
+            return Map.of("status", "OK", "query", "", "data", List.of());
+        }
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+        
+        List<WatchlistItem> allItems = watchlistService.getWatchlist();
+        List<Map<String, Object>> results = new ArrayList<>();
+        
+        for (WatchlistItem item : allItems) {
+            String symbol = text(item.getSymbol()).toUpperCase();
+            String exchange = text(item.getExchange());
+            String folder = text(item.getFolder());
+            
+            // Search by symbol or try to get name from position
+            boolean matchesSymbol = symbol.toLowerCase().contains(query);
+            String symbolName = "";
+            boolean matchesName = false;
+            
+            if (!matchesSymbol) {
+                AutoPosition pos = positionService.getPosition(symbol);
+                if (pos != null && pos.getSymbolName() != null) {
+                    symbolName = pos.getSymbolName();
+                    matchesName = symbolName.toLowerCase().contains(query);
+                }
+            } else {
+                // Still fetch name for display
+                AutoPosition pos = positionService.getPosition(symbol);
+                if (pos != null && pos.getSymbolName() != null) {
+                    symbolName = pos.getSymbolName();
+                }
+            }
+            
+            // Include if matches symbol or name
+            if (matchesSymbol || matchesName) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("id", item.getId());
+                row.put("symbol", symbol);
+                row.put("exchange", exchange);
+                row.put("folder", folder);
+                row.put("name", symbolName);
+                row.put("createdAt", item.getCreatedAt());
+                results.add(row);
+                if (results.size() >= safeLimit) break;
+            }
+        }
+        
+        return Map.of("status", "OK", "query", query, "data", results);
+    }
+
     @GetMapping("/watchlist/name")
     public Map<String, Object> watchlistName(@RequestParam("symbol") String symbol) {
         if (symbol == null || symbol.isBlank()) {
@@ -283,10 +337,26 @@ public class ApiController {
     @PostMapping("/watchlist")
     public Map<String, Object> addWatchlist(
             @RequestParam("symbol")                         String symbol,
-            @RequestParam(name="exchange", required=false)  String exchange) {
+            @RequestParam(name="exchange", required=false)  String exchange,
+            @RequestParam(name="folder", required=false)    String folder) {
         String sym  = validateSymbol(symbol, null);
         String exch = exchange != null ? validateExchange(exchange, "KRX") : null;
-        watchlistService.addSymbol(sym, exch);
+        String folderName = (folder != null && !folder.isBlank()) ? folder.trim() : null;
+        watchlistService.addSymbol(sym, exch, folderName);
+        return Map.of("status", "OK");
+    }
+
+    @PostMapping("/watchlist/folder")
+    public Map<String, Object> setWatchlistFolder(
+            @RequestParam("id") int id,
+            @RequestParam(name="folder", required=false) String folder) {
+        watchlistService.setFolder(id, folder);
+        return Map.of("status", "OK");
+    }
+
+    @PostMapping("/watchlist/folder/clear")
+    public Map<String, Object> clearWatchlistFolder(@RequestParam("folder") String folder) {
+        watchlistService.clearFolder(folder);
         return Map.of("status", "OK");
     }
 

@@ -13,7 +13,7 @@
 [INFO] 
 [INFO] --- compiler:3.11.0:compile (default-compile) @ auto-trading ---
 [INFO] Changes detected - recompiling the module! :source
-[INFO] Compiling 58 source files with javac [debug target 11] to target\classes
+[INFO] Compiling 59 source files with javac [debug target 11] to target\classes
 [INFO] /C:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: C:\workspace\autotrading\src\main\java\com\autotrading\market\KoreaInvestmentApiClient.java uses unchecked or unsafe operations.
 [INFO] /C:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: Recompile with -Xlint:unchecked for details.
 [INFO] 
@@ -35,6 +35,6 @@
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  10.065 s
-[INFO] Finished at: 2026-03-25T10:43:21+09:00
+[INFO] Total time:  7.633 s
+[INFO] Finished at: 2026-04-02T13:04:58+09:00
 [INFO] ------------------------------------------------------------------------
