@@ -193,6 +193,11 @@ public class ApiController {
         );
     }
 
+    @GetMapping("/monitor/exchange-rate")
+    public Map<String, Object> monitorExchangeRate() {
+        return monitorService.getExchangeRate();
+    }
+
     /* ════════════════════════════════════════════
        Orders
     ════════════════════════════════════════════ */

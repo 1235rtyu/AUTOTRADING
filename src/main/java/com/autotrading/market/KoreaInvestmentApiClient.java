@@ -1566,6 +1566,102 @@ public Map<String, Object> fetchVolumeRanking() {
         return summary;
     }
 
+    /**
+     * 주식잔고조회_실현손익 (TTTC8494R)
+     * output2: rlzt_pfls(실현손익), tot_evlu_amt(총평가금액), evlu_pfls_smtl_amt(평가손익합계),
+     *          thdt_buy_amt(금일매수금액), thdt_sll_amt(금일매도금액)
+     * 모의투자 미지원 — 실전 계좌 전용
+     */
+    public Map<String, Object> fetchDomesticRealizedPnl() {
+        Map<String, Object> result = new HashMap<>();
+        if (!properties.isConfigured()) {
+            result.put("status", "ERROR");
+            result.put("message", "KIS appKey/appSecret not configured.");
+            return result;
+        }
+        if (!isAccountConfigValid()) {
+            return accountConfigMissingResult("fetchDomesticRealizedPnl");
+        }
+        if (properties.isDemo()) {
+            result.put("status", "ERROR");
+            result.put("message", "inquire-balance-rlz-pl: 모의투자 미지원");
+            return result;
+        }
+
+        AccountInfo accountInfo = resolveAccountInfo("fetchDomesticRealizedPnl");
+        if (!accountInfo.isValid()) {
+            result.put("status", "ERROR");
+            result.put("message", "Account number/product code missing.");
+            return result;
+        }
+
+        String token = generateAccessToken();
+        if (!StringUtils.hasText(token)) {
+            result.put("status", "ERROR");
+            result.put("message", "KIS access token unavailable.");
+            return result;
+        }
+
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("CANO", accountInfo.cano);
+        params.put("ACNT_PRDT_CD", accountInfo.productCode);
+        params.put("AFHR_FLPR_YN", "N");
+        params.put("OFL_YN", "");
+        params.put("INQR_DVSN", "00");
+        params.put("UNPR_DVSN", "01");
+        params.put("FUND_STTL_ICLD_YN", "N");
+        params.put("FNCG_AMT_AUTO_RDPT_YN", "N");
+        params.put("PRCS_DVSN", "01");
+        params.put("COST_ICLD_YN", "Y");
+        params.put("CTX_AREA_FK100", "");
+        params.put("CTX_AREA_NK100", "");
+
+        String url = properties.getBaseUrl()
+                + "/uapi/domestic-stock/v1/trading/inquire-balance-rlz-pl?"
+                + buildQuery(params);
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("authorization", "Bearer " + token)
+                    .header("appkey", properties.getAppKey())
+                    .header("appsecret", properties.getAppSecret())
+                    .header("tr_id", "TTTC8494R")
+                    .header("custtype", properties.getCustomerType())
+                    .header("content-type", "application/json; charset=utf-8")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode root = objectMapper.readTree(response.body());
+            String rtCd = root.path("rt_cd").asText();
+            if (!"0".equals(rtCd)) {
+                result.put("status", "ERROR");
+                result.put("message", root.path("msg1").asText(""));
+                return result;
+            }
+
+            JsonNode out2 = root.path("output2");
+            JsonNode summary = out2.isArray() && out2.size() > 0 ? out2.get(0) : out2;
+
+            result.put("status", "OK");
+            result.put("message", root.path("msg1").asText(""));
+            result.put("rlztPfls",        parseDouble(summary.path("rlzt_pfls").asText("0")));
+            result.put("rlztErngRt",      parseDouble(summary.path("rlzt_erng_rt").asText("0")));
+            result.put("realEvluPfls",    parseDouble(summary.path("real_evlu_pfls").asText("0")));
+            result.put("totEvluAmt",      parseDouble(summary.path("tot_evlu_amt").asText("0")));
+            result.put("evluPflsSmtlAmt", parseDouble(summary.path("evlu_pfls_smtl_amt").asText("0")));
+            result.put("thdtBuyAmt",      parseDouble(summary.path("thdt_buy_amt").asText("0")));
+            result.put("thdtSllAmt",      parseDouble(summary.path("thdt_sll_amt").asText("0")));
+            result.put("output1", objectMapper.convertValue(root.path("output1"), List.class));
+        } catch (Exception e) {
+            logger.warn("fetchDomesticRealizedPnl failed: {}", e.getMessage());
+            result.put("status", "ERROR");
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
     public Map<String, Object> fetchOverseasBalance(String exchange, String currency) {
         Map<String, Object> result = new HashMap<>();
         if (!properties.isConfigured()) {
@@ -1644,6 +1740,101 @@ public Map<String, Object> fetchVolumeRanking() {
      */
     public Map<String, Object> fetchOverseasHoldings(String exchange, String currency) {
         return fetchOverseasBalance(exchange, currency);
+    }
+
+    /**
+     * 해외주식 기간손익 (TTTS3039R) — 모의투자 미지원
+     * output2: ovrs_rlzt_pfls_tot_amt(해외실현손익총금액), exrt(환율),
+     *          stck_sll_amt_smtl(매도금액합계), stck_buy_amt_smtl(매수금액합계)
+     * WCRC_FRCR_DVSN_CD=02(원화) 기준으로 조회
+     */
+    public Map<String, Object> fetchOverseasPeriodProfit(String startDate, String endDate) {
+        Map<String, Object> result = new HashMap<>();
+        if (!properties.isConfigured()) {
+            result.put("status", "ERROR");
+            result.put("message", "KIS appKey/appSecret not configured.");
+            return result;
+        }
+        if (!isAccountConfigValid()) {
+            return accountConfigMissingResult("fetchOverseasPeriodProfit");
+        }
+        if (properties.isDemo()) {
+            result.put("status", "ERROR");
+            result.put("message", "inquire-period-profit: 모의투자 미지원");
+            return result;
+        }
+
+        AccountInfo accountInfo = resolveAccountInfo("fetchOverseasPeriodProfit");
+        if (!accountInfo.isValid()) {
+            result.put("status", "ERROR");
+            result.put("message", "Account number/product code missing.");
+            return result;
+        }
+
+        String token = generateAccessToken();
+        if (!StringUtils.hasText(token)) {
+            result.put("status", "ERROR");
+            result.put("message", "KIS access token unavailable.");
+            return result;
+        }
+
+        String safeStart = StringUtils.hasText(startDate) ? startDate
+                : LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+        String safeEnd   = StringUtils.hasText(endDate)   ? endDate   : safeStart;
+
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("CANO",              accountInfo.cano);
+        params.put("ACNT_PRDT_CD",      accountInfo.productCode);
+        params.put("OVRS_EXCG_CD",      "");
+        params.put("NATN_CD",           "");
+        params.put("CRCY_CD",           "");
+        params.put("PDNO",              "");
+        params.put("INQR_STRT_DT",      safeStart);
+        params.put("INQR_END_DT",       safeEnd);
+        params.put("WCRC_FRCR_DVSN_CD", "02");
+        params.put("CTX_AREA_FK200",    "");
+        params.put("CTX_AREA_NK200",    "");
+
+        String url = properties.getBaseUrl()
+                + "/uapi/overseas-stock/v1/trading/inquire-period-profit?"
+                + buildQuery(params);
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("authorization", "Bearer " + token)
+                    .header("appkey", properties.getAppKey())
+                    .header("appsecret", properties.getAppSecret())
+                    .header("tr_id", "TTTS3039R")
+                    .header("custtype", properties.getCustomerType())
+                    .header("content-type", "application/json; charset=utf-8")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode root = objectMapper.readTree(response.body());
+            String rtCd = root.path("rt_cd").asText();
+            if (!"0".equals(rtCd)) {
+                result.put("status", "ERROR");
+                result.put("message", root.path("msg1").asText(""));
+                return result;
+            }
+
+            JsonNode out2 = root.path("output2");
+            result.put("status", "OK");
+            result.put("message", root.path("msg1").asText(""));
+            result.put("ovrsRlztPflsTotAmt", parseDouble(out2.path("ovrs_rlzt_pfls_tot_amt").asText("0")));
+            result.put("totPftrt",            parseDouble(out2.path("tot_pftrt").asText("0")));
+            result.put("stckSllAmtSmtl",      parseDouble(out2.path("stck_sll_amt_smtl").asText("0")));
+            result.put("stckBuyAmtSmtl",      parseDouble(out2.path("stck_buy_amt_smtl").asText("0")));
+            result.put("exrt",                parseDouble(out2.path("exrt").asText("0")));
+            result.put("output1", objectMapper.convertValue(root.path("output1"), List.class));
+        } catch (Exception e) {
+            logger.warn("fetchOverseasPeriodProfit failed: {}", e.getMessage());
+            result.put("status", "ERROR");
+            result.put("message", e.getMessage());
+        }
+        return result;
     }
 
     public Map<String, Object> fetchOverseasCash(String currency) {

@@ -133,6 +133,10 @@ public class MinuteBarHistory {
         return high;
     }
 
+    public synchronized double highestHigh(int lastN) {
+        return recentHigh(lastN);
+    }
+
     public synchronized double recentLow() {
         return recentLow(0);
     }
@@ -147,6 +151,10 @@ public class MinuteBarHistory {
             low = Math.min(low, bar.getLow());
         }
         return low == Double.MAX_VALUE ? 0.0 : low;
+    }
+
+    public synchronized double lowestLow(int lastN) {
+        return recentLow(lastN);
     }
 
     public synchronized double averageVolume() {
@@ -192,6 +200,43 @@ public class MinuteBarHistory {
     public synchronized double latestTurnover() {
         MinuteBar latest = bars.peekLast();
         return latest != null ? latest.getTurnover() : 0.0;
+    }
+
+    public synchronized double sessionVwap() {
+        if (bars.isEmpty()) {
+            return 0.0;
+        }
+        double pv = 0.0;
+        double vv = 0.0;
+        for (MinuteBar bar : bars) {
+            if (bar.getClose() <= 0.0 || bar.getVolume() <= 0.0) {
+                continue;
+            }
+            pv += bar.getClose() * bar.getVolume();
+            vv += bar.getVolume();
+        }
+        return vv > 0.0 ? (pv / vv) : 0.0;
+    }
+
+    public synchronized double sessionVwapPrevious() {
+        if (bars.size() <= 1) {
+            return sessionVwap();
+        }
+        List<MinuteBar> list = latestBars(0);
+        if (list.size() <= 1) {
+            return sessionVwap();
+        }
+        double pv = 0.0;
+        double vv = 0.0;
+        for (int i = 0; i < list.size() - 1; i++) {
+            MinuteBar bar = list.get(i);
+            if (bar.getClose() <= 0.0 || bar.getVolume() <= 0.0) {
+                continue;
+            }
+            pv += bar.getClose() * bar.getVolume();
+            vv += bar.getVolume();
+        }
+        return vv > 0.0 ? (pv / vv) : 0.0;
     }
 
     public synchronized double averagePrice(int lastN) {
