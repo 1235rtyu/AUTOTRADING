@@ -17,14 +17,14 @@
   --gold:#ffc940;--gold-d:rgba(255,201,64,.08);--gold-b:rgba(255,201,64,.22);
   --blue:#5ba3ff;--blue-d:rgba(91,163,255,.08);--blue-b:rgba(91,163,255,.22);
   --rim:rgba(255,255,255,.07);--rim-hi:rgba(255,255,255,.13);
-  --t1:#dde4f0;--t2:#8592ad;--t3:#444d63;--t4:#1a1e2c;
+  --t1:#e8edf5;--t2:#a8b5cc;--t3:#6e7e9e;--t4:#1a1e2c;
   --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
   --r:6px;--r2:10px;--r3:12px;
   --topbar-h:50px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:var(--void);}
-body{font-family:var(--sans);font-size:13px;color:var(--t1);min-height:100vh;}
+html,body{height:100%;background:var(--void);overflow:hidden;}
+body{font-family:var(--sans);font-size:13px;color:var(--t1);}
 .bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
   background-image:radial-gradient(rgba(198,255,94,.028) 1px,transparent 1px);
   background-size:32px 32px;}
@@ -64,9 +64,9 @@ body{font-family:var(--sans);font-size:13px;color:var(--t1);min-height:100vh;}
 .clk-d{font-family:var(--mono);font-size:7px;color:var(--t3);letter-spacing:.8px;}
 
 /* ── LAYOUT ── */
-.page{position:relative;z-index:1;display:grid;grid-template-columns:415px 1fr;gap:10px;padding:10px;min-height:calc(100vh - var(--topbar-h));}
+.page{position:relative;z-index:1;display:grid;grid-template-columns:415px 1fr;gap:10px;padding:10px;height:calc(100vh - var(--topbar-h));overflow:hidden;}
 @media(max-width:1100px){.page{grid-template-columns:1fr;}}
-.col{display:flex;flex-direction:column;gap:10px;}
+.col{display:flex;flex-direction:column;gap:10px;height:100%;overflow:hidden;}
 
 /* ── CARD ── */
 .card{background:var(--panel);border:1px solid var(--rim);border-radius:var(--r3);
@@ -181,7 +181,7 @@ body{font-family:var(--sans);font-size:13px;color:var(--t1);min-height:100vh;}
   border-radius:var(--r);color:var(--t1);font-family:var(--mono);font-size:10px;padding:0 7px;outline:none;}
 
 /* ── TOP 종목 리스트 ── */
-.top-scroll{overflow-y:auto;max-height:500px;padding:2px 0;
+.top-scroll{flex:1;min-height:0;overflow-y:auto;padding:2px 0;
   scrollbar-width:thin;scrollbar-color:var(--rim-hi) transparent;}
 .top-scroll::-webkit-scrollbar{width:3px;}
 .top-scroll::-webkit-scrollbar-thumb{background:var(--rim-hi);border-radius:2px;}
@@ -256,6 +256,11 @@ tbody tr:hover td{background:var(--hover);}
 .badge.warn{color:var(--gold);border-color:var(--gold-b);background:var(--gold-d);}
 .badge.cnt{color:var(--blue);border-color:var(--blue-b);background:var(--blue-d);}
 
+/* ── STATUS BADGE ── */
+.status-badge{display:inline-flex;align-items:center;font-family:var(--mono);font-size:8px;font-weight:600;padding:2px 7px;border-radius:5px;}
+.status-accepted{color:var(--emerald);border:1px solid var(--emerald-b);background:var(--emerald-d);}
+.status-rejected{color:var(--red);border:1px solid var(--red-b);background:var(--red-d);}
+
 /* ── TOAST ── */
 .toast{position:fixed;right:14px;bottom:14px;z-index:999;
   max-width:360px;background:var(--panel-hi);border:1px solid var(--rim-hi);
@@ -271,6 +276,134 @@ tbody tr:hover td{background:var(--hover);}
 
 /* ── 빈 상태 ── */
 .empty-hint{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:.5px;padding:3px 0;}
+
+/* ══════════════════════════════════════════
+   PREMIUM THEME
+══════════════════════════════════════════ */
+@keyframes chip-glow{0%,100%{border-color:rgba(0,224,122,.22);box-shadow:none;}55%{border-color:rgba(0,224,122,.6);box-shadow:0 0 14px rgba(0,224,122,.2);}}
+@keyframes shine{0%{left:-120%;}60%,100%{left:120%;}}
+
+/* ── Background depth ── */
+.bg-grid{
+  background-image:radial-gradient(rgba(198,255,94,.018) 1px,transparent 1px),
+                   radial-gradient(rgba(91,163,255,.012) 1px,transparent 1px);
+  background-size:32px 32px,64px 64px;background-position:0 0,16px 16px;}
+.bg-grid::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 130% 55% at 50% -5%,rgba(91,163,255,.07) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 45% at 95% 110%,rgba(198,255,94,.04) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 30% at 5% 95%,rgba(0,224,122,.03) 0%,transparent 50%);}
+
+/* ── Topbar premium ── */
+.topbar{border-bottom:none;background:linear-gradient(180deg,rgba(7,9,15,.99),rgba(9,11,19,.97));
+  box-shadow:0 1px 0 rgba(255,255,255,.04),0 6px 28px rgba(0,0,0,.5);}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.05) 15%,rgba(198,255,94,.55) 50%,rgba(255,255,255,.05) 85%,transparent 100%);}
+.logo-mk{background:linear-gradient(135deg,#d4ff70,#a8e040);box-shadow:0 0 12px rgba(198,255,94,.35);}
+
+/* ── Cards — glass depth ── */
+.card{position:relative;
+  background:linear-gradient(148deg,rgba(21,24,36,.97) 0%,rgba(14,16,25,.95) 100%);
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 2px 20px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.03) inset;
+  transition:border-color .25s,box-shadow .25s;}
+.card::before{content:'';position:absolute;top:0;left:16px;right:16px;height:1px;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);}
+.card:hover{border-color:rgba(255,255,255,.15);
+  box-shadow:0 6px 32px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.06) inset;}
+.card-hd{background:linear-gradient(90deg,rgba(255,255,255,.045) 0%,rgba(255,255,255,.015) 60%,transparent 100%);
+  border-bottom:1px solid rgba(255,255,255,.06);}
+.card-title{letter-spacing:2px;font-size:7.5px;}
+.hd-dot{box-shadow:0 0 7px 1px currentColor;}
+
+/* ── Engine ── */
+.engine-box{
+  background:linear-gradient(135deg,rgba(13,15,24,.92),rgba(9,11,18,.96));
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:all .4s;}
+.engine-box.is-run{
+  background:linear-gradient(135deg,rgba(0,224,122,.1) 0%,rgba(0,224,122,.03) 40%,rgba(10,12,20,.95) 70%);
+  border-color:rgba(0,224,122,.3);
+  box-shadow:inset 0 0 30px rgba(0,224,122,.07),0 0 24px rgba(0,224,122,.1);}
+.eng-state.run{text-shadow:0 0 22px rgba(0,224,122,.55),0 0 50px rgba(0,224,122,.22);}
+
+/* ── Run chips ── */
+.run-chip{
+  background:linear-gradient(135deg,rgba(0,224,122,.14),rgba(0,224,122,.06));
+  border:1px solid rgba(0,224,122,.28);
+  box-shadow:0 0 12px rgba(0,224,122,.1);
+  animation:chip-glow 3s ease-in-out infinite;}
+
+/* ── Buttons ── */
+.btn{transition:all .18s;}
+.btn-green{background:linear-gradient(135deg,rgba(0,224,122,.18),rgba(0,224,122,.07));border-color:rgba(0,224,122,.38);}
+.btn-green:hover{background:linear-gradient(135deg,#00e07a,#00c060);color:var(--void);border-color:transparent;
+  box-shadow:0 4px 22px rgba(0,224,122,.4),0 0 0 1px rgba(0,224,122,.2);}
+.btn-red{background:linear-gradient(135deg,rgba(255,80,112,.15),rgba(255,80,112,.06));border-color:rgba(255,80,112,.35);}
+.btn-red:hover{background:linear-gradient(135deg,#ff5070,#dd3060);color:#fff;border-color:transparent;
+  box-shadow:0 4px 20px rgba(255,80,112,.38);}
+.btn-lime{background:linear-gradient(135deg,rgba(198,255,94,.15),rgba(198,255,94,.06));border-color:rgba(198,255,94,.32);}
+.btn-lime:hover{background:linear-gradient(135deg,#c6ff5e,#a8dc40);color:var(--void);border-color:transparent;
+  box-shadow:0 4px 20px rgba(198,255,94,.3);}
+.btn-blue{background:linear-gradient(135deg,rgba(91,163,255,.16),rgba(91,163,255,.07));border-color:rgba(91,163,255,.32);}
+.btn-blue:hover{background:linear-gradient(135deg,#5ba3ff,#3d88e8);color:#fff;border-color:transparent;
+  box-shadow:0 4px 20px rgba(91,163,255,.38);}
+.btn-ghost:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.22);
+  box-shadow:0 2px 14px rgba(0,0,0,.3);}
+
+/* ── Badges ── */
+.side-buy{background:linear-gradient(135deg,rgba(0,224,122,.15),rgba(0,224,122,.06));
+  border:1px solid rgba(0,224,122,.32);box-shadow:0 0 8px rgba(0,224,122,.1);}
+.side-sell{background:linear-gradient(135deg,rgba(255,80,112,.15),rgba(255,80,112,.06));
+  border:1px solid rgba(255,80,112,.32);box-shadow:0 0 8px rgba(255,80,112,.1);}
+.status-accepted{background:linear-gradient(135deg,rgba(0,224,122,.15),rgba(0,224,122,.06));
+  border:1px solid rgba(0,224,122,.32);box-shadow:0 0 8px rgba(0,224,122,.1);}
+.status-rejected{background:linear-gradient(135deg,rgba(255,80,112,.15),rgba(255,80,112,.06));
+  border:1px solid rgba(255,80,112,.32);box-shadow:0 0 8px rgba(255,80,112,.1);}
+.badge.cnt{background:linear-gradient(135deg,rgba(91,163,255,.16),rgba(91,163,255,.07));
+  border-color:rgba(91,163,255,.32);}
+
+/* ── Top 50 list ── */
+.top-item{transition:background .15s,box-shadow .15s;}
+.top-item:hover{background:linear-gradient(90deg,rgba(255,255,255,.04),transparent);
+  box-shadow:inset 2px 0 0 rgba(255,255,255,.18);}
+.top-item.sel{background:linear-gradient(90deg,rgba(91,163,255,.1),transparent);
+  box-shadow:inset 2px 0 0 var(--blue);}
+.top-rank.r1{background:rgba(255,201,64,.2);box-shadow:0 0 12px rgba(255,201,64,.35);}
+.top-rank.r2{background:rgba(185,195,210,.14);}
+.top-rank.r3{background:rgba(205,139,90,.14);}
+.top-sym{letter-spacing:.3px;}
+.top-rate.up::before{content:'▲ ';font-size:7px;opacity:.7;}
+.top-rate.dn::before{content:'▼ ';font-size:7px;opacity:.7;}
+
+/* ── Table premium ── */
+thead th{background:linear-gradient(180deg,rgba(24,27,40,.99),rgba(19,22,31,.96));
+  font-size:7px;letter-spacing:2px;border-bottom:1px solid rgba(255,255,255,.07);}
+tbody tr:hover td{background:rgba(255,255,255,.024);}
+tr.row-buy:hover td{background:rgba(0,224,122,.04)!important;}
+tr.row-sell:hover td{background:rgba(255,80,112,.04)!important;}
+.tbl-toolbar{background:linear-gradient(180deg,rgba(24,27,40,.92),rgba(19,22,31,.88));
+  border-bottom:1px solid rgba(255,255,255,.06);}
+.pager{background:linear-gradient(0deg,rgba(14,16,23,.98),rgba(19,22,31,.88));
+  border-top:1px solid rgba(255,255,255,.05);}
+
+/* ── Inputs ── */
+.tb-input,.filter-input,.tbl-search{
+  background:rgba(5,7,14,.65);border:1px solid rgba(255,255,255,.1);
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.3);transition:border-color .2s,box-shadow .2s;}
+.tb-input:focus,.tbl-search:focus{border-color:rgba(198,255,94,.45);
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.2),0 0 0 2px rgba(198,255,94,.07);}
+.tb-sel{background:rgba(5,7,14,.65);border:1px solid rgba(255,255,255,.1);}
+
+/* ── Scrollbars ── */
+.tbl-wrap::-webkit-scrollbar{width:3px;height:3px;}
+.tbl-wrap::-webkit-scrollbar-track{background:rgba(255,255,255,.02);}
+.tbl-wrap::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px;}
+.tbl-wrap::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.38);}
+.top-scroll::-webkit-scrollbar{width:3px;}
+.top-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.02);}
+.top-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px;}
+.top-scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.38);}
 </style>
 </head>
 <body>
@@ -393,12 +526,12 @@ tbody tr:hover td{background:var(--hover);}
       </div>
     </div>
 
-    <!-- Volume Top 40 -->
-    <div class="card" style="animation:fu .3s .13s ease both;">
+    <!-- Volume Top 50 -->
+    <div class="card" style="animation:fu .3s .13s ease both;flex:1;min-height:0;">
       <div class="card-hd">
         <div class="card-hd-l">
           <div class="hd-dot" style="background:var(--gold)"></div>
-          <span class="card-title">Volume Top 40</span>
+          <span class="card-title">Volume Top 50</span>
         </div>
         <button class="btn btn-ghost" style="height:24px;padding:0 9px;font-size:8px;" onclick="fetchTop()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:9px;height:9px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -408,7 +541,7 @@ tbody tr:hover td{background:var(--hover);}
       <div class="card-bd">
         <div class="filter-row">
           <span class="filter-label">Top N</span>
-          <input class="filter-input" id="topN" type="number" min="1" max="40" value="3"/>
+          <input class="filter-input" id="topN" type="number" min="1" max="50" value="3"/>
           <span class="filter-label">Min %</span>
           <input class="filter-input" id="minRate" type="number" step="0.1" min="0" value="0" style="width:56px;"/>
           <span class="empty-hint" style="margin-left:auto;" id="topSelCount">선택 0개</span>
@@ -445,9 +578,9 @@ tbody tr:hover td{background:var(--hover);}
           <button class="side-btn"     id="btnSELL" onclick="setSide('SELL')">SELL</button>
         </div>
         <select class="tb-sel" id="limitSel" onchange="fetchOrders(false)">
+          <option value="20" selected>20건</option>
           <option value="50">50건</option>
           <option value="100">100건</option>
-          <option value="200">200건</option>
         </select>
         <button class="btn btn-ghost" id="refBtn" onclick="fetchOrders(false)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:9px;height:9px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -692,7 +825,9 @@ function setEngine(status,msg){
   const st=document.getElementById('engState');
   ind.className='eng-indicator '+(run?'run':'stop');
   st.className='eng-state '+(run?'run':'stop');
-  st.textContent=status||'UNKNOWN';
+  st.textContent=run?'RUNNING':(status||'UNKNOWN');
+  const engBox=document.querySelector('.engine-box');
+  if(engBox)engBox.className='engine-box'+(run?' is-run':'');
   const engMsg=document.getElementById('engMsg');
   engMsg.className='eng-sub'+(run?' run':'');
   const count=Number(document.getElementById('runCount')?.textContent||0);
@@ -863,7 +998,7 @@ function renderTop(){
 window.toggleTop=function(sym){if(!sym)return;topSel.has(sym)?topSel.delete(sym):topSel.add(sym);renderTop();};
 window.fetchTop=function(){
   return get('/api/market/ranking?market='+encodeURIComponent(MARKET)+'&exch='+encodeURIComponent(EXCH))
-    .then(d=>{topRows=(d.data||d.output||[]).slice(0,40);renderTop();})
+    .then(d=>{topRows=(d.data||d.output||[]).slice(0,50);renderTop();})
     .catch(()=>{topRows=[];renderTop();});
 };
 window.startTop=function(){
@@ -900,6 +1035,11 @@ window.startTop=function(){
 };
 
 /* ── Order Table ── */
+function reasonCell(reason){
+  if(reason==='ACCEPTED')return '<td><span class="status-badge status-accepted">ACCEPTED</span></td>';
+  if(reason==='REJECTED')return '<td><span class="status-badge status-rejected">REJECTED</span></td>';
+  return '<td class="td-reason" title="'+esc(reason||'')+'">'+esc(reason||'-')+'</td>';
+}
 function filterOrders(){
   const q=(document.getElementById('searchInput').value||'').toLowerCase();
   return rawOrders.filter(r=>{
@@ -926,13 +1066,13 @@ function renderOrders(scrollState){
         const sym=esc(r.symbol||'-');
         const nm=nameCache[r.symbol]||r.symbolName||'';
         const symCell='<div class="td-sym">'+sym+'</div>'+(nm?'<div class="td-nm">'+esc(nm)+'</div>':'');
-        return '<tr>'
+        return '<tr class="row-'+(r.side==='BUY'?'buy':'sell')+'">'
           +'<td class="td-id">#'+esc(r.id)+'</td>'
           +'<td>'+symCell+'</td>'
           +'<td><span class="side-badge '+sideClass+'">'+esc(r.side||'-')+'</span></td>'
           +'<td class="td-num">'+esc(r.quantity||'-')+'</td>'
           +'<td class="td-num td-price">'+(r.price?Number(r.price).toLocaleString():'-')+'</td>'
-          +'<td class="td-reason" title="'+esc(r.reason||'')+'">'+esc(r.reason||'-')+'</td>'
+          +reasonCell(r.reason)
           +'<td class="td-time">'+esc(fmtTime(r.createdAt))+'</td>'
         +'</tr>';
       }).join('');
@@ -956,7 +1096,7 @@ window.fetchOrders=function(keepPage){
   const btn=document.getElementById('refBtn');
   const scrollState=keepPage?captureScrollState():null;
   btn.textContent='…';
-  const limit=document.getElementById('limitSel').value||50;
+  const limit=document.getElementById('limitSel').value||20;
   const ep=MARKET==='US'?'/api/orders/us':'/api/orders/kr';
   get(ep+'?limit='+limit)
     .then(rows=>{rawOrders=Array.isArray(rows)?rows:[];if(!keepPage)curPage=1;renderOrders(scrollState);})

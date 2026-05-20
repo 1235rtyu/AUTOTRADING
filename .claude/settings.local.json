@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /c/workspace/autotrading/src/main/java/com/autotrading/service/*.java)",
+      "Bash(mvn compile *)",
+      "Bash(mvn package *)",
+      "Bash(\"D:/apache-maven-3.9.9/bin/mvn.cmd\" -DskipTests clean package)",
+      "Bash(echo \"EXIT_CODE=$?\")"
+    ]
+  }
+}

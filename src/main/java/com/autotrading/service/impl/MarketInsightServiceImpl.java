@@ -99,9 +99,26 @@ public class MarketInsightServiceImpl implements MarketInsightService {
             );
         }
 
-        Map<String, Object> raw = apiClient.fetchVolumeRanking();
-        List<Map<String, Object>> rows = asList(raw.get("output"));
-        if (rows == null || rows.isEmpty()) {
+        // 코스피(1) + 코스닥(2) 각각 30개씩 조회 후 합산 → 최대 60개 확보
+        List<Map<String, Object>> allRawRows = new ArrayList<>();
+        String lastMessage = "";
+        for (int blng : new int[]{1, 2}) {
+            try {
+                Map<String, Object> raw2 = apiClient.fetchVolumeRanking(blng);
+                List<Map<String, Object>> r2 = asList(raw2.get("output"));
+                if (r2 != null) allRawRows.addAll(r2);
+                if (StringUtils.hasText((String) raw2.get("message"))) lastMessage = (String) raw2.get("message");
+            } catch (Exception ignored) {}
+        }
+        // 합산 결과가 없으면 전체(0) 로 재시도
+        if (allRawRows.isEmpty()) {
+            Map<String, Object> raw = apiClient.fetchVolumeRanking(0);
+            List<Map<String, Object>> r0 = asList(raw.get("output"));
+            if (r0 != null) allRawRows.addAll(r0);
+            lastMessage = (String) raw.getOrDefault("message", "");
+        }
+        List<Map<String, Object>> rows = allRawRows;
+        if (rows.isEmpty()) {
             return Map.of("status", "ERROR", "message", "국내 랭킹 데이터가 없습니다.", "data", List.of());
         }
 
@@ -127,7 +144,7 @@ public class MarketInsightServiceImpl implements MarketInsightService {
 
         Map<String, Object> result = new HashMap<>();
         result.put("status",   "OK");
-        result.put("message",  raw.getOrDefault("message", "정상처리 되었습니다."));
+        result.put("message",  StringUtils.hasText(lastMessage) ? lastMessage : "정상처리 되었습니다.");
         result.put("exchange", "KRX");
         result.put("data",     normalized);
         return result;

@@ -10,6 +10,7 @@ import com.autotrading.model.WatchlistItem;
 import com.autotrading.order.OrderService;
 import com.autotrading.position.PositionService;
 import com.autotrading.service.RiskManager;
+import com.autotrading.service.TradeHistoryService;
 import com.autotrading.strategy.StrategyEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,9 @@ import org.springframework.util.StringUtils;
 
 import org.springframework.beans.factory.DisposableBean;
 import java.lang.reflect.Method;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -94,6 +97,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     private final WatchlistDao watchlistDao;
     private final RiskManager riskManager;
     private final KoreaInvestmentApiClient kisApiClient;
+    private final TradeHistoryService tradeHistoryService;
 
     // ???? ?怨밴묶 筌???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
     private final Map<String, ScheduledExecutorService> schedulers       = new ConcurrentHashMap<>();
@@ -132,6 +136,13 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     private final ScheduledExecutorService positionSyncExecutor =
             Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "position-sync");
+                t.setDaemon(true);
+                return t;
+            });
+
+    private final ScheduledExecutorService dailyStatsExecutor =
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "daily-stats");
                 t.setDaemon(true);
                 return t;
             });
@@ -289,7 +300,8 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                             AutoTradingDao autoTradingDao,
                             WatchlistDao watchlistDao,
                             RiskManager riskManager,
-                            KoreaInvestmentApiClient kisApiClient) {
+                            KoreaInvestmentApiClient kisApiClient,
+                            TradeHistoryService tradeHistoryService) {
         this.marketDataService = marketDataService;
         this.strategyEngine = strategyEngine;
         this.orderService = orderService;
@@ -298,10 +310,12 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         this.watchlistDao = watchlistDao;
         this.riskManager = riskManager;
         this.kisApiClient = kisApiClient;
+        this.tradeHistoryService = tradeHistoryService;
     }
 
     @Override
     public void afterPropertiesSet() {
+        scheduleDailyStatsAggregation();
         if (!ensureAccountConfigReady("startup")) {
             logger.error("KIS account config missing at startup - scheduler will remain disabled until configured.");
             return;
@@ -355,7 +369,49 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         shutdownExecutor(positionSyncExecutor, "position-sync");
         shutdownExecutor(buyFillConfirmExecutor, "buy-fill-confirm");
         shutdownExecutor(sellFillConfirmExecutor, "sell-fill-confirm");
+        shutdownExecutor(dailyStatsExecutor, "daily-stats");
         logger.info("SchedulerService shutdown complete");
+    }
+
+    // =========================================================================
+    // 일별 트레이드 통계 자동 집계
+    //   KRX : 16:05 KST (장 마감 15:30 + 35분 여유)
+    //   US  : 17:00 ET  (장 마감 16:00 + 60분 여유, 체결 지연 대응)
+    //   토/일 : 트레이드 없으므로 집계 스킵
+    //   실행 후 다음날 같은 시각 자동 재예약 (무한 루프)
+    // =========================================================================
+    private void scheduleDailyStatsAggregation() {
+        scheduleMarketCloseAgg("KRX", KST_ZONE, LocalTime.of(16, 5));
+        scheduleMarketCloseAgg("US",  NY_ZONE,  LocalTime.of(17, 0));
+    }
+
+    private void scheduleMarketCloseAgg(String market, ZoneId zone, LocalTime runAt) {
+        ZonedDateTime now  = ZonedDateTime.now(zone);
+        ZonedDateTime next = now.toLocalDate().atTime(runAt).atZone(zone);
+        if (!now.isBefore(next)) {
+            next = next.plusDays(1);
+        }
+        long delayMs = next.toInstant().toEpochMilli() - now.toInstant().toEpochMilli();
+
+        dailyStatsExecutor.schedule(() -> {
+            try {
+                LocalDate targetDate = LocalDate.now(zone);
+                DayOfWeek dow = targetDate.getDayOfWeek();
+                if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
+                    logger.info("DAILY_STATS_AGG [{}] skipped — weekend ({})", market, targetDate);
+                } else {
+                    tradeHistoryService.aggregateDailyStats(targetDate);
+                    logger.info("DAILY_STATS_AGG [{}] completed for {}", market, targetDate);
+                }
+            } catch (Exception e) {
+                logger.error("DAILY_STATS_AGG [{}] failed: {}", market, e.getMessage(), e);
+            } finally {
+                scheduleMarketCloseAgg(market, zone, runAt);
+            }
+        }, delayMs, TimeUnit.MILLISECONDS);
+
+        logger.info("DAILY_STATS_AGG [{}] next run in {}min ({})",
+                market, delayMs / 60_000, next.toLocalDateTime());
     }
 
     @Override
@@ -536,6 +592,9 @@ public class SchedulerService implements InitializingBean, DisposableBean {
             if (StringUtils.hasText(pos.symbolName)) {
                 symbolNameCache.put(pos.symbol, pos.symbolName);
             }
+            if (pos.quantity > 0) {
+                strategyEngine.forceHoldingState(pos.symbol);
+            }
         }
         logger.info("Position sync applied: count={} reason={}", livePositions.size(), reason);
     }
@@ -712,6 +771,9 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         }
 
         if ("SELL".equals(command.getType())) {
+            if ("SELL_TIMEOUT_MARKET_RETRY".equals(command.getReason())) {
+                cancelSellFillConfirmTask(symbol);
+            }
             if (!passesSellGate(symbol, command, orderExchange)) return;
         }
 
@@ -1434,6 +1496,19 @@ public class SchedulerService implements InitializingBean, DisposableBean {
 
                 if (confirmed) {
                     syncPositionToDB(ctx.symbol, real);
+                    if (real.quantity <= 0) {
+                        // notifySellFilled 이전에 호출 — 이후 엔진 entryState가 초기화됨
+                        StrategyEngine.EntrySnapshot snap = strategyEngine.getEntrySnapshot(ctx.symbol);
+                        tradeHistoryService.recordTrade(
+                                ctx.symbol,
+                                isOverseasSymbol(ctx.symbol) ? "US" : "KRX",
+                                snap,
+                                ctx.avgPrice,
+                                ctx.referencePrice,
+                                ctx.previousQty,
+                                ctx.reason,
+                                false);
+                    }
                     strategyEngine.notifySellFilled(ctx.symbol, real.quantity);
                     cancelSellFillConfirmTask(ctx.symbol);
 
@@ -1448,7 +1523,11 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                             String.format("%.2f", pnl), String.format("%.2f", pnlPct), ctx.defensiveExit);
 
                     if (ctx.defensiveExit) {
-                        stopLossTime.put(ctx.symbol, Instant.now());
+                        if (isShortCooldownExit(ctx.reason)) {
+                            lastSellTime.put(ctx.symbol, Instant.now());
+                        } else {
+                            stopLossTime.put(ctx.symbol, Instant.now());
+                        }
                         if (pnl < 0) {
                             riskManager.addLoss(Math.abs(pnl));
                         }
@@ -1479,11 +1558,25 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                     syncPositionToDB(ctx.symbol, retryReal);
                     if (retryReal.quantity <= 0) {
                         // ?逾?fix3: ??쇱젫嚥?筌ｋ떯猿????notifySellFilled嚥?entryState ?類ｂ봺
+                        StrategyEngine.EntrySnapshot snap = strategyEngine.getEntrySnapshot(ctx.symbol);
+                        tradeHistoryService.recordTrade(
+                                ctx.symbol,
+                                isOverseasSymbol(ctx.symbol) ? "US" : "KRX",
+                                snap,
+                                ctx.avgPrice,
+                                ctx.referencePrice,
+                                ctx.previousQty,
+                                ctx.reason,
+                                false);
                         strategyEngine.notifySellFilled(ctx.symbol, 0);
                         double soldQty = Math.max(0, ctx.previousQty);
                         double pnl = (ctx.referencePrice - ctx.avgPrice) * soldQty;
                         if (ctx.defensiveExit) {
-                            stopLossTime.put(ctx.symbol, Instant.now());
+                            if (isShortCooldownExit(ctx.reason)) {
+                                lastSellTime.put(ctx.symbol, Instant.now());
+                            } else {
+                                stopLossTime.put(ctx.symbol, Instant.now());
+                            }
                             if (pnl < 0) {
                                 riskManager.addLoss(Math.abs(pnl));
                             }
@@ -1496,9 +1589,17 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                         strategyEngine.notifySellFilled(ctx.symbol, retryReal.quantity);
                         double soldQty = Math.max(0, ctx.previousQty - retryReal.quantity);
                         double pnl = (ctx.referencePrice - ctx.avgPrice) * soldQty;
-                        lastSellTime.put(ctx.symbol, Instant.now());
-                        if (ctx.defensiveExit && pnl < 0) {
-                            riskManager.addLoss(Math.abs(pnl));
+                        if (ctx.defensiveExit) {
+                            if (isShortCooldownExit(ctx.reason)) {
+                                lastSellTime.put(ctx.symbol, Instant.now());
+                            } else {
+                                stopLossTime.put(ctx.symbol, Instant.now());
+                            }
+                            if (pnl < 0) {
+                                riskManager.addLoss(Math.abs(pnl));
+                            }
+                        } else {
+                            lastSellTime.put(ctx.symbol, Instant.now());
                         }
                         logger.info("SELL partial fill confirmed (timeout fallback) for {} remainingQty={}",
                                 ctx.symbol, retryReal.quantity);
@@ -1634,10 +1735,16 @@ public class SchedulerService implements InitializingBean, DisposableBean {
 
     private boolean isTakeProfitReason(String reason) {
         if (reason == null) return false;
-        return "TAKE_PROFIT_PARTIAL".equals(reason)
-                || "TAKE_PROFIT_PARTIAL_FULL".equals(reason)
-                || "TAKE_PROFIT_FINAL".equals(reason)
-                || "TRAILING_STOP".equals(reason);
+        return reason.startsWith("TAKE_PROFIT_");
+    }
+
+    private boolean isShortCooldownExit(String reason) {
+        if (reason == null) return false;
+        return "TIME_STOP_SOFT".equals(reason)
+                || "TIME_STOP_HARD".equals(reason)
+                || "BREAKEVEN_GUARD".equals(reason)
+                || "SELL_TIMEOUT_MARKET_RETRY".equals(reason)
+                || reason.startsWith("TRAIL_");
     }
 
     private boolean isKrxOpeningCautious() {

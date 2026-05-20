@@ -1,5 +1,6 @@
 com\autotrading\model\AccountCredential.class
 com\autotrading\service\impl\MonitorServiceImpl.class
+com\autotrading\strategy\StrategyEngine$1.class
 com\autotrading\scheduler\SchedulerService$MarketSessionStatus.class
 com\autotrading\market\MarketDataService.class
 com\autotrading\scheduler\SchedulerService$PositionSnapshot.class
@@ -19,6 +20,7 @@ com\autotrading\strategy\StrategyEngine$Market.class
 com\autotrading\config\KisProperties.class
 com\autotrading\config\SchemaPatchRunner.class
 com\autotrading\scheduler\SchedulerService$BarAccumulator.class
+com\autotrading\strategy\StrategyEngine$ExitProfile.class
 com\autotrading\indicator\IndicatorService$BollingerBands.class
 com\autotrading\model\AuthSession.class
 com\autotrading\controller\AuthApiController.class
@@ -34,6 +36,7 @@ com\autotrading\strategy\StrategyEngine$SellDecision.class
 com\autotrading\controller\AutoControlController.class
 com\autotrading\service\impl\DashboardServiceImpl.class
 com\autotrading\dao\impl\WatchlistDaoImpl.class
+com\autotrading\strategy\StrategyEngine$ExitType.class
 com\autotrading\model\MonitorAggregateRow.class
 com\autotrading\service\impl\MarketInsightServiceImpl$RowSupplier.class
 com\autotrading\strategy\StrategyEngine$MarketContext.class
@@ -67,6 +70,7 @@ com\autotrading\indicator\IndicatorService.class
 com\autotrading\config\PropertyConfig.class
 com\autotrading\controller\MonitorController.class
 com\autotrading\util\AccountCredentialStore.class
+com\autotrading\strategy\StrategyEngine$PositionPhase.class
 com\autotrading\mapper\AutoTradingMapper.class
 com\autotrading\scheduler\SchedulerService$RealPosition.class
 com\autotrading\service\impl\AutoTradingServiceImpl.class

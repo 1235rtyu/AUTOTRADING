@@ -24,7 +24,18 @@ public class StrategyEngine {
 
     public enum Market { KRX, US }
 
-    private enum EntryMode { NONE, PULLBACK, BREAKOUT, VOLUME_BREAKOUT }
+    private enum EntryMode { NONE, PULLBACK, BREAKOUT, VOLUME_BREAKOUT, EARLY_MOMENTUM }
+
+    private enum PositionPhase {
+        NONE,      // 포지션 없음
+        ENTERING,  // 매수 주문 진행 중
+        HOLDING,   // 풀 포지션 보유
+        EXITING    // 매도 주문 진행 중
+    }
+
+    private enum ExitType {
+        NONE, PROFIT, TRAIL, STOPLOSS, TIMESTOP, VWAP_BREAK
+    }
 
     private static final ZoneId KST_ZONE = ZoneId.of("Asia/Seoul");
     private static final ZoneId NY_ZONE = ZoneId.of("America/New_York");
@@ -32,111 +43,201 @@ public class StrategyEngine {
     // =========================
     // History
     // =========================
-    private static final int TICK_HISTORY_CAPACITY = 180;
-    private static final int MINUTE_HISTORY_CAPACITY = 150;
-    private static final int MIN_HISTORY_BARS = 8;
-    private static final int MIN_HISTORY_SPAN_SECONDS = 300;
+    private static final int TICK_HISTORY_CAPACITY = 180;       // 틱 히스토리 최대 보관 수 (tick gate 판단용)
+    private static final int MINUTE_HISTORY_CAPACITY = 150;     // 분봉 히스토리 최대 보관 수
+    private static final int MIN_HISTORY_BARS = 8;              // 신호 판단 최소 분봉 수 (이하면 데이터 부족)
+    private static final int MIN_HISTORY_SPAN_SECONDS = 300;    // 신호 판단 최소 기간 (5분 미만 무시)
 
-    private static final int VELOCITY_WINDOW_MIN_SECONDS = 180;
-    private static final int VELOCITY_WINDOW_MAX_SECONDS = 300;
+    private static final int VELOCITY_WINDOW_MIN_SECONDS = 180; // 대표 속도 계산 윈도우 하한 (3분)
+    private static final int VELOCITY_WINDOW_MAX_SECONDS = 300; // 대표 속도 계산 윈도우 상한 (5분)
 
-    private static final int TREND_SHORT_MIN_SECONDS = 120;
-    private static final int TREND_SHORT_MAX_SECONDS = 180;
-    private static final int TREND_MID_MIN_SECONDS = 180;
-    private static final int TREND_MID_MAX_SECONDS = 300;
-    private static final int TREND_LONG_MIN_SECONDS = 300;
-    private static final int TREND_LONG_MAX_SECONDS = 480;
+    // 단기/중기/장기 추세 속도 계산 윈도우 (분~분 사이 구간 평균으로 안정화)
+    private static final int TREND_SHORT_MIN_SECONDS = 120;     // 단기 추세 시작 (2분)
+    private static final int TREND_SHORT_MAX_SECONDS = 180;     // 단기 추세 끝 (3분)
+    private static final int TREND_MID_MIN_SECONDS = 180;       // 중기 추세 시작 (3분)
+    private static final int TREND_MID_MAX_SECONDS = 300;       // 중기 추세 끝 (5분)
+    private static final int TREND_LONG_MIN_SECONDS = 300;      // 장기 추세 시작 (5분)
+    private static final int TREND_LONG_MAX_SECONDS = 480;      // 장기 추세 끝 (8분)
 
     // =========================
     // Entry timing
     // =========================
-    private static final long ENTRY_READY_TTL_MS = 35_000L;
-    private static final long ENTRY_READY_MIN_DELAY_MS = 2_000L;
-    private static final int BUY_RECENT_RANGE_BARS = 6;
+    private static final long ENTRY_READY_TTL_MS = 20_000L;    // 신호 유효 시간: 20초 내 틱 진입 불가 시 만료
+    private static final long ENTRY_READY_MIN_DELAY_MS = 500L; // 신호 발생 후 최소 대기 (빠른 체결을 위해 0.5초)
+    private static final int BUY_RECENT_RANGE_BARS = 15;       // 최근 고점/저점 산출 범위 (최근 15개 분봉)
 
     // =========================
     // Momentum / breakout
     // =========================
-    private static final double MOMENTUM_PRICE_NEAR_HIGH = 0.9970;
-    private static final double MOMENTUM_VOLUME_MULT = 1.8;
-    private static final double STRONG_BREAKOUT_VOLUME_MULT = 1.9;
-    private static final double VOLUME_BREAKOUT_VOLUME_MULT = 2.0;
-    private static final double VOLUME_SURGE_MULT_FOR_SIZE_UP = 2.3;
+    private static final double MOMENTUM_PRICE_NEAR_HIGH = 0.9970;  // 고점 대비 -0.3% 이내여야 모멘텀 인식
+    private static final double BREAKOUT_RETEST_LOWER = 0.9960; // KRX 돌파 재테스트 하단 (고점 대비 -0.4%)
+    private static final double BREAKOUT_RETEST_UPPER = 1.0040; // KRX 돌파 재테스트 상단 (고점 대비 +0.4%)
+    private static final double MOMENTUM_VOLUME_MULT = 1.5;          // 모멘텀 진입 최소 거래량 (평균의 1.5배)
+    private static final double STRONG_BREAKOUT_VOLUME_MULT = 1.5;   // 강한 돌파 최소 거래량 (평균의 1.5배)
+    private static final double VOLUME_BREAKOUT_VOLUME_MULT = 1.6;   // 거래량 돌파 최소 거래량 (평균의 1.6배)
+    private static final double VOLUME_SURGE_MULT_FOR_SIZE_UP = 2.3; // 사이즈 업 조건: 거래량 평균 2.3배 이상
 
     // =========================
     // Pullback zone (shared for KRX/US)
     // =========================
-    private static final double PULLBACK_UPPER_FROM_HIGH = 0.980;
-    private static final double PULLBACK_LOWER_FROM_HIGH = 0.960;
+    private static final double PULLBACK_UPPER_FROM_HIGH = 0.985; // 눌림 진입 허용 상단: 고점 대비 -1.5%
+    private static final double PULLBACK_LOWER_FROM_HIGH = 0.975; // 눌림 진입 허용 하단: 고점 대비 -2.5%
 
-    private static final double PULLBACK_VOLUME_MULT = 0.90;
+    private static final double PULLBACK_VOLUME_MULT = 0.90; // 눌림 진입 최소 거래량 (평균의 90% 이상)
 
-    private static final double LOW_VOLUME_SKIP_MULT = 0.85;
+    // LOW_VOLUME_SKIP_MULT removed: per-mode volume ratio used in isBuyCandidate
 
     // =========================
     // VWAP filter
     // =========================
-    private static final double VWAP_MAX_DISTANCE_PCT = 0.0080;
-    private static final double VWAP_NEAR_DISTANCE_PCT = 0.0040;
-    private static final double VWAP_BREAK_SELL_BUFFER = 0.9990;
+    private static final double VWAP_NEAR_DISTANCE_PCT  = 0.0040; // pullback nearVwap 판단 기준
+    private static final double VWAP_BREAK_SELL_BUFFER  = 0.9950; // VWAP -0.5%
+    private static final double VWAP_SLOPE_MIN_PCT       = 0.0002; // VWAP slope 최소 상승폭
+    // 극단적 과열만 safety-net으로 차단 — 실제 per-mode 상한은 isBuyCandidate에서 체크
+    private static final double VWAP_TOO_FAR_HARD_LIMIT   = 0.080;  // 8% 초과만 즉시 차단
+    // Pullback은 VWAP 대비 최대 -0.4% 아래까지 진입 허용 (회복 확인 조건 필요)
+    private static final double VWAP_PULLBACK_BELOW_ALLOWED = -0.004;
+
+    // =========================
+    // Per-mode entry thresholds (진입 모드별 필터 기준)
+    // =========================
+    // VWAP 이격 허용 상한 (price above VWAP 기준)
+    private static final double VWAP_MAX_GAP_BREAKOUT        = 0.022; // 2.2%
+    private static final double VWAP_MAX_GAP_EARLY_MOMENTUM  = 0.012; // 1.2%
+    private static final double VWAP_MAX_GAP_PULLBACK        = 0.010; // 1.0%
+
+    // 거래량 비율 (volume / avgVolume 최소값)
+    private static final double VOLUME_RATIO_BREAKOUT        = 0.15;
+    private static final double VOLUME_RATIO_EARLY_MOMENTUM  = 0.12;
+    private static final double VOLUME_RATIO_PULLBACK        = 0.10;
+
+    // 거래대금 비율 (latestTurnover / avgTurnover 최소값)
+    private static final double TURNOVER_RATIO_BREAKOUT      = 0.20;
+    private static final double TURNOVER_RATIO_EARLY_MOMENTUM = 0.18;
+    private static final double TURNOVER_RATIO_PULLBACK      = 0.15;
+
+    // 고득점(≥70) 시 필터 완화
+    private static final int    HIGH_CONVICTION_SCORE         = 84;
+    private static final double HIGH_CONVICTION_VWAP_BONUS    = 0.006; // +0.6% VWAP 이격 허용
+    private static final double HIGH_CONVICTION_VOLUME_MULT   = 0.85;  // 볼륨 기준 -15%
+    private static final double HIGH_CONVICTION_TURNOVER_MULT = 0.85;  // 거래대금 기준 -15%
 
     // =========================
     // Liquidity / price filter
     // =========================
     private static final double MIN_KRX_PRICE = 1000.0;
 
-    private static final double MIN_KRX_LATEST_TURNOVER = 30_000_000.0;
-    private static final double MIN_KRX_AVG_TURNOVER = 20_000_000.0;
+    private static final double MIN_KRX_LATEST_TURNOVER = 50_000_000.0; // 5천만원 (기존 3천만 → 상향)
+    private static final double MIN_KRX_AVG_TURNOVER    = 30_000_000.0; // 3천만원 (기존 2천만 → 상향)
 
     private static final double MIN_US_LATEST_TURNOVER = 10_000.0;
     private static final double MIN_US_AVG_TURNOVER = 6_000.0;
 
     // =========================
-    // Risk / Exit (shared settings)
+    // Risk / Exit (공통)
     // =========================
-    private static final double STOP_LOSS_MULT    = 0.985;   // -1.5%
-    private static final double EMERGENCY_STOP_MULT = 0.945; // emergency stop
+    private static final double EMERGENCY_STOP_MULT = 0.945; // emergency stop (모든 모드 공통)
 
-    private static final double TAKE_PROFIT_PARTIAL_MULT = 1.020;         // +2.0% partial take profit
-    private static final double BREAKEVEN_STOP_AFTER_PARTIAL_MULT = 1.003; // +0.3% breakeven stop after partial TP
-
-    private static final double MAX_DAILY_LOSS_PCT = 0.04; // 일일 최대 손실 4%
+    private static final double MAX_DAILY_LOSS_PCT   = 0.06; // 일일 최대 손실 6%
+    private static final double MAX_DAILY_PROFIT_PCT = 0.05; // 일일 수익 목표 +5% 달성 시 신규 진입 차단
 
     private static final long SELL_MARKET_FALLBACK_TTL_MS = 60_000L;
 
-    // TRAIL_FROM_HIGH_MULT removed: replaced by dynamic profit-rate-based trailing
+    // Breakeven guard: 한번이라도 수익 찍었다가 손실 구간으로 되돌아오면 시장가 청산
+    private static final double BREAKEVEN_GUARD_PEAK_THRESHOLD = 0.013; // 피크 +1.3% 이상 도달 후 (↑0.8%, VWAP 노이즈 수준 제외)
+    private static final long   BREAKEVEN_GUARD_MIN_HOLD_MS    = 180_000L; // 진입 후 최소 3분 경과
+
+    // =========================
+    // Risk / Exit (KRX — entryMode별)
+    // =========================
+    // PULLBACK: 손절 -2.3%, 익절 +3.2%, 트레일 시작 +2.2%, 고점 하락 -1.6%
+    private static final double STOP_KRX_PULLBACK              = 0.977;
+    private static final double TP_KRX_PULLBACK                = 1.032;
+    private static final double TRAIL_START_KRX_PULLBACK       = 0.022;
+    private static final double TRAIL_DROP_KRX_PULLBACK        = 0.016;
+
+    // BREAKOUT: 손절 -1.3%, 익절 +2.8%, 트레일 시작 +1.8%, 고점 하락 -1.5%
+    // R:R = 2.8/1.3 = 2.15 — 진짜 강한 돌파는 2.2% 이후가 본게임, 조기 익절 방지
+    private static final double STOP_KRX_BREAKOUT              = 0.987;
+    private static final double TP_KRX_BREAKOUT                = 1.028;
+    private static final double TRAIL_START_KRX_BREAKOUT       = 0.023;
+    private static final double TRAIL_DROP_KRX_BREAKOUT        = 0.015;
+
+    // VOLUME_BREAKOUT: 손절 -1.8%, 익절 +3.5%, 트레일 시작 +2.8%, 고점 하락 -1.8%
+    private static final double STOP_KRX_VOLUME_BREAKOUT       = 0.982;
+    private static final double TP_KRX_VOLUME_BREAKOUT         = 1.035;
+    private static final double TRAIL_START_KRX_VOLUME_BREAKOUT = 0.028;
+    private static final double TRAIL_DROP_KRX_VOLUME_BREAKOUT  = 0.018;
+
+    // EARLY_MOMENTUM: 손절 -1.0%, 익절 +2.2%, 트레일 없음 (모멘텀 소멸 즉시 컷)
+    private static final double STOP_KRX_EARLY_MOMENTUM        = 0.990;
+    private static final double TP_KRX_EARLY_MOMENTUM          = 1.022;
+
+    // =========================
+    // Risk / Exit (US — KRX보다 손절 약간 넓게)
+    // =========================
+    // PULLBACK: 손절 -2.5%, 익절 +3.5%, 트레일 시작 +2.3%, 고점 하락 -1.7%
+    private static final double STOP_US_PULLBACK               = 0.975;
+    private static final double TP_US_PULLBACK                 = 1.035;
+    private static final double TRAIL_START_US_PULLBACK        = 0.023;
+    private static final double TRAIL_DROP_US_PULLBACK         = 0.017;
+
+    // BREAKOUT: 손절 -1.5%, 익절 +3.0%, 트레일 시작 +1.8%, 고점 하락 -1.5%
+    // R:R = 3.0/1.5 = 2.0 — 진짜 강한 돌파는 2.2% 이후가 본게임, 조기 익절 방지
+    private static final double STOP_US_BREAKOUT               = 0.985;
+    private static final double TP_US_BREAKOUT                 = 1.030;
+    private static final double TRAIL_START_US_BREAKOUT        = 0.023;
+    private static final double TRAIL_DROP_US_BREAKOUT         = 0.015;
+
+    // VOLUME_BREAKOUT: 손절 -2.0%, 익절 +4.0%, 트레일 시작 +3.0%, 고점 하락 -2.0%
+    private static final double STOP_US_VOLUME_BREAKOUT        = 0.980;
+    private static final double TP_US_VOLUME_BREAKOUT          = 1.040;
+    private static final double TRAIL_START_US_VOLUME_BREAKOUT  = 0.030;
+    private static final double TRAIL_DROP_US_VOLUME_BREAKOUT   = 0.020;
+
+    // EARLY_MOMENTUM: 손절 -1.2%, 익절 +2.3%, 트레일 없음 (모멘텀 소멸 즉시 컷)
+    private static final double STOP_US_EARLY_MOMENTUM         = 0.988;
+    private static final double TP_US_EARLY_MOMENTUM           = 1.023;
 
     // =========================
     // Sizing
     // =========================
     private static final double BASE_SIZE_PULLBACK = 1.20;
     private static final double BASE_SIZE_BREAKOUT = 0.80;
+    private static final double BASE_SIZE_EARLY_MOMENTUM = 0.50; // 승률 낮은 모드 → 사이즈 축소
     private static final double SIZE_UP_MULT = 1.50;
 
     // =========================
     // Execution control
     // =========================
-    private static final long BUY_COOLDOWN_MS = 90_000L;
-    private static final long PENDING_TIMEOUT_MS = 30_000L;
-    private static final long SELL_RETRY_COOLDOWN_MS = 5_000L;
-    private static final long SELL_PENDING_TIMEOUT_MS = 15_000L;
+    private static final long BUY_COOLDOWN_MS = 90_000L;          // 매수 신호 간 최소 쿨다운 (90초)
+    private static final long PENDING_TIMEOUT_MS = 30_000L;        // 매수 주문 미체결 타임아웃 (30초)
+    private static final long SELL_RETRY_COOLDOWN_MS = 5_000L;     // 매도 재시도 최소 간격 (5초)
+    private static final long SELL_PENDING_TIMEOUT_MS = 15_000L;   // 매도 주문 미체결 타임아웃 (15초)
 
-    private static final long REENTER_PROFIT_COOLDOWN_MS = 300_000L;
-    private static final long REENTER_TRAIL_COOLDOWN_MS  = 120_000L;  // 2m after TRAIL_DYNAMIC exit
-    private static final long REENTER_STOPLOSS_COOLDOWN_MS = 900_000L;
+    private static final long REENTER_PROFIT_COOLDOWN_MS = 300_000L;   // 익절 후 동일 종목 재진입 금지 (5분)
+    private static final long REENTER_TRAIL_COOLDOWN_MS  = 120_000L;   // 트레일 청산 후 재진입 금지 (2분)
+    // 손절 이유별 재진입 쿨다운 (강한 종목은 빠른 회복 가능 → 이유별 차별화)
+    private static final long REENTER_STOPLOSS_COOLDOWN_MS          = 900_000L; // STOP_LOSS / VWAP_BREAK / EMERGENCY: 15분
+    private static final long REENTER_FAILED_BREAKOUT_COOLDOWN_MS   = 600_000L; // FAILED_BREAKOUT: 10분
+    private static final long REENTER_EARLY_MOMENTUM_DEAD_COOLDOWN_MS = 480_000L; // EARLY_MOMENTUM_DEAD: 8분
+    private static final long REENTER_FAILED_PULLBACK_COOLDOWN_MS     = 480_000L; // FAILED_PULLBACK: 8분
+    private static final long REENTER_TIME_STOP_SOFT_COOLDOWN_MS    = 180_000L; // TIME_STOP_SOFT: 3분
+    private static final long REENTER_TIME_STOP_HARD_COOLDOWN_MS    = 300_000L; // TIME_STOP_HARD: 5분
 
-    private static final int MAX_DAILY_ENTRY_COUNT = 2;
-    private static final int MAX_SAME_PATTERN_ENTRY_COUNT = 1;
+    private static final int MAX_DAILY_ENTRY_COUNT = 2;           // 종목당 일일 최대 진입 횟수
+    private static final int MAX_SAME_PATTERN_ENTRY_COUNT = 1;    // 동일 패턴 연속 진입 최대 횟수 (중복 추격 방지)
 
     // =========================
     // Time stop
     // =========================
-    private static final long MAX_HOLD_SOFT_MS = 900_000L;    // 15m soft time stop
-    private static final long MAX_HOLD_HARD_MS = 1_800_000L; // 30m hard time stop
-    private static final double TIME_STOP_SOFT_PROFIT_MULT = 1.003; // exit if below +0.3% at soft stop
+    // soft: 5분 후 수익 +0.3% 미만 + 속도 약화 → 모멘텀 실패로 판단 청산
+    private static final long MAX_HOLD_SOFT_MS = 300_000L;    // 소프트 타임스탑: 5분
+    // hard: 12분 경과 시 무조건 청산 (단타/모멘텀 전략 — 12분 내 안 가면 실패)
+    private static final long MAX_HOLD_HARD_MS = 720_000L;    // 하드 타임스탑: 12분
+    private static final long VWAP_BREAK_GRACE_MS = 360_000L; // 매수 후 6분간 VWAP_BREAK 유예 (초기 흔들림 허용)
 
-    // FIXED_BUY_QTY removed: entry requires buyAmountPerOrder to be set
-    private static final long MARKET_CONTEXT_TTL_MS = 300_000L;
+    private static final long MARKET_CONTEXT_TTL_MS = 300_000L; // 시장 컨텍스트 유효 시간 (5분 초과 시 만료)
 
     private final MarketDataService marketDataService;
     private final Map<String, SymbolState> states = new ConcurrentHashMap<>();
@@ -173,8 +274,8 @@ public class StrategyEngine {
         long entryTimeMs;
         double highestSinceEntry;
         double buyAmountPerOrder;
+        int    entryQty;
 
-        boolean partialTakeProfitDone;
         double entryPriceSnapshot;
         double lastKnownProfitRate;
 
@@ -189,6 +290,7 @@ public class StrategyEngine {
         long lastProfitExitTimeMs;
         long lastTrailExitTimeMs;
         long lastStopLossExitTimeMs;
+        String lastStopLossExitReason;  // 쿨다운 차별화용 (이유별 재진입 대기 시간 다름)
         int dailyEntryCount;
         java.time.LocalDate lastEntryDay;
         String lastEntryPatternKey;
@@ -199,6 +301,23 @@ public class StrategyEngine {
         String forceMarketReason;
 
         EntryMode entryMode = EntryMode.NONE;
+        PositionPhase positionPhase = PositionPhase.NONE;
+        ExitType lastExitType = ExitType.NONE;
+        String lastPendingSellReason;     // 진행 중인 매도 주문 이유 (거절 시 롤백용)
+        int pendingSellQty;               // 진행 중인 매도 주문 수량
+        double pendingSellWeightedPnl;    // SELL_FILLED 시 dailyPnl에 반영할 값 (주문 생성 시점에는 미반영)
+        double pendingSellTradePnlPct;    // SELL_FILLED 시 statsDailyExitPnlSum에 반영할 값
+
+        // 진입 시점 지표 스냅샷 (BUY 주문 생성 시 저장 — clearEntryReadyState 후에도 유지)
+        int    entrySignalScore;
+        double entryVwapDistPct;
+        double entryVelocityShort;
+
+        // 일별 통계 (진입 기회 / 실행 / 청산 성과)
+        int statsDailyEntryReadyCount;
+        int statsDailyExecCount;
+        Map<String, Integer> statsDailyExitReasonCounts = new java.util.HashMap<>();
+        double statsDailyExitPnlSum;
     }
 
     private static class BuySignal {
@@ -232,6 +351,7 @@ public class StrategyEngine {
         boolean pullbackEntry;
         boolean volumeBreakout;
         boolean strongBreakout;
+        boolean earlyMomentum; // velShort/velMid 기반 초기 급등 포착
 
         boolean momentumNearHigh;
         boolean momentumVelocityOk;
@@ -276,28 +396,143 @@ public class StrategyEngine {
         EntryMode entryMode = EntryMode.NONE;
 
         boolean isBuyCandidate(Market market) {
+            // --- 하드 게이트 (모드 무관) ---
             if (!enoughHistory) return false;
             if (timeWindowBlocked) return false;
             if (!marketFilterPassed) return false;
             if (cheapStockBlocked) return false;
-            if (!turnoverFilterPassed) return false;
-            if (!absoluteLiquidityPassed) return false;
-            if (lowVolumeSkip) return false;
-            if (!aboveVwap) return false;
-            if (!vwapSlopeUp) return false;
-            if (vwapTooFar) return false;
+            if (!absoluteLiquidityPassed) return false; // 절대 유동성 (50M KRX)
+            if (vwapTooFar) return false;               // safety-net: 8% 초과
+            if (entryMode == EntryMode.NONE) return false;
 
-            // Primary: pullback rebound
-            if (pullbackEntry) {
-                return signalScore >= 60 && nearVwap;
+            // --- VWAP 포지션: 모드별 처리 ---
+            // Pullback: VWAP 대비 -0.4% 이내까지 허용 (slope 상승 조건 필수)
+            // 그 외 모드: 반드시 VWAP 위에 있어야 하고 slope도 상승이어야 함
+            if (entryMode == EntryMode.PULLBACK) {
+                // PULLBACK도 VWAP_SLOPE_MIN_PCT(0.02%) 기준 통일 — 기준 이하 횡보 VWAP 진입 차단
+                boolean vwapSlopeRelaxed = vwap > 0.0 && prevVwap > 0.0
+                        && ((vwap - prevVwap) / prevVwap) >= VWAP_SLOPE_MIN_PCT;
+                boolean vwapOk = aboveVwap
+                        || (vwap > 0.0 && vwapDistancePct >= VWAP_PULLBACK_BELOW_ALLOWED && vwapSlopeRelaxed);
+                if (!vwapOk) return false;
+            } else {
+                if (!aboveVwap) return false;
+                if (!vwapSlopeUp) return false;
             }
 
-            // Breakout path requires retest confirmation
-            if (volumeBreakout || strongBreakout) {
-                return breakoutRetestReady
+            // --- per-mode 기준값 결정 ---
+            boolean highConviction = entryMode == EntryMode.EARLY_MOMENTUM
+                    ? signalScore >= 88
+                    : signalScore >= HIGH_CONVICTION_SCORE;
+
+            double allowedVwapGap;
+            double requiredVolumeRatio;
+            double requiredTurnoverRatio;
+            int minScore;
+
+            if (entryMode == EntryMode.BREAKOUT) {
+                allowedVwapGap        = VWAP_MAX_GAP_BREAKOUT;
+                requiredVolumeRatio   = VOLUME_RATIO_BREAKOUT;
+                requiredTurnoverRatio = TURNOVER_RATIO_BREAKOUT;
+                minScore              = market == Market.US ? 82 : 78;
+            } else if (entryMode == EntryMode.VOLUME_BREAKOUT) {
+                allowedVwapGap        = VWAP_MAX_GAP_BREAKOUT;
+                requiredVolumeRatio   = VOLUME_RATIO_BREAKOUT;
+                requiredTurnoverRatio = TURNOVER_RATIO_BREAKOUT;
+                minScore              = market == Market.US ? 82 : 78;
+            } else if (entryMode == EntryMode.EARLY_MOMENTUM) {
+                allowedVwapGap        = VWAP_MAX_GAP_EARLY_MOMENTUM;
+                requiredVolumeRatio   = VOLUME_RATIO_EARLY_MOMENTUM;
+                requiredTurnoverRatio = TURNOVER_RATIO_EARLY_MOMENTUM;
+                minScore              = 65;
+            } else { // PULLBACK
+                allowedVwapGap        = VWAP_MAX_GAP_PULLBACK;
+                requiredVolumeRatio   = VOLUME_RATIO_PULLBACK;
+                requiredTurnoverRatio = TURNOVER_RATIO_PULLBACK;
+                minScore              = 72;
+            }
+
+            // 고득점이면 일부 기준 완화
+            if (highConviction) {
+                allowedVwapGap        += HIGH_CONVICTION_VWAP_BONUS;
+                requiredVolumeRatio   *= HIGH_CONVICTION_VOLUME_MULT;
+                requiredTurnoverRatio *= HIGH_CONVICTION_TURNOVER_MULT;
+            }
+
+            // --- per-mode 필터 ---
+            if (vwapDistancePct > allowedVwapGap) return false;
+            if (averageVolume > 0.0 && volume < averageVolume * requiredVolumeRatio) return false;
+            if (averageTurnover > 0.0 && latestTurnover < averageTurnover * requiredTurnoverRatio) return false;
+            if (signalScore < minScore) return false;
+
+            // --- 모드별 진입 조건 ---
+            if (entryMode == EntryMode.PULLBACK) {
+                // 강한 회복 확인형 눌림목: OR 완화가 아니라 AND 구조
+                // velocityShort > 0.002 (최소 상승 속도) 필수이며,
+                // 추가로 이평 회복 증거 하나 이상 확인:
+                //   - pullbackAvgShort >= pullbackAvgLong: 단기 이평이 장기 이평 위
+                //   - price >= pullbackAvgShort: 현재가가 단기 이평 회복
+                boolean recoveryConfirmed = velocityShort > 0.0012   // 완전 회복 전 초기 반등 포착 허용
+                        && (pullbackAvgShort >= pullbackAvgLong || price >= pullbackAvgShort);
+                return pullbackEntry && recoveryConfirmed;
+            }
+            if (entryMode == EntryMode.BREAKOUT || entryMode == EntryMode.VOLUME_BREAKOUT) {
+                // 과열 돌파 차단: 고점 근처에서 급등 + 거래량 폭발이면 끝꼬리 매수 가능성
+                // 과열 차단: 고점 근처(-0.2% 이내) + 고속도(1.1%) + VWAP 과리(1.8%) + 거래량 폭발(2.5배) 동시 충족
+                // → 끝꼬리 매수 가능성이 매우 높은 구간
+                boolean overheated = recentHigh > 0.0
+                        && price >= recentHigh * 0.998
+                        && velocityShort >= 0.011
+                        && vwapDistancePct >= 0.018
+                        && averageVolume > 0.0
+                        && volume >= averageVolume * 2.5;
+                if (overheated) return false;
+                // 고점 0.05% 이내 + 과열 상태일 때만 차단 — 단순 고점 근접은 괜찮지만 과열이면 끝꼬리 매수
+                // (속도 1.1% 이상 + VWAP 이격 1.8% 이상 동반 시에만 차단)
+                if (recentHigh > 0.0
+                        && price >= recentHigh * 0.9995
+                        && velocityShort >= 0.011
+                        && vwapDistancePct >= 0.018) {
+                    return false;
+                }
+                // 가속도 조건: velocityShort > velocityMid 필수 — 중기보다 단기 속도가 강해야 진짜 돌파
+                // velocityShort <= velocityMid면 모멘텀이 이미 둔화 중 → 죽어가는 돌파 진입 방지
+                if (velocityShort <= velocityMid) return false;
+                // US: velocityMid > 0 이상만으로는 부족 — 최소 0.001 이상 요구
+                if (market == Market.US && velocityMid <= 0.001) return false;
+                // US: 단기/중기/장기 3방향 모두 상승이어야 함 (KRX는 2방향으로 충분)
+                boolean trendOk = market == Market.US ? trendScore == 3 : multiUptrend;
+                if (market == Market.US) {
+                    if (entryMode == EntryMode.VOLUME_BREAKOUT) {
+                        // US VOLUME_BREAKOUT: 고점 근처(99.9% 이상)에서 거래량 폭발로 직접 진입
+                        return volumeBreakNearHigh    // price >= recentHigh * 0.9990
+                                && aboveVwap
+                                && vwapSlopeUp
+                                && velocityShort > 0.0
+                                && averageVolume > 0.0
+                                && volume >= averageVolume * VOLUME_BREAKOUT_VOLUME_MULT
+                                && trendOk;
+                    }
+                    // US BREAKOUT: 돌파 확인 후 0.1~1.0% 눌린 구간에서만 진입
+                    boolean usPullbackZone = recentHigh > 0.0
+                            && price < recentHigh * 0.9990
+                            && price >= recentHigh * 0.990;
+                    return usPullbackZone
+                            && aboveVwap
+                            && vwapSlopeUp
+                            && velocityShort > 0.0
+                            && price >= pullbackAvgShort  // 눌림 후 단기 이평 회복 확인
+                            && averageVolume > 0.0
+                            && volume >= averageVolume * 1.2
+                            && trendOk;
+                }
+                return (volumeBreakout || strongBreakout)
+                        && breakoutRetestReady
                         && breakoutRetestRecovering
-                        && signalCount >= 3
-                        && signalScore >= 65;
+                        && trendOk;
+            }
+            if (entryMode == EntryMode.EARLY_MOMENTUM) {
+                return earlyMomentum && multiUptrend;
             }
 
             return false;
@@ -322,8 +557,80 @@ public class StrategyEngine {
         }
     }
 
+    private static class ExitProfile {
+        final double stopLossMult;
+        final Double takeProfitMult;    // null = 고정 익절 없음
+        final Double trailStartProfit;  // null = 트레일 없음
+        final Double trailDropFromHigh;
+        final boolean useTrailing;
+        final String modeTag;           // sell reason suffix (e.g. "PULLBACK")
+
+        ExitProfile(double stopLossMult, Double takeProfitMult,
+                    Double trailStartProfit, Double trailDropFromHigh,
+                    boolean useTrailing, String modeTag) {
+            this.stopLossMult      = stopLossMult;
+            this.takeProfitMult    = takeProfitMult;
+            this.trailStartProfit  = trailStartProfit;
+            this.trailDropFromHigh = trailDropFromHigh;
+            this.useTrailing       = useTrailing;
+            this.modeTag           = modeTag;
+        }
+    }
+
+    public static class EntrySnapshot {
+        public final String entryMode;
+        public final double entryPrice;       // entryPriceSnapshot (브로커 avgPrice 보조)
+        public final long   entryTimeMs;
+        public final double highestSinceEntry;
+        public final int    signalScore;
+        public final double vwapDistPct;
+        public final double velocityShort;
+        public final double buyAmountPerOrder;
+        public final int    entryQty;
+
+        EntrySnapshot(SymbolState st) {
+            this.entryMode         = st.entryMode != null ? st.entryMode.name() : "UNKNOWN";
+            this.entryPrice        = st.entryPriceSnapshot;
+            this.entryTimeMs       = st.entryTimeMs;
+            this.highestSinceEntry = st.highestSinceEntry;
+            this.signalScore       = st.entrySignalScore;
+            this.vwapDistPct       = st.entryVwapDistPct;
+            this.velocityShort     = st.entryVelocityShort;
+            this.buyAmountPerOrder = st.buyAmountPerOrder;
+            this.entryQty          = st.entryQty;
+        }
+    }
+
+    public EntrySnapshot getEntrySnapshot(String symbol) {
+        String normalized = normalizeSymbol(symbol);
+        if (normalized == null) return null;
+        SymbolState st = state(normalized);
+        synchronized (st) {
+            if (st.entryPriceSnapshot <= 0.0) return null;
+            return new EntrySnapshot(st);
+        }
+    }
+
     public StrategyEngine(MarketDataService marketDataService) {
         this.marketDataService = marketDataService;
+    }
+
+    public void logDailyStats(String symbol) {
+        String normalized = normalizeSymbol(symbol);
+        if (normalized == null) return;
+        SymbolState st = state(normalized);
+        synchronized (st) {
+            Market market = st.market != null ? st.market : Market.KRX;
+            java.time.LocalDate today = nowByMarket(market).toLocalDate();
+            double dailyPnl = dailyPnlAccumulator.getOrDefault(today, 0.0);
+            logger.info("DAILY_STATS [{}] {} date={} entryReady={} execCount={} exitPnlSum={} weightedDailyPnl={} exitsByReason={}",
+                    market, normalized, today,
+                    st.statsDailyEntryReadyCount,
+                    st.statsDailyExecCount,
+                    fmtPct(st.statsDailyExitPnlSum),
+                    fmtPct(dailyPnl),
+                    st.statsDailyExitReasonCounts);
+        }
     }
 
     public void resetAll() {
@@ -410,16 +717,44 @@ public class StrategyEngine {
 
         SymbolState st = state(normalized);
         synchronized (st) {
+            // phase=NONE이면 이미 청산 완료 — 브로커 API 지연으로 오는 stale 알림 무시
+            if (st.positionPhase == PositionPhase.NONE) return;
             st.buyPending = false;
             st.buyPendingSinceMs = 0L;
             if (st.entryTimeMs == 0L) {
                 st.entryTimeMs = System.currentTimeMillis();
             }
+            st.positionPhase = PositionPhase.HOLDING;
+            logger.info("BUY_FILLED {} phase={}", normalizeSymbol(symbol), st.positionPhase);
+        }
+    }
+
+    public void forceHoldingState(String symbol) {
+        String normalized = normalizeSymbol(symbol);
+        if (normalized == null) return;
+        SymbolState st = state(normalized);
+        synchronized (st) {
+            if (st.positionPhase != PositionPhase.NONE) return;
+            st.positionPhase = PositionPhase.HOLDING;
+            st.buyPending = false;
+            st.buyPendingSinceMs = 0L;
+            if (st.entryTimeMs == 0L) {
+                st.entryTimeMs = System.currentTimeMillis();
+            }
+            logger.info("FORCE_HOLDING {} phase=HOLDING (startup recovery)", normalized);
         }
     }
 
     public void notifyBuyRejected(String symbol) {
-        cancelBuyPending(symbol);
+        String normalized = normalizeSymbol(symbol);
+        if (normalized == null) return;
+        SymbolState st = state(normalized);
+        synchronized (st) {
+            st.buyPending = false;
+            st.buyPendingSinceMs = 0L;
+            st.positionPhase = PositionPhase.NONE;
+            logger.warn("BUY_REJECTED {} phase={}", normalized, st.positionPhase);
+        }
     }
 
     public void notifySellAccepted(String symbol) {
@@ -442,13 +777,61 @@ public class StrategyEngine {
 
         SymbolState st = state(normalized);
         synchronized (st) {
-            st.sellPending = false;
-            st.sellPendingSinceMs = 0L;
             st.lastSellSignalMs = System.currentTimeMillis();
 
-            if (remainingQty <= 0) {
-                resetEntryState(st);
+            String filledReason = st.lastPendingSellReason;
+
+            // 체결 확인 후 dailyPnl 반영 — filledQty=0이면 실체결 없으므로 PnL 반영 건너뜀
+            if (st.pendingSellWeightedPnl != 0.0 || st.pendingSellTradePnlPct != 0.0) {
+                int filledQty = st.pendingSellQty - remainingQty;
+                if (filledQty <= 0) {
+                    logger.warn("SELL_FILLED {} skipped PnL: filledQty={} pendingSellQty={} remainingQty={}",
+                            normalized, filledQty, st.pendingSellQty, remainingQty);
+                } else if (st.pendingSellQty <= 0) {
+                    logger.warn("SELL_FILLED {} skipped PnL: invalid pendingSellQty={} filledQty={}",
+                            normalized, st.pendingSellQty, filledQty);
+                } else {
+                    double fillRatio = (double) filledQty / st.pendingSellQty;
+                    double realizedWeightedPnl = st.pendingSellWeightedPnl * fillRatio;
+                    double realizedTradePnlPct = st.pendingSellTradePnlPct * fillRatio;
+
+                    java.time.LocalDate today = nowByMarket(st.market != null ? st.market : Market.KRX).toLocalDate();
+                    dailyPnlAccumulator.merge(today, realizedWeightedPnl, (a, b) -> a + b);
+                    st.statsDailyExitPnlSum += realizedTradePnlPct;
+                    if (filledReason != null) {
+                        st.statsDailyExitReasonCounts.merge(filledReason, 1, (a, b) -> a + b);
+                    }
+                    logger.info("SELL_FILLED_PNL {} reason={} filledQty={}/{} fillRatio={} weightedPnl={} dailyPnl={}",
+                            normalized, filledReason,
+                            filledQty, st.pendingSellQty,
+                            String.format("%.2f", fillRatio),
+                            fmtPct(realizedWeightedPnl),
+                            fmtPct(dailyPnlAccumulator.getOrDefault(today, 0.0)));
+
+                    st.pendingSellWeightedPnl -= realizedWeightedPnl;
+                    st.pendingSellTradePnlPct -= realizedTradePnlPct;
+                    st.pendingSellQty = remainingQty;
+                }
             }
+
+            if (remainingQty <= 0) {
+                // 전량 청산
+                st.sellPending = false;
+                st.sellPendingSinceMs = 0L;
+                st.lastExitType = toExitType(filledReason);
+                resetEntryState(st);
+                st.positionPhase = PositionPhase.NONE;
+            } else {
+                // 부분 체결 — sellPending 유지하여 중복 매도 방지, 타임아웃 카운터 리셋
+                st.sellPending = true;
+                st.sellPendingSinceMs = System.currentTimeMillis();
+                st.pendingSellQty = remainingQty;
+                st.positionPhase = PositionPhase.EXITING;
+            }
+
+            logger.info("SELL_FILLED {} reason={} remainingQty={} phase={} exitType={}",
+                    normalized, filledReason, remainingQty,
+                    st.positionPhase, st.lastExitType);
         }
     }
 
@@ -458,9 +841,26 @@ public class StrategyEngine {
 
         SymbolState st = state(normalized);
         synchronized (st) {
+            String rejectedReason = st.lastPendingSellReason;
+
             st.sellPending = false;
             st.sellPendingSinceMs = 0L;
             st.lastSellSignalMs = System.currentTimeMillis();
+
+            // positionPhase를 매도 진행 이전으로 복원
+            if (st.positionPhase == PositionPhase.EXITING) {
+                st.positionPhase = PositionPhase.HOLDING;
+            }
+
+            // dailyPnl은 주문 생성 시 반영하지 않았으므로 롤백 불필요 — 그냥 소거
+            st.pendingSellWeightedPnl = 0.0;
+            st.pendingSellTradePnlPct = 0.0;
+
+            logger.warn("SELL_REJECTED {} reason={} phase={}",
+                    normalized, rejectedReason, st.positionPhase);
+
+            st.lastPendingSellReason = null;
+            st.pendingSellQty = 0;
         }
     }
 
@@ -486,11 +886,13 @@ public class StrategyEngine {
         double longAvg;
         double velocityShort;
 
+        double sessionVwapProxy;
         synchronized (st) {
             latest = st.minuteHistory.latest();
             shortAvg = st.minuteHistory.averagePrice(3);
             longAvg = st.minuteHistory.averagePrice(6);
             velocityShort = st.minuteHistory.velocitySeconds(TREND_SHORT_MIN_SECONDS, TREND_SHORT_MAX_SECONDS);
+            sessionVwapProxy = st.minuteHistory.sessionVwap();
         }
 
         if (latest == null || latest.getClose() <= 0.0) return;
@@ -498,8 +900,13 @@ public class StrategyEngine {
 
         boolean choppy = Math.abs(velocityShort) < 0.0005
                 && Math.abs(shortAvg - longAvg) < (price * 0.001);
-        boolean weak = velocityShort <= -0.001
-                && shortAvg < longAvg;
+
+        // weak 판정 강화:
+        //  1) 단기 속도가 0 미만이고 단기 평균이 장기 평균 아래 (기존보다 완화: -0.001 → 0.0)
+        //  2) OR 프록시 ETF가 세션 VWAP 대비 0.15% 이상 하락 (일중 하락장 감지)
+        boolean trendWeak = velocityShort < 0.0 && shortAvg < longAvg;
+        boolean belowVwap = sessionVwapProxy > 0.0 && price < sessionVwapProxy * 0.9985;
+        boolean weak = trendWeak || belowVwap;
 
         MarketContext ctx = marketContext.computeIfAbsent(market, m -> new MarketContext());
         synchronized (ctx) {
@@ -513,8 +920,9 @@ public class StrategyEngine {
             ctx.sourceSymbol = normalized;
         }
 
-        logger.info("MARKET_CONTEXT [{}] proxy={} velShort={} shortAvg={} longAvg={} choppy={} weak={}",
-                market, normalized, fmtPct(velocityShort), fmt(shortAvg), fmt(longAvg), choppy, weak);
+        logger.debug("MARKET_CONTEXT [{}] proxy={} velShort={} shortAvg={} longAvg={} vwap={} belowVwap={} trendWeak={} choppy={} weak={}",
+                market, normalized, fmtPct(velocityShort), fmt(shortAvg), fmt(longAvg),
+                fmt(sessionVwapProxy), belowVwap, trendWeak, choppy, weak);
     }
 
     public void record(String symbol,
@@ -539,136 +947,22 @@ public class StrategyEngine {
         synchronized (st) {
             st.minuteHistory.addBar(open, high, low, close, Math.max(0.0, volume), ts);
 
-            logger.info("MINUTE_BAR_CREATED {} o={} h={} l={} c={} v={} ts={}",
-                    normalized, fmt(open), fmt(high), fmt(low), fmt(close), fmt(volume), timestamp);
-
             BuySignal signal = buildBuySignal(st, market, close, Math.max(0.0, volume), ts);
 
             if (isEntryReady(signal, market)) {
+                st.statsDailyEntryReadyCount++;
                 st.entrySignal = signal;
                 st.entryReadyAtMs = nowMs;
                 st.entryReadyUntilMs = nowMs + ENTRY_READY_TTL_MS;
                 st.entryReadyClose = close;
                 st.entryReadyPatternKey = signal.patternKey;
                 st.lastEntryReadyBarTs = ts;
-
-                logger.info("ENTRY_READY [{}] {} mode={} price={} pattern={} score={} count={} multiUp={} weak={} choppy={} TTL={}ms",
-                        market,
-                        normalized,
-                        signal.entryMode,
-                        fmt(st.entryReadyClose),
-                        st.entryReadyPatternKey,
-                        signal.signalScore,
-                        signal.signalCount,
-                        signal.multiUptrend,
-                        signal.marketWeak,
-                        signal.choppyMarket,
-                        ENTRY_READY_TTL_MS);
-                logger.info("ENTRY_READY_DETAIL [{}] {} mode={} vwap={} dist={} nearVwap={} tooFar={} retestReady={} retestRecovering={}",
-                        market,
-                        normalized,
-                        signal.entryMode,
-                        fmt(signal.vwap),
-                        fmtPct(signal.vwapDistancePct),
-                        signal.nearVwap,
-                        signal.vwapTooFar,
-                        signal.breakoutRetestReady,
-                        signal.breakoutRetestRecovering);
             } else {
-                logger.info(
-                        "ENTRY_REJECT (minute) [{}] {} reason={} mode={} signals={} score={} uptrend={} price={} high={} low={} pbDepth={} volume={}/{} turnover={}/{} vel(short/mid/long)={}/{}/{}",
-                        market,
-                        normalized,
-                        signal.rejectReason,
-                        signal.entryMode,
-                        signal.signalCount,
-                        signal.signalScore,
-                        signal.multiUptrend,
-                        fmt(signal.price),
-                        fmt(signal.recentHigh),
-                        fmt(signal.recentLow),
-                        fmtPct(signal.pullbackDepthFromHigh),
-                        fmt(signal.volume),
-                        fmt(signal.averageVolume),
-                        fmt(signal.latestTurnover),
-                        fmt(signal.averageTurnover),
-                        fmtPct(signal.velocityShort),
-                        fmtPct(signal.velocityMid),
-                        fmtPct(signal.velocityLong)
-                );
-
                 clearEntryReadyState(st);
             }
         }
     }
 
-    public boolean shouldBuy(String symbol) {
-        String normalized = normalizeSymbol(symbol);
-        if (normalized == null) return false;
-
-        SymbolState st = state(normalized);
-        Market market = detectMarket(normalized, st);
-        LocalDateTime now = nowByMarket(market);
-
-        StockQuote quote;
-        try {
-            quote = marketDataService.fetchPrice(normalized, market == Market.KRX ? "KRX" : null);
-        } catch (Exception e) {
-            logger.warn("BUY WAIT {} reason=QUOTE_ERROR msg={}", normalized, e.getMessage());
-            return false;
-        }
-
-        synchronized (st) {
-            st.tickHistory.addTick(
-                    quote.getPrice(),
-                    Math.max(0.0, quote.getVolume()),
-                    normalizeTimestamp(quote.getTimestamp(), market)
-            );
-
-            long nowMs = System.currentTimeMillis();
-            if (!ensureEntryReady(st, market, normalized, nowMs)) {
-                return false;
-            }
-
-            if (!canBuy(st, normalized, market, now, st.entrySignal)) {
-                return false;
-            }
-
-            if (!passesTickEntryGate(st, normalized, market, quote.getPrice())) {
-                return false;
-            }
-
-            st.lastBuySignalMs = nowMs;
-            return true;
-        }
-    }
-
-    public boolean shouldSell(String symbol, double buyPrice, int currentQuantity) {
-        String normalized = normalizeSymbol(symbol);
-        if (normalized == null || buyPrice <= 0.0) return false;
-
-        SymbolState st = state(normalized);
-        Market market = detectMarket(normalized, st);
-
-        StockQuote quote;
-        try {
-            quote = marketDataService.fetchPrice(normalized, market == Market.KRX ? "KRX" : null);
-        } catch (Exception e) {
-            logger.warn("SELL WAIT {} reason=QUOTE_ERROR msg={}", normalized, e.getMessage());
-            return false;
-        }
-
-        synchronized (st) {
-            st.tickHistory.addTick(
-                    quote.getPrice(),
-                    Math.max(0.0, quote.getVolume()),
-                    normalizeTimestamp(quote.getTimestamp(), market)
-            );
-
-            SellDecision decision = evaluateSellDecision(st, market, normalized, quote.getPrice(), currentQuantity, buyPrice, System.currentTimeMillis());
-            return decision.shouldSell;
-        }
-    }
 
     public Optional<OrderCommand> decide(String symbol,
                                          double currentPrice,
@@ -699,7 +993,11 @@ public class StrategyEngine {
                     st.sellPending);
 
             if (currentQuantity <= 0) {
-                resetEntryState(st);
+                // 미결 주문이 있는 동안은 entry state 초기화 금지 (stale state 방지)
+                if (!st.buyPending && !st.sellPending) {
+                    resetEntryState(st);
+                    st.positionPhase = PositionPhase.NONE;
+                }
 
                 if (!ensureEntryReady(st, market, normalized, nowMs)) {
                     return Optional.empty();
@@ -710,123 +1008,81 @@ public class StrategyEngine {
                     return Optional.empty();
                 }
 
-                logger.info("ENTRY_EVAL [{}] {} ready={} pending={} weak={} choppy={} cheap={} turnoverFail={} volumeSkip={} multiUp={} score={} count={} mode={}",
-                        market,
-                        normalized,
-                        st.entrySignal != null,
-                        st.buyPending,
-                        signal.marketWeak,
-                        signal.choppyMarket,
-                        signal.cheapStockBlocked,
-                        !signal.turnoverFilterPassed,
-                        signal.lowVolumeSkip,
-                        signal.multiUptrend,
-                        signal.signalScore,
-                        signal.signalCount,
-                        signal.entryMode
-                );
-
                 if (!canBuy(st, normalized, market, now, signal)) {
-                    logger.info("ENTRY_RESULT [{}] {} result=SKIP reason=CANNOT_BUY score={} count={} weak={} multiUp={}",
-                            market,
-                            normalized,
-                            signal.signalScore,
-                            signal.signalCount,
-                            signal.marketWeak,
-                            signal.multiUptrend
-                    );
                     return Optional.empty();
                 }
 
                 if (!passesTickEntryGate(st, normalized, market, currentPrice)) {
-                    logger.info("ENTRY_RESULT [{}] {} result=WAIT reason=TICK_GATE score={} count={} weak={} multiUp={}",
-                            market,
-                            normalized,
-                            signal.signalScore,
-                            signal.signalCount,
-                            signal.marketWeak,
-                            signal.multiUptrend
-                    );
                     return Optional.empty();
                 }
 
                 double positionSize = determinePositionSize(signal, market);
                 if (positionSize <= 0.0) {
-                    logger.info("BUY WAIT [{}] {} reason=POSITION_SIZE_ZERO mode={} count={} score={}",
-                            market, normalized, signal.entryMode, signal.signalCount, signal.signalScore);
+                    logger.warn("BUY_SKIP [{}] {} reason=POSITION_SIZE_ZERO mode={}", market, normalized, signal.entryMode);
                     return Optional.empty();
                 }
 
                 double orderPrice = roundToTickSize(currentPrice, market);
                 int qty = resolveBuyQuantity(st, orderPrice, positionSize);
                 if (qty < 1) {
-                    double targetNotional = st.buyAmountPerOrder * positionSize;
-                    int rawQty = orderPrice > 0 ? (int) Math.floor(targetNotional / orderPrice) : 0;
-                    logger.info("BUY WAIT [{}] {} reason=BUY_AMOUNT_TOO_SMALL amount={} positionSize={}x targetNotional={} orderPrice={} calcQty={}",
-                            market,
-                            normalized,
-                            fmt(st.buyAmountPerOrder),
-                            fmt(positionSize),
-                            fmt(targetNotional),
-                            fmt(orderPrice),
-                            rawQty);
+                    logger.warn("BUY_SKIP [{}] {} reason=AMOUNT_TOO_SMALL amount={} size={}x price={}",
+                            market, normalized, fmt(st.buyAmountPerOrder), fmt(positionSize), fmt(orderPrice));
                     return Optional.empty();
                 }
 
                 st.lastBuySignalMs = nowMs;
+                st.statsDailyExecCount++;
                 updateEntryCounters(st, signal, now.toLocalDate());
                 st.entryMode = signal.entryMode;
-                String executedPatternKey = st.entryReadyPatternKey;
+                st.entrySignalScore   = signal.signalScore;
+                st.entryVwapDistPct   = signal.vwapDistancePct;
+                st.entryVelocityShort = signal.velocityShort;
+                st.entryQty           = qty;
                 clearEntryReadyState(st);
                 st.buyPending = true;
                 st.buyPendingSinceMs = nowMs;
+                st.positionPhase = PositionPhase.ENTERING;
 
-                logger.info("ENTRY_EXECUTED [{}] {} mode={} buyFilled price={} qty={} pattern={} reason={}",
-                        market,
-                        normalized,
-                        st.entryMode,
-                        fmt(orderPrice),
-                        qty,
-                        executedPatternKey,
-                        "conditions_met");
-                logger.info("ENTRY_RESULT [{}] {} result=BUY reason=CONDITIONS_MET score={} count={} weak={} multiUp={}",
-                        market,
-                        normalized,
-                        signal.signalScore,
-                        signal.signalCount,
-                        signal.marketWeak,
-                        signal.multiUptrend
-                );
+                boolean logHighConviction = signal.entryMode == EntryMode.EARLY_MOMENTUM
+                        ? signal.signalScore >= 88 : signal.signalScore >= HIGH_CONVICTION_SCORE;
+                boolean logBreakoutAccel = signal.velocityShort > signal.velocityMid;
+                double logFromHighPct = signal.recentHigh > 0.0
+                        ? (signal.price - signal.recentHigh) / signal.recentHigh : 0.0;
+                double logAllowedVwapGap = (signal.entryMode == EntryMode.BREAKOUT
+                        || signal.entryMode == EntryMode.VOLUME_BREAKOUT) ? VWAP_MAX_GAP_BREAKOUT
+                        : signal.entryMode == EntryMode.EARLY_MOMENTUM ? VWAP_MAX_GAP_EARLY_MOMENTUM
+                        : VWAP_MAX_GAP_PULLBACK;
+                if (logHighConviction) logAllowedVwapGap += HIGH_CONVICTION_VWAP_BONUS;
 
                 logger.info(
-                        "BUY [{}] {} mode={} price={} qty={} size={} count={} score={} m={} p={} v={} strong={} multi={} trendScore={} vel={} v1={} v2={} v3={} high={} low={} pbDepth={} vol={}/{} turnover={}/{} absLiq={} reason={}",
-                        market,
-                        normalized,
+                        "BUY [{}] {} mode={} price={} qty={} size={}x score={}{}" +
+                        " | WHY: {}" +
+                        " | VWAP: {}({} slope={}) allowedGap={}" +
+                        " | TREND: score={} vel={}/{}/{} accel={}" +
+                        " | VOL: {}/{} TO: {}/{}" +
+                        " | HIGH: {} fromHigh={}" +
+                        " | entryNo={}",
+                        market, normalized,
                         signal.entryMode,
-                        fmt(orderPrice),
-                        qty,
+                        fmt(orderPrice), qty,
                         fmt(positionSize),
-                        signal.signalCount,
                         signal.signalScore,
-                        signal.momentumBreakout,
-                        signal.pullbackEntry,
-                        signal.volumeBreakout,
-                        signal.strongBreakout,
-                        signal.multiUptrend,
+                        logHighConviction ? "(CONV)" : "",
+                        buildBuyWhyString(signal),
+                        fmtPct(signal.vwapDistancePct),
+                        signal.aboveVwap ? "ABOVE" : "BELOW",
+                        signal.vwapSlopeUp ? "UP" : "DN",
+                        fmtPct(logAllowedVwapGap),
                         signal.trendScore,
-                        fmtPct(signal.velocity),
                         fmtPct(signal.velocityShort),
                         fmtPct(signal.velocityMid),
                         fmtPct(signal.velocityLong),
+                        logBreakoutAccel,
+                        fmt(signal.volume), fmt(signal.averageVolume),
+                        fmt(signal.latestTurnover), fmt(signal.averageTurnover),
                         fmt(signal.recentHigh),
-                        fmt(signal.recentLow),
-                        fmtPct(signal.pullbackDepthFromHigh),
-                        fmt(signal.volume),
-                        fmt(signal.averageVolume),
-                        fmt(signal.latestTurnover),
-                        fmt(signal.averageTurnover),
-                        signal.absoluteLiquidityPassed,
-                        entryReason(signal)
+                        fmtPct(logFromHighPct),
+                        st.dailyEntryCount
                 );
 
                 return Optional.of(new OrderCommand(
@@ -849,39 +1105,51 @@ public class StrategyEngine {
                 return Optional.empty();
             }
 
+            // phase=NONE인데 브로커가 qty>0을 계속 보내는 경우 (stale 알림) 무시
+            // SELL_FILLED 이후 브로커 API 지연으로 잔량이 남아있는 것처럼 보이는 phantom 포지션 차단
+            if (st.positionPhase == PositionPhase.NONE && !st.sellPending) {
+                logger.warn("SELL_SKIP [{}] {} reason=PHANTOM_POSITION phase=NONE qty={} avgPrice={}",
+                        market, normalized, currentQuantity, fmt(avgPrice));
+                return Optional.empty();
+            }
+
             refreshHoldingState(st, avgPrice, currentPrice, nowMs);
 
             if (st.sellPending) {
                 long elapsed = nowMs - st.sellPendingSinceMs;
                 if (elapsed < SELL_PENDING_TIMEOUT_MS) {
-                    logger.info("SELL_WAIT [{}] {} reason=PENDING elapsedMs={}",
-                            market, normalized, elapsed);
                     return Optional.empty();
+                }
+                // 타임아웃: 이전 주문 상태 정리 후 즉시 시장가 재매도 (이유 변경 조건 대기 없이)
+                // forceMarketOnNextSell 방식은 가격 조건이 바뀌면 재매도 안 나갈 수 있어 위험
+                if (avgPrice > 0.0) {
+                    double tradePnlPct = (currentPrice - avgPrice) / avgPrice;
+                    double soldNotional = avgPrice * currentQuantity;
+                    double orderBase = st.buyAmountPerOrder > 0 ? st.buyAmountPerOrder : soldNotional;
+                    st.pendingSellWeightedPnl = tradePnlPct * (soldNotional / orderBase);
+                    st.pendingSellTradePnlPct = tradePnlPct;
+                } else {
+                    st.pendingSellWeightedPnl = 0.0;
+                    st.pendingSellTradePnlPct = 0.0;
                 }
                 st.sellPending = false;
                 st.sellPendingSinceMs = 0L;
-                logger.warn("SELL pending timeout cleared for {}", normalized);
+                st.forceMarketOnNextSell = false;
+                st.lastPendingSellReason = "SELL_TIMEOUT_MARKET_RETRY";
+                st.pendingSellQty = currentQuantity;
+                st.lastSellSignalMs = nowMs;
+                st.sellPending = true;
+                st.sellPendingSinceMs = nowMs;
+                st.positionPhase = PositionPhase.EXITING;
+                logger.warn("SELL timeout for {} — issuing immediate MARKET sell qty={}", normalized, currentQuantity);
+                return Optional.of(new OrderCommand(normalized, currentQuantity, "SELL", 0.0, true, "SELL_TIMEOUT_MARKET_RETRY"));
             }
 
             if ((nowMs - st.lastSellSignalMs) < SELL_RETRY_COOLDOWN_MS) {
-                logger.info("SELL_WAIT [{}] {} reason=RETRY_COOLDOWN remainingMs={}",
-                        market, normalized, (SELL_RETRY_COOLDOWN_MS - (nowMs - st.lastSellSignalMs)));
                 return Optional.empty();
             }
 
             SellDecision sellDecision = evaluateSellDecision(st, market, normalized, currentPrice, currentQuantity, avgPrice, nowMs);
-
-            long holdMs = st.entryTimeMs > 0 ? (nowMs - st.entryTimeMs) : 0L;
-            logger.info("SELL_CHECK [{}] {} mode={} decision={} reason={} pnl={} holdMs={} highSinceEntry={} price={}",
-                    market,
-                    normalized,
-                    st.entryMode,
-                    sellDecision.shouldSell,
-                    sellDecision.reason,
-                    fmtPct((currentPrice - avgPrice) / avgPrice),
-                    holdMs,
-                    fmt(st.highestSinceEntry),
-                    fmt(currentPrice));
 
             if (!sellDecision.shouldSell) {
                 return Optional.empty();
@@ -891,9 +1159,12 @@ public class StrategyEngine {
                 st.lastProfitExitTimeMs = nowMs;
             } else if (isTrailExitReason(sellDecision.reason)) {
                 st.lastTrailExitTimeMs = nowMs;
-            } else if (isStopLossExitReason(sellDecision.reason)) {
+            } else if (isStopLossExitReason(sellDecision.reason) || isTimeStopExitReason(sellDecision.reason)) {
                 st.lastStopLossExitTimeMs = nowMs;
+                st.lastStopLossExitReason = sellDecision.reason;
             }
+            // 청산 이유를 enum으로 저장 (재진입 쿨다운 판단용)
+            st.lastExitType = toExitType(sellDecision.reason);
 
             boolean forceMarket = false;
             if (st.forceMarketOnNextSell) {
@@ -912,29 +1183,44 @@ public class StrategyEngine {
                         normalized, sellDecision.reason);
             }
 
-            if ("TAKE_PROFIT_PARTIAL".equals(sellDecision.reason)) {
-                st.partialTakeProfitDone = true;
-            }
-
+            // 여기서는 주문 의도만 저장
+            st.lastPendingSellReason = sellDecision.reason;
+            st.pendingSellQty = sellDecision.quantity;
             st.lastSellSignalMs = nowMs;
             st.sellPending = true;
             st.sellPendingSinceMs = nowMs;
+            st.positionPhase = PositionPhase.EXITING;
 
             double orderPrice = marketOrder ? 0.0 : roundToTickSize(currentPrice, market);
             double logPrice = marketOrder ? currentPrice : orderPrice;
 
             double tradePnlPct = (currentPrice - avgPrice) / avgPrice;
-            java.time.LocalDate today = now.toLocalDate();
-            dailyPnlAccumulator.merge(today, tradePnlPct, (a, b) -> a + b);
-            logger.info("SELL_EXECUTED [{}] {} mode={} sellFilled price={} qty={} reason={} pnl={} dailyPnl={}",
+            // 수량 가중 손익: 1주문 기준량(buyAmountPerOrder) 대비 실현 금액 비율로 스케일링
+            double soldNotional = avgPrice * sellDecision.quantity;
+            double orderBase = st.buyAmountPerOrder > 0 ? st.buyAmountPerOrder : soldNotional;
+            double weightedPnl = tradePnlPct * (soldNotional / orderBase);
+            // dailyPnl은 주문 생성 시점이 아닌 SELL_FILLED 수신 시점에 반영
+            // (브로커 거절/타임아웃 시 롤백 불필요 — 미반영이므로)
+            st.pendingSellWeightedPnl = weightedPnl;
+            st.pendingSellTradePnlPct = tradePnlPct;
+            long holdMs = st.entryTimeMs > 0 ? (nowMs - st.entryTimeMs) : 0L;
+            double peakPnlRate = st.highestSinceEntry > 0.0 && avgPrice > 0.0
+                    ? (st.highestSinceEntry - avgPrice) / avgPrice : 0.0;
+            logger.info("SELL_EXECUTED [{}] {} mode={} phase={} exitType={} price={} qty={} reason={} pnl={} peakPnl={} holdMs={} high={} avgPrice={} weightedPnl={} (pending fill)",
                     market,
                     normalized,
                     st.entryMode,
+                    st.positionPhase,
+                    st.lastExitType,
                     fmt(logPrice),
                     sellDecision.quantity,
                     sellDecision.reason,
                     fmtPct(tradePnlPct),
-                    fmtPct(dailyPnlAccumulator.getOrDefault(today, 0.0)));
+                    fmtPct(peakPnlRate),
+                    holdMs,
+                    fmt(st.highestSinceEntry),
+                    fmt(avgPrice),
+                    fmtPct(weightedPnl));
 
             return Optional.of(new OrderCommand(
                     normalized,
@@ -984,10 +1270,13 @@ public class StrategyEngine {
         signal.vwap = st.minuteHistory.sessionVwap();
         signal.prevVwap = st.minuteHistory.sessionVwapPrevious();
         signal.aboveVwap = signal.vwap > 0.0 && signal.price > signal.vwap;
-        signal.vwapSlopeUp = signal.vwap > 0.0 && signal.prevVwap > 0.0 && signal.vwap >= signal.prevVwap;
+        // VWAP slope: 단순히 같거나 미세하게 올라도 횡보 구간 — 최소 0.02% 이상 상승이어야 진짜 상승 VWAP
+        signal.vwapSlopeUp = signal.vwap > 0.0 && signal.prevVwap > 0.0
+                && ((signal.vwap - signal.prevVwap) / signal.prevVwap) >= VWAP_SLOPE_MIN_PCT;
         signal.vwapDistancePct = signal.vwap > 0.0 ? ((signal.price - signal.vwap) / signal.vwap) : 0.0;
         signal.nearVwap = signal.vwap > 0.0 && Math.abs(signal.vwapDistancePct) <= VWAP_NEAR_DISTANCE_PCT;
-        signal.vwapTooFar = signal.vwap > 0.0 && signal.vwapDistancePct > VWAP_MAX_DISTANCE_PCT;
+        // vwapTooFar: 8% 초과만 safety-net으로 차단. 실제 per-mode 상한은 isBuyCandidate에서 처리
+        signal.vwapTooFar = signal.vwap > 0.0 && signal.vwapDistancePct > VWAP_TOO_FAR_HARD_LIMIT;
 
         signal.choppyMarket = Math.abs(signal.velocityShort) < 0.0005
                 && Math.abs(signal.pullbackAvgShort - signal.pullbackAvgLong) < (signal.price * 0.001);
@@ -1000,7 +1289,8 @@ public class StrategyEngine {
         }
 
         signal.timeWindowBlocked = !passesTimeWindow(market, now);
-        signal.marketFilterPassed = passesMarketFilter(market);
+        // marketFilterPassed는 아래 컨텍스트 블록 끝에서 entryMode 확정 후 단 한 번 계산하여 할당
+        // (여기서 true로 선초기화하면 중간 로직 추가 시 의도치 않게 true가 유지될 위험이 있음)
         signal.cheapStockBlocked = !passesCheapStockFilter(market, price);
         signal.turnoverFilterPassed = passesTurnoverFilter(signal, market);
         signal.absoluteLiquidityPassed = passesAbsoluteLiquidityFilter(signal, market);
@@ -1023,21 +1313,26 @@ public class StrategyEngine {
         double fromHighRatio = signal.recentHigh > 0.0 ? (signal.price / signal.recentHigh) : 0.0;
         signal.pullbackZone = fromHighRatio >= PULLBACK_LOWER_FROM_HIGH && fromHighRatio <= PULLBACK_UPPER_FROM_HIGH;
 
+        // Flexible recovery: ANY one of the three sub-conditions is enough
+        // (old AND-logic blocked valid entries where one indicator lagged)
         signal.pullbackRecovering =
                 signal.pullbackAvgShort > 0.0
                         && signal.pullbackAvgLong > 0.0
-                        && signal.pullbackAvgShort >= signal.pullbackAvgLong
-                        && signal.velocityShort > 0.0;
+                        && signal.velocityShort > 0.0
+                        && signal.velocityMid >= 0.0
+                        && signal.price >= signal.pullbackAvgShort;
 
+        // pullbackVelocityOk는 로깅/스코어링용으로만 유지; pullbackEntry에서는 제외
+        // pullbackRecovering이 이미 velocityShort > 0 || avgShort >= avgLong || price >= avgShort 를 OR로 포괄함
         signal.pullbackVelocityOk = signal.velocityShort > 0.0;
         signal.pullbackVolumeOk = signal.averageVolume > 0.0 && signal.volume >= (signal.averageVolume * PULLBACK_VOLUME_MULT);
 
+        // nearVwap removed: VWAP position is validated in isBuyCandidate (allows slight below-VWAP recovery)
+        // pullbackVelocityOk removed: pullbackRecovering already covers velocity via OR logic
         signal.pullbackEntry =
                 signal.pullbackZone
                         && signal.pullbackRecovering
-                        && signal.pullbackVelocityOk
-                        && signal.pullbackVolumeOk
-                        && signal.nearVwap;
+                        && signal.pullbackVolumeOk;
 
         // volume breakout
         signal.volumeBreakNearHigh = signal.recentHigh > 0.0 && signal.price >= (signal.recentHigh * 0.9990);
@@ -1055,9 +1350,24 @@ public class StrategyEngine {
                         && signal.volumeBreakVelocityOk
                         && signal.volumeBreakVolumeOk;
 
+        // early momentum: 속도 기반 초기 급등 포착 (고점 근처 불필요, 거래량 조건 완화)
+        // earlyMomentum: 초기 급등 포착 — 실패율 높으므로 조건 강화
+        signal.earlyMomentum = signal.velocityShort >= 0.006
+                && signal.velocityMid >= 0.002
+                && signal.trendScore == 3               // 단기/중기/장기 모두 상승 필수
+                && signal.vwapDistancePct <= VWAP_MAX_GAP_EARLY_MOMENTUM  // VWAP 이격 상한 (상수 통일)
+                && signal.vwapSlopeUp                   // VWAP slope 상승 필수
+                && signal.averageTurnover > 0.0
+                && signal.latestTurnover >= signal.averageTurnover * 1.5  // 거래대금 평균 1.5배 이상
+                && signal.averageVolume > 0.0
+                && signal.volume >= signal.averageVolume * 2.0  // 평균 2배 이상 거래량
+                && signal.aboveVwap
+                && !signal.choppyMarket
+                && !signal.marketWeak;
+
         // breakout retest
-        double breakoutRetestUpper = signal.recentHigh > 0.0 ? (signal.recentHigh * 1.0030) : 0.0;
-        double breakoutRetestLower = signal.recentHigh > 0.0 ? (signal.recentHigh * 0.9980) : 0.0;
+        double breakoutRetestUpper = signal.recentHigh > 0.0 ? (signal.recentHigh * BREAKOUT_RETEST_UPPER) : 0.0;
+        double breakoutRetestLower = signal.recentHigh > 0.0 ? (signal.recentHigh * BREAKOUT_RETEST_LOWER) : 0.0;
         signal.breakoutRetestReady =
                 signal.recentHigh > 0.0
                         && signal.price >= breakoutRetestLower
@@ -1079,6 +1389,11 @@ public class StrategyEngine {
         if (signal.aboveVwap) {
             signal.signalScore += 20;
             signal.signalCount++;
+        } else if (signal.vwap > 0.0
+                && signal.vwapDistancePct >= VWAP_PULLBACK_BELOW_ALLOWED
+                && signal.vwapSlopeUp) {
+            // VWAP 아래이지만 허용 범위(-0.4%) 내에서 slope 상승 중: pullback 회복 부분 점수
+            signal.signalScore += 12;
         }
         if (signal.vwapSlopeUp) {
             signal.signalScore += 10;
@@ -1125,8 +1440,17 @@ public class StrategyEngine {
         if (signal.breakoutRetestReady && signal.breakoutRetestRecovering) {
             signal.signalScore += 12;
             signal.signalCount++;
-            if (signal.entryMode == EntryMode.NONE) {
+            // US: retest 단독으로 BREAKOUT 설정 가능 (pullback zone 접근, volumeBreakout 불필요)
+            // KRX: volumeBreakout/strongBreakout 없이 retest만으로는 isBuyCandidate()에서 거절되므로 모드 미설정
+            if (signal.entryMode == EntryMode.NONE && market == Market.US) {
                 signal.entryMode = EntryMode.BREAKOUT;
+            }
+        }
+        if (signal.earlyMomentum) {
+            signal.signalScore += 18;  // 조건 자체가 매우 엄격(속도 0.6%/s, 거래량 2배 등) → 상응 가중
+            signal.signalCount++;
+            if (signal.entryMode == EntryMode.NONE) {
+                signal.entryMode = EntryMode.EARLY_MOMENTUM;
             }
         }
 
@@ -1144,6 +1468,57 @@ public class StrategyEngine {
             signal.signalScore -= 8;
         }
 
+        // 추가 감점: 과열 추격 / 속도 감쇠 / 긴 윗꼬리
+        // PULLBACK 제외: 눌림목은 VWAP 이격·윗꼬리가 회복 과정에서 자연스럽게 발생
+        if (signal.entryMode != EntryMode.PULLBACK) {
+            if (signal.vwapDistancePct > 0.018) {
+                signal.signalScore -= 10; // VWAP 과열 추격
+            }
+            // 윗꼬리 감점: EARLY_MOMENTUM 제외
+            // — earlyMomentum 조건(속도 0.006, 거래량 2배)이 이미 진입 품질을 보장하며,
+            //   초기 급등 분봉은 구조적으로 윗꼬리를 포함하는 경우가 많음
+            if (signal.entryMode != EntryMode.EARLY_MOMENTUM) {
+                MinuteBarHistory.MinuteBar latestBar = st.minuteHistory.latest();
+                if (latestBar != null) {
+                    double barHigh  = latestBar.getHigh();
+                    double barLow   = latestBar.getLow();
+                    double barClose = latestBar.getClose();
+                    if (barHigh > barLow) {
+                        double upperWickRatio = (barHigh - barClose) / (barHigh - barLow);
+                        if (upperWickRatio > 0.4) {
+                            signal.signalScore -= 12; // 긴 윗꼬리 (매도 압력)
+                        }
+                    }
+                }
+            }
+        }
+        // 속도 감쇠: velocityMid > 0일 때만 의미 있는 비교 (음수/0 근처에서 오작동 방지)
+        if (signal.velocityMid > 0.0 && signal.velocityShort < signal.velocityMid * 0.5) {
+            signal.signalScore -= 8;  // 단기 속도 급감 (모멘텀 약화)
+        }
+
+        // 시장 컨텍스트(프록시 ETF) 기반 필터 — entryMode 확정 후 적용
+        // marketFilterPassed를 여기서 최초이자 유일하게 계산하여 확정
+        // Pullback: marketWeak이면 점수 패널티만 부과(하드 차단 없음)
+        // Breakout / EarlyMomentum: marketWeak이면 하드 차단
+        {
+            MarketContext mCtx = marketContext.get(market);
+            boolean ctxWeak   = mCtx != null && !isMarketContextExpired(mCtx) && mCtx.marketWeak;
+            boolean ctxChoppy = mCtx != null && !isMarketContextExpired(mCtx) && mCtx.choppyMarket;
+            boolean marketPass = true;
+            if (ctxWeak) {
+                if (signal.entryMode == EntryMode.PULLBACK) {
+                    signal.signalScore -= 12; // 패널티: 점수 기반으로 진입 여부 결정 (하드 차단 없음)
+                } else {
+                    marketPass = false; // breakout/momentum은 약세장 하드 차단
+                }
+            }
+            if (ctxChoppy) {
+                signal.signalScore -= 5; // 모든 모드에 패널티 (기존 pullback 하드 차단 대체)
+            }
+            signal.marketFilterPassed = marketPass; // 단 한 번, 여기서 확정
+        }
+
         if (!signal.enoughHistory) {
             signal.rejectReason = "NOT_ENOUGH_HISTORY";
         } else if (signal.timeWindowBlocked) {
@@ -1158,18 +1533,62 @@ public class StrategyEngine {
             signal.rejectReason = "ABSOLUTE_LIQUIDITY_BLOCKED";
         } else if (signal.lowVolumeSkip) {
             signal.rejectReason = "LOW_VOLUME_SKIP";
-        } else if (!signal.aboveVwap) {
+        } else if (!signal.aboveVwap
+                && !(signal.entryMode == EntryMode.PULLBACK
+                        && signal.vwap > 0.0
+                        && signal.vwapDistancePct >= VWAP_PULLBACK_BELOW_ALLOWED
+                        && signal.prevVwap > 0.0 && signal.vwap >= signal.prevVwap)) {  // isBuyCandidate와 동일한 완화 조건
             signal.rejectReason = "BELOW_VWAP";
-        } else if (!signal.vwapSlopeUp) {
+        } else if (!signal.vwapSlopeUp && signal.aboveVwap
+                && !(signal.entryMode == EntryMode.PULLBACK
+                        && signal.vwap > 0.0 && signal.prevVwap > 0.0
+                        && ((signal.vwap - signal.prevVwap) / signal.prevVwap) >= VWAP_SLOPE_MIN_PCT)) {
             signal.rejectReason = "VWAP_SLOPE_DOWN";
         } else if (signal.vwapTooFar) {
-            signal.rejectReason = "VWAP_TOO_FAR";
-        } else if (signal.pullbackEntry) {
-            signal.rejectReason = "PULLBACK_SCORE_LOW";
-        } else if (signal.volumeBreakout || signal.strongBreakout) {
-            signal.rejectReason = "BREAKOUT_RETEST_NOT_READY";
+            signal.rejectReason = "VWAP_TOO_FAR_EXTREME";
+        } else if (signal.entryMode == EntryMode.NONE) {
+            signal.rejectReason = "NO_ENTRY_MODE";
         } else {
-            signal.rejectReason = "NO_ENTRY_READY";
+            // Diagnose the specific per-mode gate that isBuyCandidate would reject
+            boolean highConviction = signal.signalScore >= HIGH_CONVICTION_SCORE;
+            double effVwapGap;
+            double effVolRatio;
+            double effTurnoverRatio;
+            if (signal.entryMode == EntryMode.BREAKOUT || signal.entryMode == EntryMode.VOLUME_BREAKOUT) {
+                effVwapGap       = VWAP_MAX_GAP_BREAKOUT       + (highConviction ? HIGH_CONVICTION_VWAP_BONUS : 0.0);
+                effVolRatio      = VOLUME_RATIO_BREAKOUT        * (highConviction ? HIGH_CONVICTION_VOLUME_MULT : 1.0);
+                effTurnoverRatio = TURNOVER_RATIO_BREAKOUT      * (highConviction ? HIGH_CONVICTION_TURNOVER_MULT : 1.0);
+            } else if (signal.entryMode == EntryMode.EARLY_MOMENTUM) {
+                effVwapGap       = VWAP_MAX_GAP_EARLY_MOMENTUM  + (highConviction ? HIGH_CONVICTION_VWAP_BONUS : 0.0);
+                effVolRatio      = VOLUME_RATIO_EARLY_MOMENTUM  * (highConviction ? HIGH_CONVICTION_VOLUME_MULT : 1.0);
+                effTurnoverRatio = TURNOVER_RATIO_EARLY_MOMENTUM * (highConviction ? HIGH_CONVICTION_TURNOVER_MULT : 1.0);
+            } else { // PULLBACK
+                effVwapGap       = VWAP_MAX_GAP_PULLBACK        + (highConviction ? HIGH_CONVICTION_VWAP_BONUS : 0.0);
+                effVolRatio      = VOLUME_RATIO_PULLBACK        * (highConviction ? HIGH_CONVICTION_VOLUME_MULT : 1.0);
+                effTurnoverRatio = TURNOVER_RATIO_PULLBACK      * (highConviction ? HIGH_CONVICTION_TURNOVER_MULT : 1.0);
+            }
+
+            if (signal.vwapDistancePct > effVwapGap) {
+                signal.rejectReason = "VWAP_GAP_TOO_LARGE";
+            } else if (signal.averageVolume > 0.0 && signal.volume < signal.averageVolume * effVolRatio) {
+                signal.rejectReason = "VOL_RATIO_LOW";
+            } else if (signal.averageTurnover > 0.0 && signal.latestTurnover < signal.averageTurnover * effTurnoverRatio) {
+                signal.rejectReason = "TURNOVER_RATIO_LOW";
+            } else if (signal.signalScore < 65) {
+                signal.rejectReason = "SCORE_LOW";
+            } else if (signal.entryMode == EntryMode.PULLBACK && !signal.pullbackEntry) {
+                signal.rejectReason = "PULLBACK_COND_FAIL";
+            } else if ((signal.entryMode == EntryMode.BREAKOUT || signal.entryMode == EntryMode.VOLUME_BREAKOUT)
+                    && (!signal.breakoutRetestReady || !signal.breakoutRetestRecovering)) {
+                signal.rejectReason = "BREAKOUT_RETEST_FAIL";
+            } else if ((signal.entryMode == EntryMode.BREAKOUT || signal.entryMode == EntryMode.VOLUME_BREAKOUT)
+                    && !signal.multiUptrend) {
+                signal.rejectReason = "BREAKOUT_NO_MULTITREND";
+            } else if (signal.entryMode == EntryMode.EARLY_MOMENTUM && !signal.multiUptrend) {
+                signal.rejectReason = "MOMENTUM_NO_MULTITREND";
+            } else {
+                signal.rejectReason = "FILTER_LOW";
+            }
         }
 
         signal.patternKey = signal.entryMode.name() + "|VWAP=" + signal.aboveVwap + "|TREND=" + signal.trendScore;
@@ -1180,24 +1599,15 @@ public class StrategyEngine {
     private boolean isEntryReady(BuySignal signal, Market market) {
         if (!signal.enoughHistory) return false;
         if (signal.timeWindowBlocked) return false;
-        if (!signal.marketFilterPassed) return false;
+        if (!signal.marketFilterPassed) return false; // buildBuySignal에서 모드별로 설정됨
         if (signal.cheapStockBlocked) return false;
         if (!signal.turnoverFilterPassed) return false;
         if (!signal.absoluteLiquidityPassed) return false;
         if (signal.lowVolumeSkip) return false;
-
-        MarketContext ctx = marketContext.get(market);
-        if (ctx != null && !isMarketContextExpired(ctx)) {
-            if (ctx.marketWeak) {
-                signal.rejectReason = "MARKET_WEAK";
-                return false;
-            }
-            if (ctx.choppyMarket && signal.pullbackEntry) {
-                signal.rejectReason = "MARKET_CHOPPY_PULLBACK";
-                return false;
-            }
-        }
-
+        // 시장 컨텍스트 하드 차단 제거:
+        //   - marketWeak: buildBuySignal에서 breakout/momentum은 marketFilterPassed=false로 처리,
+        //                 pullback은 점수 패널티로 처리
+        //   - choppyMarket && pullback: 점수 패널티(-5)로 처리 (하드 차단 불필요)
         return signal.isBuyCandidate(market);
     }
 
@@ -1215,22 +1625,16 @@ public class StrategyEngine {
                 return false;
             }
             if (!tryBuildEntryReadyFromHistory(st, market, symbol, nowMs)) {
-                if (st.minuteHistory.hasEnoughHistory(MIN_HISTORY_BARS, MIN_HISTORY_SPAN_SECONDS)) {
-                    logger.info("BUY_WAIT [{}] {} reason=ENTRY_NOT_BUILT", market, symbol);
-                    logger.info("BUY_SKIP [{}] {} reason=NO_ENTRY_READY", market, symbol);
-                }
                 return false;
             }
         }
 
         if (st.entryReadyUntilMs > 0 && nowMs > st.entryReadyUntilMs) {
-            logger.info("BUY_WAIT [{}] {} reason=ENTRY_EXPIRED", market, symbol);
             clearEntryReadyState(st);
             return false;
         }
 
         if (nowMs < st.entryReadyAtMs + ENTRY_READY_MIN_DELAY_MS) {
-            logger.info("BUY_WAIT [{}] {} reason=MIN_DELAY", market, symbol);
             return false;
         }
 
@@ -1262,25 +1666,6 @@ public class StrategyEngine {
         st.entryReadyPatternKey = signal.patternKey;
         st.lastEntryReadyBarTs = latest.getTimestamp();
 
-        logger.info("ENTRY_READY [{}] {} mode={} price={} pattern={} score={} TTL={}ms",
-                market,
-                symbol,
-                signal.entryMode,
-                fmt(st.entryReadyClose),
-                st.entryReadyPatternKey,
-                signal.signalScore,
-                ENTRY_READY_TTL_MS);
-        logger.info("ENTRY_READY_DETAIL [{}] {} mode={} vwap={} dist={} nearVwap={} tooFar={} retestReady={} retestRecovering={}",
-                market,
-                symbol,
-                signal.entryMode,
-                fmt(signal.vwap),
-                fmtPct(signal.vwapDistancePct),
-                signal.nearVwap,
-                signal.vwapTooFar,
-                signal.breakoutRetestReady,
-                signal.breakoutRetestRecovering);
-
         return true;
     }
 
@@ -1302,50 +1687,66 @@ public class StrategyEngine {
             return false;
         }
 
-        List<PriceHistory.Tick> recentTicks = st.tickHistory.latestTicks(4);
-        if (recentTicks.size() < 3) {
-            logger.info("BUY_WAIT [{}] {} reason=TICK_NOT_ENOUGH", market, symbol);
+        // 신호 발생 기준가(entryReadyClose) 대비 현재 가격 이탈 방지
+        // - 신호 후 -0.2% 이상 밀림: 신호 무효 (방향 반전 의심)
+        // - BREAKOUT/VOLUME_BREAKOUT: +0.8% 허용 (강한 돌파 시 빠르게 이탈 → 못 잡는 문제 완화)
+        // - 그 외 모드: +0.5% 허용 (기존 유지)
+        if (st.entryReadyClose > 0.0) {
+            double moveFromReady = (currentPrice - st.entryReadyClose) / st.entryReadyClose;
+            double maxOvershoot = (signal.entryMode == EntryMode.BREAKOUT
+                    || signal.entryMode == EntryMode.VOLUME_BREAKOUT) ? 0.008 : 0.005;
+            if (moveFromReady < -0.002 || moveFromReady > maxOvershoot) {
+                return false;
+            }
+        }
+
+        List<PriceHistory.Tick> recentTicks = st.tickHistory.latestTicks(3);
+        if (recentTicks.size() < 2) {
             return false;
         }
 
-        double p1 = recentTicks.get(recentTicks.size() - 3).getPrice();
         double p2 = recentTicks.get(recentTicks.size() - 2).getPrice();
         double p3 = recentTicks.get(recentTicks.size() - 1).getPrice();
 
-        boolean rising3Ticks = p1 <= p2 && p2 <= p3;
-        if (!rising3Ticks) {
-            logger.info("BUY_WAIT [{}] {} reason=TICK_NOT_RISING p1={} p2={} p3={}",
-                    market, symbol, fmt(p1), fmt(p2), fmt(p3));
-            return false;
+        if (signal.entryMode == EntryMode.PULLBACK) {
+            if (recentTicks.size() < 3) return false;
+            double p1 = recentTicks.get(recentTicks.size() - 3).getPrice();
+            if (!(p1 <= p2 && p2 <= p3)) return false;
+        } else if (signal.entryMode != EntryMode.EARLY_MOMENTUM) {
+            // Breakout / VolumeBreakout: 직전 틱 하락하지 않으면 진입 허용
+            boolean twoTickOk = p2 <= p3;
+            if (!twoTickOk) {
+                return false;
+            }
         }
 
         if (signal.pullbackEntry) {
-            if (signal.vwapDistancePct > 0.0035) {
-                logger.info("BUY_WAIT [{}] {} reason=PULLBACK_TOO_FAR_FROM_VWAP dist={}",
-                        market, symbol, fmtPct(signal.vwapDistancePct));
-                return false;
-            }
-            return currentPrice > p2;
+            // VWAP 이격 체크 제거: isBuyCandidate에서 VWAP_MAX_GAP_PULLBACK으로 이미 검증됨
+            // >= p2: 이전 틱 이상이면 진입 허용 (기존 > p2에서 완화)
+            return currentPrice >= p2;
         }
 
-        if (signal.volumeBreakout || signal.strongBreakout) {
+        if (signal.entryMode == EntryMode.BREAKOUT || signal.entryMode == EntryMode.VOLUME_BREAKOUT) {
+            if (market == Market.US) {
+                return currentPrice >= p2
+                        && signal.velocityShort > 0.0
+                        && signal.velocityShort > signal.velocityMid
+                        && currentPrice >= signal.pullbackAvgShort
+                        && (signal.recentHigh <= 0.0 || currentPrice < signal.recentHigh * 1.002);
+            }
             if (!signal.breakoutRetestReady || !signal.breakoutRetestRecovering) {
-                logger.info("BUY_WAIT [{}] {} reason=BREAKOUT_RETEST_NOT_READY", market, symbol);
                 return false;
             }
-            boolean inRange = currentPrice >= signal.recentHigh * 0.9995
-                    && currentPrice <= signal.recentHigh * 1.0015
-                    && currentPrice > p2;
-            if (!inRange) {
-                logger.info("BUY_WAIT [{}] {} reason=BREAKOUT_GATE price={} recentHigh={} distFromHigh={} p2={} retestReady={} retestRecovering={}",
-                        market,
-                        symbol,
-                        fmt(currentPrice),
-                        fmt(signal.recentHigh),
-                        signal.recentHigh > 0.0 ? fmtPct((currentPrice - signal.recentHigh) / signal.recentHigh) : "0.00%",
-                        fmt(p2),
-                        signal.breakoutRetestReady,
-                        signal.breakoutRetestRecovering);
+            return currentPrice >= signal.recentHigh * BREAKOUT_RETEST_LOWER
+                    && currentPrice <= signal.recentHigh * BREAKOUT_RETEST_UPPER
+                    && currentPrice >= p2;
+        }
+
+        if (signal.entryMode == EntryMode.EARLY_MOMENTUM) {
+            boolean ok = currentPrice >= p2
+                    && signal.velocityShort > 0.0
+                    && signal.multiUptrend;
+            if (!ok) {
                 return false;
             }
             return true;
@@ -1360,68 +1761,53 @@ public class StrategyEngine {
                            LocalDateTime now,
                            BuySignal signal) {
         if (!signal.enoughHistory) {
-            logger.info("BUY WAIT [{}] {} reason=HISTORY_SHORT bars={} spanSec={} reqBars={} reqSpanSec={}",
-                    market, symbol, signal.ticks, signal.spanSeconds, MIN_HISTORY_BARS, MIN_HISTORY_SPAN_SECONDS);
             return false;
         }
 
         long nowMs = System.currentTimeMillis();
         resetDailyEntryIfNeeded(st, now.toLocalDate());
 
-        // 일일 손실 한도 (-4%) 초과 시 신규 진입 전면 차단
+        // 일일 손익 한도 초과 시 신규 진입 전면 차단
         double todayPnl = dailyPnlAccumulator.getOrDefault(now.toLocalDate(), 0.0);
         if (todayPnl <= -MAX_DAILY_LOSS_PCT) {
             logger.warn("BUY_SKIP [{}] {} reason=DAILY_LOSS_LIMIT dailyPnl={}",
                     market, symbol, fmtPct(todayPnl));
             return false;
         }
+        if (todayPnl >= MAX_DAILY_PROFIT_PCT) {
+            logger.warn("BUY_SKIP [{}] {} reason=DAILY_PROFIT_TARGET_HIT dailyPnl={}",
+                    market, symbol, fmtPct(todayPnl));
+            return false;
+        }
 
         if (st.dailyEntryCount >= MAX_DAILY_ENTRY_COUNT) {
-            long profitGap = st.lastProfitExitTimeMs > 0 ? (nowMs - st.lastProfitExitTimeMs) : -1L;
-            long stopGap = st.lastStopLossExitTimeMs > 0 ? (nowMs - st.lastStopLossExitTimeMs) : -1L;
-            logger.info("BUY_SKIP [{}] {} reason=REENTER_LIMIT profitGapMs={} stopGapMs={} dailyCount={}",
-                    market, symbol, profitGap, stopGap, st.dailyEntryCount);
             return false;
         }
 
         if (st.lastTrailExitTimeMs > 0 && nowMs - st.lastTrailExitTimeMs < REENTER_TRAIL_COOLDOWN_MS) {
-            long trailGap = nowMs - st.lastTrailExitTimeMs;
-            long stopGap = st.lastStopLossExitTimeMs > 0 ? (nowMs - st.lastStopLossExitTimeMs) : -1L;
-            logger.info("BUY_SKIP [{}] {} reason=REENTER_LIMIT trailGapMs={} stopGapMs={} dailyCount={}",
-                    market, symbol, trailGap, stopGap, st.dailyEntryCount);
             return false;
         }
 
         if (st.lastProfitExitTimeMs > 0 && nowMs - st.lastProfitExitTimeMs < REENTER_PROFIT_COOLDOWN_MS) {
-            long profitGap = nowMs - st.lastProfitExitTimeMs;
-            long stopGap = st.lastStopLossExitTimeMs > 0 ? (nowMs - st.lastStopLossExitTimeMs) : -1L;
-            logger.info("BUY_SKIP [{}] {} reason=REENTER_LIMIT profitGapMs={} stopGapMs={} dailyCount={}",
-                    market, symbol, profitGap, stopGap, st.dailyEntryCount);
             return false;
         }
 
-        if (st.lastStopLossExitTimeMs > 0 && nowMs - st.lastStopLossExitTimeMs < REENTER_STOPLOSS_COOLDOWN_MS) {
-            long profitGap = st.lastProfitExitTimeMs > 0 ? (nowMs - st.lastProfitExitTimeMs) : -1L;
-            long stopGap = nowMs - st.lastStopLossExitTimeMs;
-            logger.info("BUY_SKIP [{}] {} reason=REENTER_LIMIT profitGapMs={} stopGapMs={} dailyCount={}",
-                    market, symbol, profitGap, stopGap, st.dailyEntryCount);
-            return false;
+        if (st.lastStopLossExitTimeMs > 0) {
+            long cooldown = resolveStopLossCooldown(st.lastStopLossExitReason);
+            if (nowMs - st.lastStopLossExitTimeMs < cooldown) {
+                return false;
+            }
         }
 
         if (signal.patternKey != null
                 && signal.patternKey.equals(st.lastEntryPatternKey)
                 && st.samePatternEntryCount >= MAX_SAME_PATTERN_ENTRY_COUNT) {
-            long profitGap = st.lastProfitExitTimeMs > 0 ? (nowMs - st.lastProfitExitTimeMs) : -1L;
-            long stopGap = st.lastStopLossExitTimeMs > 0 ? (nowMs - st.lastStopLossExitTimeMs) : -1L;
-            logger.info("BUY_SKIP [{}] {} reason=REENTER_LIMIT profitGapMs={} stopGapMs={} dailyCount={} pattern={}",
-                    market, symbol, profitGap, stopGap, st.dailyEntryCount, signal.patternKey);
             return false;
         }
 
         if (st.buyPending) {
             long elapsed = nowMs - st.buyPendingSinceMs;
             if (elapsed < PENDING_TIMEOUT_MS) {
-                logger.info("BUY WAIT [{}] {} reason=PENDING elapsedMs={}", market, symbol, elapsed);
                 return false;
             }
             st.buyPending = false;
@@ -1431,7 +1817,6 @@ public class StrategyEngine {
 
         long cooldownLeft = BUY_COOLDOWN_MS - (nowMs - st.lastBuySignalMs);
         if (cooldownLeft > 0) {
-            logger.info("BUY WAIT [{}] {} reason=COOLDOWN remainingMs={}", market, symbol, cooldownLeft);
             return false;
         }
 
@@ -1441,95 +1826,36 @@ public class StrategyEngine {
                     && signal.multiUptrend
                     && signal.velocity >= strongVelocityMin(market)
                     && signal.volume >= signal.averageVolume * STRONG_BREAKOUT_VOLUME_MULT;
-
             if (!cautiousPassed) {
-                logger.info("BUY WAIT [{}] {} reason=OPENING_CAUTION mode={} count={} multi={} trendScore={} vel={} v1={} v2={} v3={} vol={}/{}",
-                        market,
-                        symbol,
-                        signal.entryMode,
-                        signal.signalCount,
-                        signal.multiUptrend,
-                        signal.trendScore,
-                        fmtPct(signal.velocity),
-                        fmtPct(signal.velocityShort),
-                        fmtPct(signal.velocityMid),
-                        fmtPct(signal.velocityLong),
-                        fmt(signal.volume),
-                        fmt(signal.averageVolume));
                 return false;
             }
         }
 
         if (!signal.marketFilterPassed) {
-            logger.info("BUY WAIT [{}] {} reason=MARKET_FILTER_FAIL", market, symbol);
             return false;
         }
 
         if (signal.timeWindowBlocked) {
-            logger.info("BUY WAIT [{}] {} reason=TIME_WINDOW_BLOCKED", market, symbol);
             return false;
         }
 
         if (signal.cheapStockBlocked) {
-            logger.info("BUY WAIT [{}] {} reason=CHEAP_STOCK_BLOCKED price={} min={}",
-                    market, symbol, fmt(signal.price), fmt(MIN_KRX_PRICE));
             return false;
         }
 
         if (!signal.turnoverFilterPassed) {
-            logger.info("BUY WAIT [{}] {} reason=TURNOVER_FILTER_FAIL turnover={}/{}",
-                    market, symbol, fmt(signal.latestTurnover), fmt(signal.averageTurnover));
             return false;
         }
 
         if (!signal.absoluteLiquidityPassed) {
-            logger.info("BUY WAIT [{}] {} reason=ABSOLUTE_LIQUIDITY_FAIL latestTurnover={} avgTurnover={}",
-                    market, symbol, fmt(signal.latestTurnover), fmt(signal.averageTurnover));
             return false;
         }
 
         if (signal.lowVolumeSkip) {
-            logger.info("BUY WAIT [{}] {} reason=LOW_VOLUME price={} vol={} avgVol={}",
-                    market, symbol, fmt(signal.price), fmt(signal.volume), fmt(signal.averageVolume));
             return false;
         }
 
         if (!signal.isBuyCandidate(market)) {
-            logger.info(
-                    "BUY WAIT [{}] {} reason={} mode={} count={} score={} m={} p={} v={} strong={} multi={} trendScore={} vel={} v1={} v2={} v3={} price={} high={} low={} pbDepth={} vol={}/{} absLiq={} pbZone={} pbRec={} pbVelOk={} pbVolOk={} pbAvgS={} pbAvgL={} momNear={} momVelOk={} momVolOk={}",
-                    market,
-                    symbol,
-                    signal.rejectReason,
-                    signal.entryMode,
-                    signal.signalCount,
-                    signal.signalScore,
-                    signal.momentumBreakout,
-                    signal.pullbackEntry,
-                    signal.volumeBreakout,
-                    signal.strongBreakout,
-                    signal.multiUptrend,
-                    signal.trendScore,
-                    fmtPct(signal.velocity),
-                    fmtPct(signal.velocityShort),
-                    fmtPct(signal.velocityMid),
-                    fmtPct(signal.velocityLong),
-                    fmt(signal.price),
-                    fmt(signal.recentHigh),
-                    fmt(signal.recentLow),
-                    fmtPct(signal.pullbackDepthFromHigh),
-                    fmt(signal.volume),
-                    fmt(signal.averageVolume),
-                    signal.absoluteLiquidityPassed,
-                    signal.pullbackZone,
-                    signal.pullbackRecovering,
-                    signal.pullbackVelocityOk,
-                    signal.pullbackVolumeOk,
-                    fmt(signal.pullbackAvgShort),
-                    fmt(signal.pullbackAvgLong),
-                    signal.momentumNearHigh,
-                    signal.momentumVelocityOk,
-                    signal.momentumVolumeOk
-            );
             return false;
         }
 
@@ -1548,92 +1874,193 @@ public class StrategyEngine {
         }
 
         double pnlMult = currentPrice / avgPrice;
+        double pnlRate = (currentPrice - avgPrice) / avgPrice;
         double sessionVwap = st.minuteHistory.sessionVwap();
+        long holdMs = st.entryTimeMs > 0 ? (nowMs - st.entryTimeMs) : 0L;
+        // 트레일 판단은 반드시 highestSinceEntry 기준 (현재 수익률 기준 금지)
+        double peakProfitRate = st.highestSinceEntry > 0.0
+                ? (st.highestSinceEntry - avgPrice) / avgPrice : 0.0;
 
-        // Emergency stop (항상 적용)
+        ExitProfile profile = exitProfileFor(st.entryMode, market);
+        logger.debug("EXIT_PROFILE [{}] {} mode={} stop={} tp={} trailStart={} trailDrop={} useTrail={}",
+                market, symbol, st.entryMode,
+                fmt(profile.stopLossMult),
+                profile.takeProfitMult  != null ? fmt(profile.takeProfitMult)    : "none",
+                profile.trailStartProfit != null ? fmtPct(profile.trailStartProfit) : "none",
+                profile.trailDropFromHigh != null ? fmtPct(profile.trailDropFromHigh) : "none",
+                profile.useTrailing);
+
+        // 1. Emergency stop (모든 모드 공통, 항상 적용)
         if (pnlMult <= EMERGENCY_STOP_MULT) {
             return new SellDecision(true, currentQuantity, "EMERGENCY_STOP", true);
         }
 
-        // 부분 익절 전: -1.5% 손절 / 부분 익절 후: +0.3% 손절 (수익 보호)
-        if (st.partialTakeProfitDone) {
-            if (pnlMult < BREAKEVEN_STOP_AFTER_PARTIAL_MULT) {
-                logger.info("SELL [BREAKEVEN_STOP] {} pnl={} threshold={}",
-                        symbol, pnlMult - 1.0, BREAKEVEN_STOP_AFTER_PARTIAL_MULT - 1.0);
-                return new SellDecision(true, currentQuantity, "BREAKEVEN_STOP", true);
-            }
-        } else {
-            if (pnlMult <= STOP_LOSS_MULT) {
-                return new SellDecision(true, currentQuantity, "STOP_LOSS", true);
-            }
+        // 2. 장 마감 강제 청산 (KRX 15:25 / US 15:55)
+        LocalTime nowTime = nowByMarket(market).toLocalTime();
+        boolean eodForce = (market == Market.KRX && nowTime.isAfter(LocalTime.of(15, 25)))
+                || (market == Market.US && nowTime.isAfter(LocalTime.of(15, 55)));
+        if (eodForce) {
+            logger.info("SELL [EOD_FORCE_SELL] {} pnl={} time={}", symbol, fmtPct(pnlRate), nowTime);
+            return new SellDecision(true, currentQuantity, "EOD_FORCE_SELL", true);
         }
 
-        // Partial take profit (+2%)
-        if (!st.partialTakeProfitDone && pnlMult >= TAKE_PROFIT_PARTIAL_MULT) {
-            int partialQty = Math.max(1, currentQuantity / 2);
-            return new SellDecision(true, partialQty, "TAKE_PROFIT_PARTIAL", false);
+        // 3. Stop loss (entryMode별)
+        if (pnlMult <= profile.stopLossMult) {
+            String reason = "STOP_LOSS_" + profile.modeTag;
+            return new SellDecision(true, currentQuantity, reason, true);
         }
 
-        // Dynamic trailing: trailMult determined by PEAK profit rate (not current)
-        // This prevents the trailing from self-disabling as price drops
-        double peakProfitRate = st.highestSinceEntry > 0.0
-                ? (st.highestSinceEntry - avgPrice) / avgPrice
-                : 0.0;
-        double trailMult;
-        if (peakProfitRate >= 0.050) {
-            trailMult = 0.995;
-        } else if (peakProfitRate >= 0.030) {
-            trailMult = 0.993;
-        } else if (peakProfitRate >= 0.015) {
-            trailMult = 0.990;
-        } else {
-            trailMult = 0.0;
-        }
-        boolean trailingActive = st.highestSinceEntry > 0.0 && trailMult > 0.0;
+        // 4. Trail 활성화 여부: useTrailing=true이고 peak profit이 trailStartProfit 이상 도달한 경우
+        boolean trailActive = profile.useTrailing
+                && profile.trailStartProfit != null
+                && peakProfitRate >= profile.trailStartProfit;
 
-        if (trailingActive && currentPrice <= st.highestSinceEntry * trailMult) {
-            double currentProfitRate = (currentPrice - avgPrice) / avgPrice;
-            logger.info("SELL [TRAIL_DYNAMIC] {} pnl={} peakPnl={} high={} current={} mult={}",
-                    symbol, currentProfitRate, peakProfitRate, st.highestSinceEntry, currentPrice, trailMult);
-            return new SellDecision(true, currentQuantity, "TRAIL_DYNAMIC", true);
+        // 5. 고정 익절 (entryMode별): takeProfitMult != null이면 trail 활성 여부 무관하게 익절
+        // BREAKOUT도 고정 익절을 사용함 (KRX +2.8%, US +3.0% 도달 시 익절).
+        // trail 조건도 별도로 유지되므로 trail 발동이 먼저면 trail이 우선됨.
+        if (profile.takeProfitMult != null && pnlMult >= profile.takeProfitMult) {
+            String reason = "TAKE_PROFIT_" + profile.modeTag;
+            return new SellDecision(true, currentQuantity, reason, false);
         }
 
-        // After partial TP, apply VWAP-loss based exit
-        if (st.partialTakeProfitDone && sessionVwap > 0.0 && currentPrice < sessionVwap) {
-            return new SellDecision(true, currentQuantity, "VWAP_LOST_AFTER_PARTIAL", true);
+        // 6. Trailing stop (entryMode별): trail 활성화 후 highestSinceEntry 대비 하락 청산
+        if (trailActive && profile.trailDropFromHigh != null
+                && currentPrice <= st.highestSinceEntry * (1.0 - profile.trailDropFromHigh)) {
+            String reason = "TRAIL_" + profile.modeTag;
+            logger.info("SELL [{}] {} pnl={} peakPnl={} high={} current={}",
+                    reason, symbol, fmtPct(pnlRate), fmtPct(peakProfitRate),
+                    fmt(st.highestSinceEntry), fmt(currentPrice));
+            return new SellDecision(true, currentQuantity, reason, true);
         }
 
-        // VWAP_BREAK: only fire when trailing is NOT yet active (avoids conflict with trailing in profit zone)
-        if (!trailingActive && sessionVwap > 0.0 && currentPrice < (sessionVwap * VWAP_BREAK_SELL_BUFFER)) {
+        // 7. Breakeven guard: peak≥0.8%, 현재 손실, hold≥3분, trail 미발동
+        if (!trailActive
+                && holdMs >= BREAKEVEN_GUARD_MIN_HOLD_MS
+                && peakProfitRate >= BREAKEVEN_GUARD_PEAK_THRESHOLD
+                && pnlRate < 0.0) {
+            logger.info("SELL [BREAKEVEN_GUARD] {} pnl={} peakPnl={} holdMs={}",
+                    symbol, fmtPct(pnlRate), fmtPct(peakProfitRate), holdMs);
+            return new SellDecision(true, currentQuantity, "BREAKEVEN_GUARD", true);
+        }
+
+        // 8. VWAP_BREAK: 매수 후 6분 유예 + 손실 구간(-0.3%)에서만 발동
+        // trail 비활성 상태에서만, 단기 속도도 음수여야 진짜 추세 이탈
+        double recentVelocity = st.minuteHistory.velocitySeconds(TREND_SHORT_MIN_SECONDS, TREND_SHORT_MAX_SECONDS);
+        double pullbackAvgShort = st.minuteHistory.averagePrice(3);
+        if (!trailActive
+                && holdMs >= VWAP_BREAK_GRACE_MS
+                && sessionVwap > 0.0
+                && currentPrice < (sessionVwap * VWAP_BREAK_SELL_BUFFER)
+                && pnlRate <= -0.003
+                && recentVelocity < -0.001) {
             return new SellDecision(true, currentQuantity, "VWAP_BREAK", true);
         }
 
-        long holdMs = st.entryTimeMs > 0 ? (nowMs - st.entryTimeMs) : 0L;
+        // 8-1. BREAKOUT/VOLUME_BREAKOUT: 3~6분 사이 실패 돌파 감지
+        // VWAP 이탈 + 속도 음전(-0.0025 이하) → 성공한 돌파는 이 구간에서 이미 위에 있어야 함
+        if ((st.entryMode == EntryMode.BREAKOUT || st.entryMode == EntryMode.VOLUME_BREAKOUT)
+                && holdMs >= 180_000L
+                && holdMs <= 360_000L
+                && recentVelocity < -0.0025
+                && sessionVwap > 0.0
+                && currentPrice < sessionVwap * 0.998) {
+            return new SellDecision(true, currentQuantity, "FAILED_BREAKOUT", true);
+        }
+
+        // 8-2. PULLBACK: 2~4분 사이 실패 감지 — VWAP 이탈 + 속도 음전이면 방향 반전 확정
+        if (st.entryMode == EntryMode.PULLBACK
+                && holdMs >= 120_000L
+                && holdMs <= 240_000L
+                && recentVelocity < -0.002
+                && sessionVwap > 0.0
+                && currentPrice < sessionVwap * 0.999) {
+            return new SellDecision(true, currentQuantity, "FAILED_PULLBACK", true);
+        }
+
+        // 8-3. EARLY_MOMENTUM 전용: 1분~7분 사이 모멘텀 소멸 감지
+        // velocity 음전 + avgShort 이탈 → 초기 추세 종료로 판단
+        if (st.entryMode == EntryMode.EARLY_MOMENTUM
+                && holdMs >= 60_000L
+                && holdMs <= 420_000L
+                && recentVelocity < -0.001
+                && currentPrice < pullbackAvgShort) {
+            return new SellDecision(true, currentQuantity, "EARLY_MOMENTUM_DEAD", true);
+        }
+
+        // 9. Time stop soft: KRX 7분/US 5분 후 수익 기준 미달 + 속도 미약 → 모멘텀 실패
+        // velocity < 0.0015: 최소 상승 모멘텀(0.15% 미만) 없으면 탈출 — 단순 0 이하보다 선제적
+        long softStopMs    = market == Market.KRX ? 420_000L : MAX_HOLD_SOFT_MS;
+        double softStopPnl = market == Market.KRX ? 0.001    : 0.0015;
+        if (st.entryTimeMs > 0 && holdMs >= softStopMs
+                && pnlRate < softStopPnl
+                && recentVelocity < 0.0015) {
+            return new SellDecision(true, currentQuantity, "TIME_STOP_SOFT", true);
+        }
+
+        // 10. Time stop hard: 12분 경과 시 무조건 청산
         if (st.entryTimeMs > 0 && holdMs >= MAX_HOLD_HARD_MS) {
             return new SellDecision(true, currentQuantity, "TIME_STOP_HARD", true);
-        }
-        if (st.entryTimeMs > 0 && holdMs >= MAX_HOLD_SOFT_MS && pnlMult < TIME_STOP_SOFT_PROFIT_MULT) {
-            return new SellDecision(true, currentQuantity, "TIME_STOP_SOFT", true);
         }
 
         return SellDecision.none();
     }
 
+    private ExitProfile exitProfileFor(EntryMode mode, Market market) {
+        if (market == Market.US) {
+            switch (mode) {
+                case PULLBACK:
+                    return new ExitProfile(STOP_US_PULLBACK, TP_US_PULLBACK,
+                            TRAIL_START_US_PULLBACK, TRAIL_DROP_US_PULLBACK, true, "PULLBACK");
+                case BREAKOUT:
+                    return new ExitProfile(STOP_US_BREAKOUT, TP_US_BREAKOUT,
+                            TRAIL_START_US_BREAKOUT, TRAIL_DROP_US_BREAKOUT, true, "BREAKOUT");
+                case VOLUME_BREAKOUT:
+                    return new ExitProfile(STOP_US_VOLUME_BREAKOUT, TP_US_VOLUME_BREAKOUT,
+                            TRAIL_START_US_VOLUME_BREAKOUT, TRAIL_DROP_US_VOLUME_BREAKOUT, true, "VOLUME_BREAKOUT");
+                case EARLY_MOMENTUM:
+                    return new ExitProfile(STOP_US_EARLY_MOMENTUM, TP_US_EARLY_MOMENTUM,
+                            null, null, false, "EARLY_MOMENTUM");
+                default:
+                    return new ExitProfile(0.985, 1.017, 0.012, 0.006, true, "DEFAULT");
+            }
+        } else { // KRX
+            switch (mode) {
+                case PULLBACK:
+                    return new ExitProfile(STOP_KRX_PULLBACK, TP_KRX_PULLBACK,
+                            TRAIL_START_KRX_PULLBACK, TRAIL_DROP_KRX_PULLBACK, true, "PULLBACK");
+                case BREAKOUT:
+                    return new ExitProfile(STOP_KRX_BREAKOUT, TP_KRX_BREAKOUT,
+                            TRAIL_START_KRX_BREAKOUT, TRAIL_DROP_KRX_BREAKOUT, true, "BREAKOUT");
+                case VOLUME_BREAKOUT:
+                    return new ExitProfile(STOP_KRX_VOLUME_BREAKOUT, TP_KRX_VOLUME_BREAKOUT,
+                            TRAIL_START_KRX_VOLUME_BREAKOUT, TRAIL_DROP_KRX_VOLUME_BREAKOUT, true, "VOLUME_BREAKOUT");
+                case EARLY_MOMENTUM:
+                    return new ExitProfile(STOP_KRX_EARLY_MOMENTUM, TP_KRX_EARLY_MOMENTUM,
+                            null, null, false, "EARLY_MOMENTUM");
+                default:
+                    return new ExitProfile(0.990, 1.017, 0.012, 0.006, true, "DEFAULT");
+            }
+        }
+    }
+
     private boolean passesTimeWindow(Market market, LocalDateTime now) {
-        if (market != Market.KRX) return true;
-        return !isKrMarketBlockedTime(now);
+        if (market == Market.KRX) return !isKrMarketBlockedTime(now);
+        if (market == Market.US)  return !isUsMarketBlockedTime(now);
+        return true;
+    }
+
+    private boolean isUsMarketBlockedTime(LocalDateTime nowNy) {
+        LocalTime time = nowNy.toLocalTime();
+        // 개장 직후 15분 차단 (9:30~9:44): 개장 갭 스파이크 가짜 신호 방지
+        // 15:50 이후 차단: 하드 타임스탑 12분 감안, EOD 강제 청산(15:55) 이전에 정리
+        boolean openingBlock = !time.isBefore(LocalTime.of(9, 30)) && time.isBefore(LocalTime.of(9, 45));
+        boolean closingBlock = time.isAfter(LocalTime.of(15, 49));
+        return openingBlock || closingBlock;
     }
 
     private boolean passesCheapStockFilter(Market market, double price) {
         if (market != Market.KRX) return true;
         return price >= MIN_KRX_PRICE;
-    }
-
-    private boolean passesMarketFilter(Market market) {
-        MarketContext ctx = marketContext.get(market);
-        if (ctx == null) return true;
-        if (isMarketContextExpired(ctx)) return true;
-        return !ctx.marketWeak;
     }
 
     private boolean isMarketContextExpired(MarketContext ctx) {
@@ -1656,145 +2083,6 @@ public class StrategyEngine {
                 && signal.averageTurnover >= MIN_KRX_AVG_TURNOVER;
     }
 
-    private boolean evaluateMomentumBreakout(BuySignal signal, Market market) {
-        signal.momentumVelocityOk = signal.velocity >= momentumVelocityMin(market);
-        signal.momentumNearHigh = signal.recentHigh > 0.0
-                && signal.price >= signal.recentHigh * MOMENTUM_PRICE_NEAR_HIGH;
-        signal.momentumVolumeOk = signal.averageVolume > 0.0
-                && signal.volume >= signal.averageVolume * MOMENTUM_VOLUME_MULT;
-
-        return signal.multiUptrend
-                && signal.momentumVelocityOk
-                && signal.momentumNearHigh
-                && signal.momentumVolumeOk;
-    }
-
-    private boolean evaluatePullbackEntry(SymbolState st, BuySignal signal, Market market) {
-        double pullbackUpper = pullbackUpperFromHigh(market);
-        double pullbackLower = pullbackLowerFromHigh(market);
-
-        signal.pullbackZone = signal.recentHigh > 0.0
-                && signal.price <= signal.recentHigh * pullbackUpper
-                && signal.price >= signal.recentHigh * pullbackLower;
-
-        signal.pullbackAvgShort = st.minuteHistory.averagePrice(3);
-        signal.pullbackAvgLong = st.minuteHistory.averagePrice(6);
-
-        signal.pullbackRecovering = signal.pullbackAvgShort > 0.0
-                && signal.pullbackAvgLong > 0.0
-                && signal.pullbackAvgShort >= signal.pullbackAvgLong
-                && signal.price >= signal.pullbackAvgShort * 0.999;
-
-        signal.pullbackVelocityOk = signal.velocityShort >= 0.0005;
-
-        signal.pullbackVolumeOk = signal.averageVolume > 0.0
-                && signal.volume >= signal.averageVolume * pullbackVolumeMult(market);
-
-        signal.pullbackDepthFromHigh = signal.recentHigh > 0.0
-                ? ((signal.recentHigh - signal.price) / signal.recentHigh)
-                : 0.0;
-
-        boolean trendOk = signal.shortUp || signal.midUp || st.minuteHistory.isShortTermUptrend(5, 15);
-
-        return signal.pullbackZone
-                && signal.pullbackRecovering
-                && signal.pullbackVelocityOk
-                && signal.pullbackVolumeOk
-                && trendOk;
-    }
-
-    private boolean evaluateVolumeBreakout(BuySignal signal, Market market) {
-        signal.volumeBreakNearHigh = signal.recentHigh > 0.0
-                && signal.price >= signal.recentHigh * 0.999;
-        signal.volumeBreakVelocityOk = signal.velocityShort >= 0.001;
-        signal.volumeBreakVolumeOk = signal.averageVolume > 0.0
-                && signal.volume >= signal.averageVolume * VOLUME_BREAKOUT_VOLUME_MULT;
-
-        return signal.multiUptrend
-                && signal.volumeBreakNearHigh
-                && signal.volumeBreakVolumeOk
-                && signal.volumeBreakVelocityOk;
-    }
-
-    private boolean evaluateStrongBreakout(BuySignal signal, Market market) {
-        return signal.multiUptrend
-                && signal.velocity >= strongVelocityMin(market)
-                && signal.averageVolume > 0.0
-                && signal.volume >= signal.averageVolume * STRONG_BREAKOUT_VOLUME_MULT
-                && signal.recentHigh > 0.0
-                && signal.price >= signal.recentHigh * 0.9992;
-    }
-
-    private int countSignals(boolean momentumBreakout, boolean pullbackEntry, boolean volumeBreakout, boolean strongBreakout) {
-        int count = 0;
-        if (momentumBreakout) count++;
-        if (pullbackEntry) count++;
-        if (volumeBreakout || strongBreakout) count++;
-        return count;
-    }
-
-    private int calculateSignalScore(BuySignal signal, Market market) {
-        int score = 0;
-
-        // Pullback weighted as primary signal
-        if (signal.pullbackEntry) score += 55;
-        if (signal.volumeBreakout) score += 16;
-        if (signal.momentumBreakout) score += 6;
-        if (signal.strongBreakout) score += 8;
-
-        if (signal.turnoverFilterPassed) score += 8;
-        if (signal.absoluteLiquidityPassed) score += 8;
-
-        score += signal.trendScore * 6;
-
-        if (signal.pullbackRecovering) score += 10;
-        if (signal.pullbackVelocityOk) score += 8;
-
-        if (signal.velocity >= strongVelocityMin(market)) score += 5;
-        else if (signal.velocity >= momentumVelocityMin(market)) score += 2;
-
-        if (signal.volume > 0.0 && signal.averageVolume > 0.0) {
-            double volRatio = signal.volume / signal.averageVolume;
-            if (volRatio >= 2.0) score += 7;
-            else if (volRatio >= 1.0) score += 4;
-        }
-
-        // Bonus for moderate pullback depth range
-        if (signal.pullbackDepthFromHigh >= 0.015 && signal.pullbackDepthFromHigh <= 0.040) {
-            score += 6;
-        }
-
-        // Penalize momentum-only entries
-        if (signal.momentumBreakout && !signal.pullbackEntry && !signal.volumeBreakout) {
-            score -= 8;
-        }
-
-        return score;
-    }
-
-    private String deriveRejectReason(BuySignal signal, Market market) {
-        if (signal.signalCount == 0) return "NO_ENTRY";
-
-        if (signal.pullbackEntry) {
-            if (signal.signalScore < 58) return "PULLBACK_SCORE_LOW";
-            return "FILTERED";
-        }
-
-        if (signal.volumeBreakout || signal.strongBreakout) {
-            if (signal.signalScore < 55) return "BREAKOUT_SCORE_LOW";
-            if (signal.signalCount < 2) return "BREAKOUT_SIGNAL_COUNT_LOW";
-            return "FILTERED";
-        }
-
-        return "MOMENTUM_ONLY_BLOCKED";
-    }
-
-    private EntryMode deriveEntryMode(BuySignal signal) {
-        if (signal.pullbackEntry) return EntryMode.PULLBACK;
-        if (signal.volumeBreakout) return EntryMode.VOLUME_BREAKOUT;
-        if (signal.strongBreakout || signal.momentumBreakout) return EntryMode.BREAKOUT;
-        return EntryMode.NONE;
-    }
 
     private double determinePositionSize(BuySignal signal, Market market) {
         if (!signal.isBuyCandidate(market)) {
@@ -1820,6 +2108,10 @@ public class StrategyEngine {
             return BASE_SIZE_BREAKOUT;
         }
 
+        if (signal.entryMode == EntryMode.EARLY_MOMENTUM) {
+            return BASE_SIZE_EARLY_MOMENTUM;
+        }
+
         return 0.0;
     }
 
@@ -1829,8 +2121,7 @@ public class StrategyEngine {
         // positionSize = notional multiplier (e.g. 1.20x PULLBACK, 0.80x BREAKOUT, 1.50x SIZE_UP)
         double targetNotional = st.buyAmountPerOrder * positionSize;
         int qty = (int) Math.floor(targetNotional / orderPrice);
-        // Require at least 2 shares for amount-based entries
-        return qty >= 2 ? qty : 0;
+        return qty >= 1 ? qty : 0;
     }
 
     private void refreshHoldingState(SymbolState st, double avgPrice, double currentPrice, long nowMs) {
@@ -1851,10 +2142,16 @@ public class StrategyEngine {
     private void resetEntryState(SymbolState st) {
         st.entryTimeMs = 0L;
         st.highestSinceEntry = 0.0;
-        st.partialTakeProfitDone = false;
         st.entryPriceSnapshot = 0.0;
         st.lastKnownProfitRate = 0.0;
         st.entryMode = EntryMode.NONE;
+        st.positionPhase = PositionPhase.NONE;
+        st.lastPendingSellReason = null;
+        st.pendingSellQty = 0;
+        st.entrySignalScore   = 0;
+        st.entryVwapDistPct   = 0.0;
+        st.entryVelocityShort = 0.0;
+        st.entryQty           = 0;
     }
 
     private void resetDailyEntryIfNeeded(SymbolState st, java.time.LocalDate today) {
@@ -1864,6 +2161,11 @@ public class StrategyEngine {
             st.dailyEntryCount = 0;
             st.lastEntryPatternKey = null;
             st.samePatternEntryCount = 0;
+            st.statsDailyEntryReadyCount = 0;
+            st.statsDailyExecCount = 0;
+            st.statsDailyExitReasonCounts.clear();
+            st.statsDailyExitPnlSum = 0.0;
+            dailyPnlAccumulator.keySet().removeIf(d -> d.isBefore(today));
         }
     }
 
@@ -1896,10 +2198,6 @@ public class StrategyEngine {
         return symbol.matches("^\\d{5,6}$") ? Market.KRX : Market.US;
     }
 
-    private LocalDateTime normalizeTimestamp(LocalDateTime ts, Market market) {
-        return ts != null ? ts : nowByMarket(market);
-    }
-
     private String normalizeSymbol(String symbol) {
         if (symbol == null || symbol.isBlank()) {
             return null;
@@ -1911,7 +2209,7 @@ public class StrategyEngine {
         if (market == Market.KRX) {
             return LocalDateTime.now(KST_ZONE);
         }
-        return LocalDateTime.now();
+        return LocalDateTime.now(NY_ZONE); // US는 반드시 뉴욕 시간 기준
     }
 
     private long historySpanSeconds(MinuteBarHistory history) {
@@ -1920,8 +2218,8 @@ public class StrategyEngine {
 
     private boolean isKrMarketBlockedTime(LocalDateTime now) {
         LocalTime time = now.toLocalTime();
-        // 9:15 이전: VWAP 미수렴 구간 차단
-        // 14:50 이후: 30분 타임스탑 감안 신규 진입 차단
+        // 9:15 이전: VWAP 미수렴, 갭 스파이크 구간 → 진입 차단
+        // 14:50 이후: 하드 타임스탑 12분 감안 → 15:02 이전 청산 완료, 장마감(15:30) 여유
         return time.isBefore(LocalTime.of(9, 15)) || time.isAfter(LocalTime.of(14, 49));
     }
 
@@ -1931,7 +2229,8 @@ public class StrategyEngine {
     }
 
     private double lowVolumeSkipMult(Market market) {
-        return LOW_VOLUME_SKIP_MULT;
+        // safety-net only: 5% 미만이면 무조건 차단. 실질 기준은 isBuyCandidate per-mode 체크
+        return 0.05;
     }
 
     private double momentumVelocityMin(Market market) {
@@ -1942,29 +2241,6 @@ public class StrategyEngine {
         return market == Market.US ? 0.014 : 0.010;
     }
 
-    private double pullbackUpperFromHigh(Market market) {
-        return PULLBACK_UPPER_FROM_HIGH;
-    }
-
-    private double pullbackLowerFromHigh(Market market) {
-        return PULLBACK_LOWER_FROM_HIGH;
-    }
-
-    private double pullbackVolumeMult(Market market) {
-        return PULLBACK_VOLUME_MULT;
-    }
-
-    private double multiTrendShortMin(Market market) {
-        return market == Market.US ? 0.0015 : 0.0010;
-    }
-
-    private double multiTrendMidMin(Market market) {
-        return market == Market.US ? 0.0025 : 0.0015;
-    }
-
-    private double multiTrendLongMin(Market market) {
-        return market == Market.US ? 0.0035 : 0.0020;
-    }
 
     private double roundToTickSize(double price, Market market) {
         if (market == Market.US) {
@@ -1985,60 +2261,93 @@ public class StrategyEngine {
 
     private boolean isTakeProfitReason(String reason) {
         if (reason == null) return false;
-        return "TAKE_PROFIT_PARTIAL".equals(reason)
-                || "VWAP_LOST_AFTER_PARTIAL".equals(reason)
-                || "BREAKEVEN_STOP".equals(reason);
+        return reason.startsWith("TAKE_PROFIT_");
     }
 
     private boolean isProfitExitReason(String reason) {
         if (reason == null) return false;
-        // TRAIL_DYNAMIC: 별도 2분 쿨다운 처리 (isTrailExitReason)
-        // BREAKEVEN_STOP: 부분익절 후 +0.3% 청산 → 수익 실현으로 분류
-        return "TAKE_PROFIT_PARTIAL".equals(reason)
-                || "VWAP_LOST_AFTER_PARTIAL".equals(reason)
-                || "BREAKEVEN_STOP".equals(reason);
+        return reason.startsWith("TAKE_PROFIT_");
     }
 
     private boolean isTrailExitReason(String reason) {
-        return "TRAIL_DYNAMIC".equals(reason);
+        if (reason == null) return false;
+        return reason.startsWith("TRAIL_")
+                || "BREAKEVEN_GUARD".equals(reason);
+    }
+
+    private ExitType toExitType(String reason) {
+        if (reason == null) return ExitType.NONE;
+        if (reason.startsWith("TAKE_PROFIT_")) {
+            return ExitType.PROFIT;
+        }
+        if (reason.startsWith("TRAIL_") || "BREAKEVEN_GUARD".equals(reason)) {
+            return ExitType.TRAIL;
+        }
+        if (reason.startsWith("STOP_LOSS_")
+                || "EMERGENCY_STOP".equals(reason)
+                || "FAILED_BREAKOUT".equals(reason)
+                || "FAILED_PULLBACK".equals(reason)
+                || "EARLY_MOMENTUM_DEAD".equals(reason)) {
+            return ExitType.STOPLOSS;
+        }
+        if ("TIME_STOP_SOFT".equals(reason)
+                || "TIME_STOP_HARD".equals(reason)
+                || "EOD_FORCE_SELL".equals(reason)) {
+            return ExitType.TIMESTOP;
+        }
+        if ("VWAP_BREAK".equals(reason)) {
+            return ExitType.VWAP_BREAK;
+        }
+        return ExitType.NONE;
+    }
+
+    private long resolveStopLossCooldown(String reason) {
+        if ("FAILED_BREAKOUT".equals(reason)) return REENTER_FAILED_BREAKOUT_COOLDOWN_MS;
+        if ("FAILED_PULLBACK".equals(reason)) return REENTER_FAILED_PULLBACK_COOLDOWN_MS;
+        if ("EARLY_MOMENTUM_DEAD".equals(reason)) return REENTER_EARLY_MOMENTUM_DEAD_COOLDOWN_MS;
+        if ("TIME_STOP_SOFT".equals(reason)) return REENTER_TIME_STOP_SOFT_COOLDOWN_MS;
+        if ("TIME_STOP_HARD".equals(reason)) return REENTER_TIME_STOP_HARD_COOLDOWN_MS;
+        return REENTER_STOPLOSS_COOLDOWN_MS; // STOP_LOSS / VWAP_BREAK / EMERGENCY_STOP 등: 15분
     }
 
     private boolean isStopLossExitReason(String reason) {
         if (reason == null) return false;
-        return "STOP_LOSS".equals(reason)
+        return reason.startsWith("STOP_LOSS_")
                 || "EMERGENCY_STOP".equals(reason)
-                || "TIME_STOP_SOFT".equals(reason)
+                || "FAILED_BREAKOUT".equals(reason)
+                || "FAILED_PULLBACK".equals(reason)
+                || "EARLY_MOMENTUM_DEAD".equals(reason)
+                || "VWAP_BREAK".equals(reason);
+    }
+
+    private boolean isTimeStopExitReason(String reason) {
+        if (reason == null) return false;
+        return "TIME_STOP_SOFT".equals(reason)
                 || "TIME_STOP_HARD".equals(reason);
     }
 
-    private String entryReason(BuySignal signal) {
+    private String buildBuyWhyString(BuySignal signal) {
+        StringBuilder sb = new StringBuilder();
         if (signal.entryMode == EntryMode.PULLBACK) {
-            return "PULLBACK_REBOUND";
+            sb.append("zone(").append(fmtPct(signal.pullbackDepthFromHigh)).append("fromHigh)");
+            if (signal.velocityShort > 0.0)                            sb.append(" vel+");
+            if (signal.pullbackAvgShort >= signal.pullbackAvgLong)     sb.append(" avgCross");
+            if (signal.price >= signal.pullbackAvgShort)               sb.append(" priceAboveAvg");
+            if (signal.averageVolume > 0.0)
+                sb.append(" vol(").append(String.format("%.2f", signal.volume / signal.averageVolume)).append("x)");
+        } else if (signal.entryMode == EntryMode.BREAKOUT || signal.entryMode == EntryMode.VOLUME_BREAKOUT) {
+            if (signal.strongBreakout)           sb.append("strongBreakout");
+            if (signal.volumeBreakout)           sb.append(" volBreakout");
+            if (signal.breakoutRetestRecovering) sb.append(" retestOK");
+            if (signal.multiUptrend)             sb.append(" multiUp");
+            if (signal.averageVolume > 0.0)
+                sb.append(" vol(").append(String.format("%.2f", signal.volume / signal.averageVolume)).append("x)");
+        } else if (signal.entryMode == EntryMode.EARLY_MOMENTUM) {
+            sb.append("velShort=").append(fmtPct(signal.velocityShort));
+            sb.append(" velMid=").append(fmtPct(signal.velocityMid));
+            if (signal.aboveVwap) sb.append(" aboveVwap");
         }
-        if (signal.entryMode == EntryMode.VOLUME_BREAKOUT) {
-            return "VOLUME_BREAKOUT";
-        }
-        if (signal.entryMode == EntryMode.BREAKOUT) {
-            return "BREAKOUT";
-        }
-        return "ENTRY";
-    }
-
-    private void logEntryWait(Market market,
-                              String symbol,
-                              String reason,
-                              double currentPrice,
-                              double basePrice,
-                              double velocityShort,
-                              double volumeDelta) {
-        logger.info("ENTRY_WAIT (tick) [{}] {} reason={} price={} readyClose={} velShort={} volDelta={}",
-                market,
-                symbol,
-                reason,
-                fmt(currentPrice),
-                fmt(basePrice),
-                fmtPct(velocityShort),
-                fmt(volumeDelta));
+        return sb.toString();
     }
 
     private String buildPatternKey(Market market, BuySignal signal, LocalDateTime barTime) {

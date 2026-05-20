@@ -5,9 +5,31 @@
             <charset>UTF-8</charset>
         </encoder>
     </appender>
+
+    <!--
+        중요 이벤트 전용 파일 (날짜별)
+        저장 위치: C:\workspace\autotrading\import_memo\YYYY-MM-DD.log
+        StrategyEngine logger에만 붙여서 BUY/SELL/DAILY_STATS만 기록됨
+        (Janino 불필요 — logger 이름 기반으로 분리)
+    -->
+    <appender name="TRADE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>C:/workspace/autotrading/import_memo/trade.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>C:/workspace/autotrading/import_memo/%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
     <!-- Default to WARN for app logs; allow StrategyEngine BUY/SELL INFO only -->
     <logger name="com.autotrading" level="WARN"/>
-    <logger name="com.autotrading.strategy.StrategyEngine" level="INFO"/>
+    <logger name="com.autotrading.strategy.StrategyEngine" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="TRADE_FILE"/>
+    </logger>
     <logger name="com.autotrading.scheduler.SchedulerService" level="INFO"/>
     <logger name="com.autotrading.order.OrderService" level="INFO"/>
     <root level="INFO">

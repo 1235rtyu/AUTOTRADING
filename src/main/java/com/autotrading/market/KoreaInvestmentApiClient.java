@@ -60,6 +60,13 @@ public class KoreaInvestmentApiClient {
     private volatile String accessToken;
     private volatile Instant accessTokenExpiresAt;
 
+    // Rate limiter: KIS API는 계정 전체 초당 호출 수 제한 (TR 무관)
+    // demo(VTS): 초당 1건 → 1,100ms 간격
+    // real: 초당 20건 → 55ms 간격 (안전 마진 포함)
+    // 시세/잔고/보유 등 모든 KIS 호출을 하나의 락으로 직렬화
+    private final Object kisApiRateLock = new Object();
+    private long lastKisApiCallMs = 0L;
+
     public KoreaInvestmentApiClient(KisProperties properties, AccountCredentialStore credentialStore) {
         this.properties = properties;
         this.credentialStore = credentialStore;
@@ -116,7 +123,29 @@ public class KoreaInvestmentApiClient {
         }
     }
 
+    /**
+     * 국내/해외 현재가 조회 공통 rate limiter.
+     * demo(VTS): 초당 1건 → 1,100ms 간격
+     * real: 초당 20건 → 55ms 간격
+     */
+    private void awaitApiSlot() {
+        long minIntervalMs = properties.isDemo() ? 1_100L : 55L;
+        synchronized (kisApiRateLock) {
+            long now = System.currentTimeMillis();
+            long elapsed = now - lastKisApiCallMs;
+            if (elapsed < minIntervalMs) {
+                try {
+                    Thread.sleep(minIntervalMs - elapsed);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            lastKisApiCallMs = System.currentTimeMillis();
+        }
+    }
+
     public StockQuote fetchCurrentMarketPrice(String symbol) {
+        awaitApiSlot();
         String token = generateAccessToken();
         if (!StringUtils.hasText(token)) {
             throw new IllegalStateException("KIS access token unavailable.");
@@ -139,6 +168,7 @@ public class KoreaInvestmentApiClient {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
+                logger.error("Price request failed for {}. status={} body={}", symbol, response.statusCode(), response.body());
                 throw new IllegalStateException("Price request failed. status=" + response.statusCode());
             }
             JsonNode root = objectMapper.readTree(response.body());
@@ -209,6 +239,7 @@ public class KoreaInvestmentApiClient {
 
 
 public StockQuote fetchOverseasCurrentPrice(String symbol, String exchange) {
+    awaitApiSlot();
     String token = generateAccessToken();
     if (!StringUtils.hasText(token)) {
         throw new IllegalStateException("KIS access token unavailable.");
@@ -291,6 +322,10 @@ public StockQuote fetchOverseasCurrentPrice(String symbol, String exchange) {
      */
 // 수정 — 거래량순위 전용 API 직접 호출
 public Map<String, Object> fetchVolumeRanking() {
+    return fetchVolumeRanking(0);
+}
+
+public Map<String, Object> fetchVolumeRanking(int blngClsCd) {
     Map<String, Object> result = new HashMap<>();
     if (!properties.isConfigured()) {
         result.put("status", "ERROR");
@@ -308,7 +343,7 @@ public Map<String, Object> fetchVolumeRanking() {
             + "&FID_COND_SCR_DIV_CODE=20171"
             + "&FID_INPUT_ISCD=0000"
             + "&FID_DIV_CLS_CODE=0"
-            + "&FID_BLNG_CLS_CODE=0"
+            + "&FID_BLNG_CLS_CODE=" + blngClsCd
             + "&FID_TRGT_CLS_CODE=111111111"
             + "&FID_TRGT_EXLS_CLS_CODE=0000000000"
             + "&FID_INPUT_PRICE_1="
@@ -1066,6 +1101,7 @@ public Map<String, Object> fetchVolumeRanking() {
         params.put("FUND_STTL_ICLD_YN", "N");
         params.put("FNCG_AMT_AUTO_RDPT_YN", "N");
         params.put("PRCS_DVSN", "00");
+        awaitApiSlot();
         params.put("CTX_AREA_FK100", "");
         params.put("CTX_AREA_NK100", "");
 
@@ -1193,6 +1229,7 @@ public Map<String, Object> fetchVolumeRanking() {
         params.put("ACNT_PRDT_CD", accountInfo.productCode);
         params.put("AFHR_FLPR_YN", "N");
         params.put("OFL_YN", "");
+        awaitApiSlot();
         params.put("INQR_DVSN", "02"); // symbol-level holdings
         params.put("UNPR_DVSN", "01");
         params.put("FUND_STTL_ICLD_YN", "N");
@@ -1688,6 +1725,7 @@ public Map<String, Object> fetchVolumeRanking() {
             return result;
         }
 
+        awaitApiSlot();
         String trId = properties.isDemo() ? "VTTS3012R" : "TTTS3012R";
         String ex = StringUtils.hasText(exchange) ? exchange : "NASD";
         String cur = StringUtils.hasText(currency) ? currency : "USD";
