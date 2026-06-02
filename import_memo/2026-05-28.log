@@ -1,0 +1,69 @@
+2026-05-28 00:30:12 WARN  BUY_SKIP [US] SOXL reason=AMOUNT_TOO_SMALL amount=250.0000 size=0.8000x price=209.6100
+2026-05-28 00:30:17 WARN  BUY_SKIP [US] SOXL reason=AMOUNT_TOO_SMALL amount=250.0000 size=0.8000x price=209.8400
+2026-05-28 00:32:06 INFO  BUY [US] NVDL mode=VOLUME_BREAKOUT price=101.5100 qty=1 size=0.8000x score=83 | WHY: strongBreakout volBreakout retestOK multiUp vol(2.29x) | VWAP: 0.45%(ABOVE slope=UP) allowedGap=2.20% | TREND: score=3 vel=0.21%/0.14%/0.25% accel=true | VOL: 3175272.0000/1384865.3500 TO: 322321543.1928/139899444.3197 | HIGH: 101.5800 fromHigh=-0.07% | entryNo=1
+2026-05-28 00:32:07 INFO  BUY_FILLED NVDL phase=HOLDING
+2026-05-28 00:39:10 INFO  SELL_EXECUTED [US] NVDL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=101.3497 qty=1 reason=TIME_STOP_SOFT pnl=-0.16% peakPnl=0.24% holdMs=422920 high=101.7500 avgPrice=101.5100 weightedPnl=-0.06% (pending fill)
+2026-05-28 00:39:10 WARN  SELL_REJECTED NVDL reason=TIME_STOP_SOFT phase=HOLDING kisMsg=초당 거래건수를 초과하였습니다.
+2026-05-28 00:39:15 INFO  SELL_EXECUTED [US] NVDL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=101.2000 qty=1 reason=TIME_STOP_SOFT pnl=-0.31% peakPnl=0.24% holdMs=428235 high=101.7500 avgPrice=101.5100 weightedPnl=-0.12% (pending fill)
+2026-05-28 00:39:30 WARN  SELL timeout for NVDL — issuing immediate LIMIT sell qty=1 fallbackPrice=100.9400
+2026-05-28 00:39:46 WARN  SELL timeout for NVDL — issuing immediate LIMIT sell qty=1 fallbackPrice=100.8300
+2026-05-28 00:39:55 WARN  SELL_REJECTED NVDL reason=SELL_TIMEOUT_MARKET_RETRY phase=HOLDING kisMsg=FILL_UNRESOLVABLE
+2026-05-28 00:40:01 INFO  SELL_EXECUTED [US] NVDL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=101.0500 qty=1 reason=TIME_STOP_SOFT pnl=-0.45% peakPnl=0.24% holdMs=474382 high=101.7500 avgPrice=101.5100 weightedPnl=-0.18% (pending fill)
+2026-05-28 00:40:02 WARN  SELL_REJECTED NVDL reason=TIME_STOP_SOFT phase=HOLDING kisMsg=주문단가를 입력 하십시오
+2026-05-28 00:40:07 INFO  SELL_EXECUTED [US] NVDL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=101.1300 qty=1 reason=TIME_STOP_SOFT pnl=-0.37% peakPnl=0.24% holdMs=480296 high=101.7500 avgPrice=101.5100 weightedPnl=-0.15% (pending fill)
+2026-05-28 00:40:22 WARN  SELL timeout for NVDL — issuing immediate LIMIT sell qty=1 fallbackPrice=100.8800
+2026-05-28 02:18:05 INFO  BUY [US] SMCX mode=PULLBACK price=20.0800 qty=14 size=1.2000x score=90(CONV) | WHY: zone(-2.34%fromHigh) vel+ priceAboveAvg vol(1.69x) | VWAP: 1.22%(ABOVE slope=UP) allowedGap=1.60% | TREND: score=3 vel=0.40%/0.30%/0.15% accel=true | VOL: 1041299.0000/616049.8000 TO: 20909283.9200/12492605.3203 | HIGH: 20.5601 fromHigh=-2.34% | entryNo=2
+2026-05-28 02:18:05 WARN  BUY_REJECTED SMCX phase=NONE
+2026-05-28 03:51:07 INFO  BUY [US] TSLQ mode=VOLUME_BREAKOUT price=16.3700 qty=15 size=1.0000x score=83 | WHY: strongBreakout volBreakout retestOK multiUp vol(4.03x) | VWAP: 0.84%(ABOVE slope=UP) allowedGap=2.20% | TREND: score=3 vel=0.18%/0.12%/0.12% accel=true | VOL: 5727242.0000/1422339.4000 TO: 93754951.5400/23248203.7309 | HIGH: 16.3800 fromHigh=-0.06% | entryNo=1
+2026-05-28 03:51:39 INFO  BUY_FILLED TSLQ phase=HOLDING
+2026-05-28 03:59:29 INFO  SELL_EXECUTED [US] TSLQ mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=16.3400 qty=15 reason=TIME_STOP_SOFT pnl=-0.18% peakPnl=0.12% holdMs=470435 high=16.3899 avgPrice=16.3700 weightedPnl=-0.18% (pending fill)
+2026-05-28 03:59:29 WARN  SELL_REJECTED TSLQ reason=TIME_STOP_SOFT phase=HOLDING kisMsg=주문단가를 입력 하십시오
+2026-05-28 03:59:34 INFO  SELL_EXECUTED [US] TSLQ mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=16.3400 qty=15 reason=TIME_STOP_SOFT pnl=-0.18% peakPnl=0.12% holdMs=475856 high=16.3899 avgPrice=16.3700 weightedPnl=-0.18% (pending fill)
+2026-05-28 03:59:50 WARN  SELL timeout for TSLQ — issuing immediate LIMIT sell qty=15 fallbackPrice=16.3100
+2026-05-28 04:00:06 WARN  SELL timeout for TSLQ — issuing immediate LIMIT sell qty=15 fallbackPrice=16.3100
+2026-05-28 04:00:15 WARN  SELL_REJECTED TSLQ reason=SELL_TIMEOUT_MARKET_RETRY phase=HOLDING kisMsg=FILL_UNRESOLVABLE
+2026-05-28 04:00:21 INFO  SELL_EXECUTED [US] TSLQ mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=16.3400 qty=15 reason=TIME_STOP_SOFT pnl=-0.18% peakPnl=0.12% holdMs=522721 high=16.3899 avgPrice=16.3700 weightedPnl=-0.18% (pending fill)
+2026-05-28 04:00:22 WARN  SELL_REJECTED TSLQ reason=TIME_STOP_SOFT phase=HOLDING kisMsg=주문단가를 입력 하십시오
+2026-05-28 04:00:27 INFO  SELL_EXECUTED [US] TSLQ mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=16.3400 qty=15 reason=TIME_STOP_SOFT pnl=-0.18% peakPnl=0.12% holdMs=528243 high=16.3899 avgPrice=16.3700 weightedPnl=-0.18% (pending fill)
+2026-05-28 04:25:15 INFO  BUY [US] SOXL mode=VOLUME_BREAKOUT price=216.7400 qty=1 size=1.0000x score=95(CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(3.35x) | VWAP: 1.24%(ABOVE slope=UP) allowedGap=2.80% | TREND: score=3 vel=0.28%/0.19%/0.51% accel=true | VOL: 34476207.0000/10303176.3000 TO: 7475820725.8800/2226176498.5720 | HIGH: 216.8520 fromHigh=-0.01% | entryNo=1
+2026-05-28 04:25:16 INFO  BUY_FILLED SOXL phase=HOLDING
+2026-05-28 04:33:00 INFO  SELL_EXECUTED [US] SOXL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=215.9000 qty=1 reason=TIME_STOP_SOFT pnl=-0.38% peakPnl=-0.08% holdMs=464468 high=216.5500 avgPrice=216.7199 weightedPnl=-0.33% (pending fill)
+2026-05-28 04:33:00 WARN  SELL_REJECTED SOXL reason=TIME_STOP_SOFT phase=HOLDING kisMsg=주문단가를 입력 하십시오
+2026-05-28 04:33:05 INFO  SELL_EXECUTED [US] SOXL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=215.9195 qty=1 reason=TIME_STOP_SOFT pnl=-0.37% peakPnl=-0.08% holdMs=469662 high=216.5500 avgPrice=216.7199 weightedPnl=-0.32% (pending fill)
+2026-05-28 04:33:21 WARN  SELL timeout for SOXL — issuing immediate LIMIT sell qty=1 fallbackPrice=215.7100
+2026-05-28 04:33:36 WARN  SELL timeout for SOXL — issuing immediate LIMIT sell qty=1 fallbackPrice=215.7700
+2026-05-28 04:33:42 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:33:46 WARN  SELL_REJECTED SOXL reason=null phase=NONE kisMsg=FILL_UNRESOLVABLE
+2026-05-28 04:33:47 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:33:52 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:33:57 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:34:02 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:34:07 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:34:12 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:34:18 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:34:23 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:34:28 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:34:33 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 04:34:38 WARN  SELL_SKIP [US] SOXL reason=PHANTOM_POSITION phase=NONE qty=1 avgPrice=216.7199
+2026-05-28 17:04:09 INFO  BUY [US] SMCX mode=PULLBACK price=20.0000 qty=18 size=1.5000x score=85(CONV) | WHY: zone(-2.44%fromHigh) vel+ priceAboveAvg vol(6.67x) | VWAP: 0.98%(ABOVE slope=UP) allowedGap=1.60% | TREND: score=2 vel=4.33%/0.55%/-2.44% accel=true | VOL: 13060.0000/1959.0000 TO: 261200.0000/38799.2080 | HIGH: 20.5000 fromHigh=-2.44% | entryNo=1
+2026-05-28 17:14:08 WARN  BUY pending timeout cleared for SMCX
+2026-05-28 17:14:08 INFO  BUY [US] SMCX mode=PULLBACK price=20.0300 qty=18 size=1.5000x score=90(CONV) | WHY: zone(-2.29%fromHigh) vel+ avgCross priceAboveAvg vol(2.85x) | VWAP: 0.51%(ABOVE slope=UP) allowedGap=1.60% | TREND: score=3 vel=0.55%/0.55%/3.35% accel=false | VOL: 17395.0000/6099.1500 TO: 348421.8500/121547.6859 | HIGH: 20.5000 fromHigh=-2.29% | entryNo=2
+2026-05-28 17:23:05 INFO  BUY [US] SMU mode=PULLBACK price=13.2000 qty=28 size=1.5000x score=90(CONV) | WHY: zone(-1.75%fromHigh) vel+ avgCross priceAboveAvg vol(5.23x) | VWAP: 0.08%(ABOVE slope=UP) allowedGap=1.60% | TREND: score=3 vel=0.26%/0.33%/0.45% accel=false | VOL: 16329.0000/3122.9500 TO: 215462.7879/41037.8497 | HIGH: 13.4300 fromHigh=-1.75% | entryNo=1
+2026-05-28 21:37:08 INFO  BUY [US] NVDL mode=VOLUME_BREAKOUT price=102.7900 qty=2 size=1.0000x score=95(CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.96x) | VWAP: 0.66%(ABOVE slope=UP) allowedGap=2.80% | TREND: score=3 vel=0.27%/0.16%/0.44% accel=true | VOL: 171889.0000/58001.7000 TO: 17669742.2886/5934043.1470 | HIGH: 102.7974 fromHigh=0.00% | entryNo=1
+2026-05-28 21:56:06 WARN  BUY pending timeout cleared for SMU
+2026-05-28 21:56:06 INFO  BUY [US] SMU mode=VOLUME_BREAKOUT price=13.4500 qty=18 size=1.0000x score=85(CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(10.01x) | VWAP: 2.65%(ABOVE slope=UP) allowedGap=2.80% | TREND: score=3 vel=0.75%/0.52%/0.75% accel=true | VOL: 27111.0000/2708.1500 TO: 364100.7300/36094.9687 | HIGH: 13.4300 fromHigh=0.00% | entryNo=2
+2026-05-28 22:27:08 INFO  BUY [US] SOXL mode=VOLUME_BREAKOUT price=218.8600 qty=1 size=1.0000x score=85(CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(4.10x) | VWAP: 2.18%(ABOVE slope=UP) allowedGap=2.80% | TREND: score=3 vel=0.82%/0.76%/0.95% accel=true | VOL: 3709989.0000/904755.4500 TO: 811968192.5400/196921512.8809 | HIGH: 218.9997 fromHigh=-0.06% | entryNo=1
+2026-05-28 23:15:09 WARN  BUY pending timeout cleared for NVDL
+2026-05-28 23:15:09 INFO  BUY [US] NVDL mode=BREAKOUT price=104.8500 qty=1 size=0.8000x score=83 | WHY:  retestOK multiUp vol(3.91x) | VWAP: 0.75%(ABOVE slope=UP) allowedGap=2.20% | TREND: score=3 vel=0.81%/0.72%/0.28% accel=true | VOL: 1277407.0000/326989.9500 TO: 133833931.3900/34132548.4506 | HIGH: 104.9467 fromHigh=-0.17% | entryNo=2
+2026-05-28 23:15:10 INFO  BUY_FILLED NVDL phase=HOLDING
+2026-05-28 23:22:13 INFO  SELL_EXECUTED [US] NVDL mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=104.3400 qty=1 reason=TIME_STOP_SOFT pnl=-0.49% peakPnl=0.79% holdMs=423135 high=105.6800 avgPrice=104.8500 weightedPnl=-0.20% (pending fill)
+2026-05-28 23:22:14 WARN  SELL_REJECTED NVDL reason=TIME_STOP_SOFT phase=HOLDING kisMsg=주문단가를 입력 하십시오
+2026-05-28 23:22:19 INFO  SELL_EXECUTED [US] NVDL mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=104.3400 qty=1 reason=TIME_STOP_SOFT pnl=-0.49% peakPnl=0.79% holdMs=428508 high=105.6800 avgPrice=104.8500 weightedPnl=-0.20% (pending fill)
+2026-05-28 23:22:34 WARN  SELL timeout for NVDL — issuing immediate LIMIT sell qty=1 fallbackPrice=103.8700
+2026-05-28 23:22:50 WARN  SELL timeout for NVDL — issuing immediate LIMIT sell qty=1 fallbackPrice=103.8300
+2026-05-28 23:22:59 WARN  SELL_REJECTED NVDL reason=SELL_TIMEOUT_MARKET_RETRY phase=HOLDING kisMsg=FILL_UNRESOLVABLE
+2026-05-28 23:23:05 INFO  SELL_EXECUTED [US] NVDL mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=104.0299 qty=1 reason=TIME_STOP_SOFT pnl=-0.78% peakPnl=0.79% holdMs=475043 high=105.6800 avgPrice=104.8500 weightedPnl=-0.33% (pending fill)
+2026-05-28 23:23:06 WARN  SELL_REJECTED NVDL reason=TIME_STOP_SOFT phase=HOLDING kisMsg=주문단가를 입력 하십시오
+2026-05-28 23:23:11 INFO  SELL_EXECUTED [US] NVDL mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=103.9470 qty=1 reason=TIME_STOP_SOFT pnl=-0.86% peakPnl=0.79% holdMs=480491 high=105.6800 avgPrice=104.8500 weightedPnl=-0.36% (pending fill)
+2026-05-28 23:57:07 INFO  BUY [US] TSLL mode=VOLUME_BREAKOUT price=16.4600 qty=15 size=1.0000x score=95(CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(5.03x) | VWAP: 1.32%(ABOVE slope=UP) allowedGap=2.80% | TREND: score=3 vel=0.41%/0.26%/0.54% accel=true | VOL: 15404501.0000/3061203.5500 TO: 253373232.4480/50135764.2489 | HIGH: 16.4480 fromHigh=0.00% | entryNo=1
+2026-05-28 23:57:08 INFO  BUY_FILLED TSLL phase=HOLDING

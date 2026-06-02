@@ -217,6 +217,41 @@ public class ApiController {
         return historyService.getRecentUsOrders(validateLimit(limit));
     }
 
+    @GetMapping("/pnl/recent")
+    public List<Map<String, Object>> recentPnl(
+            @RequestParam(name="market", defaultValue="KR") String market,
+            @RequestParam(name="days",   defaultValue="3")  int days) {
+        String safeMarket = ALLOWED_MARKETS.contains(market.toUpperCase()) ? market.toUpperCase() : "KR";
+        int safeDays = Math.max(1, Math.min(days, 30));
+
+        java.time.LocalDate today = java.time.LocalDate.now();
+        YearMonth curMonth  = YearMonth.now();
+        YearMonth prevMonth = curMonth.minusMonths(1);
+
+        java.util.function.BiFunction<Integer,Integer,List<com.autotrading.model.DailyProfitPoint>> fetch =
+            (y, m) -> {
+                try { return monitorService.getMonthlyDailyProfit(safeMarket, y, m); }
+                catch (Exception e) { return List.of(); }
+            };
+
+        Map<String, Double> pnlByDate = new LinkedHashMap<>();
+        fetch.apply(prevMonth.getYear(), prevMonth.getMonthValue())
+             .forEach(p -> pnlByDate.put(p.getTradeDate(), p.getProfitAmount()));
+        fetch.apply(curMonth.getYear(), curMonth.getMonthValue())
+             .forEach(p -> pnlByDate.put(p.getTradeDate(), p.getProfitAmount()));
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (int i = safeDays - 1; i >= 0; i--) {
+            java.time.LocalDate d = today.minusDays(i);
+            String ds = d.toString();
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("date", ds);
+            item.put("pnl",  pnlByDate.getOrDefault(ds, 0.0));
+            result.add(item);
+        }
+        return result;
+    }
+
     /* ════════════════════════════════════════════
        Control
     ════════════════════════════════════════════ */
@@ -381,8 +416,8 @@ public class ApiController {
             @RequestParam(name="market",  defaultValue="KR")  String market,
             @RequestParam(name="exch",    defaultValue="NAS") String exchange) {
         // 입력 검증
-        if (n < 1 || n > 50) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "n은 1~50 범위여야 합니다.");
+        if (n < 1 || n > 80) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "n은 1~80 범위여야 합니다.");
         }
         if (!Double.isFinite(minRate) || minRate < 0 || minRate > 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "minRate는 0~100 범위여야 합니다.");
@@ -431,8 +466,8 @@ public class ApiController {
             @RequestParam(name="market",    defaultValue="KR")  String market,
             @RequestParam(name="exch",      defaultValue="NAS") String exchange,
             @RequestParam(name="buyAmount", required=false)     Double buyAmount) {
-        if (n < 1 || n > 20) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "n은 1~20 범위여야 합니다.");
+        if (n < 1 || n > 80) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "n은 1~80 범위여야 합니다.");
         }
         if (!Double.isFinite(minRate) || minRate < 0 || minRate > 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "minRate는 0~100 범위여야 합니다.");

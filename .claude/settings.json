@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Select-String -Path \"D:\\\\apache-tomcat-9.0.115\\\\logs\\\\catalina.2026-06-01.log\" -Pattern \"Price request failed for\" | ForEach-Object { $_ -match 'failed for \\(\\\\S+\\)\\\\.' | Out-Null; $Matches[1] } | Group-Object | Sort-Object Count -Descending | Format-Table Name, Count -AutoSize)",
+      "PowerShell(Select-String -Path \"D:\\\\apache-tomcat-9.0.115\\\\logs\\\\catalina.2026-06-01.log\" -Pattern \"Price request failed\" | Select-Object -Last 30 | ForEach-Object { $_.Line })",
+      "PowerShell(Get-Content \"D:\\\\apache-tomcat-9.0.115\\\\logs\\\\localhost.2026-06-01.log\" | Select-String \"Price request failed\" | ForEach-Object { $_.Line } | ForEach-Object { if \\($_ -match 'failed for \\(\\\\S+\\)\\\\.'\\) { $Matches[1] } } | Group-Object | Sort-Object Count -Descending | Format-Table Name, Count -AutoSize)",
+      "PowerShell(Get-Content \"c:\\\\workspace\\\\autotrading\\\\import_memo\\\\trade.log\" | Select-String \"Price request failed|EGW00201\" | ForEach-Object { $_.Line } | ForEach-Object { if \\($_ -match 'failed for \\(\\\\S+\\)\\\\.'\\) { $Matches[1] } } | Group-Object | Sort-Object Count -Descending | Format-Table Name, Count -AutoSize)"
+    ]
+  }
+}

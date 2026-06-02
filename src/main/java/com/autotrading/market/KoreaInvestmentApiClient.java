@@ -322,10 +322,19 @@ public StockQuote fetchOverseasCurrentPrice(String symbol, String exchange) {
      */
 // 수정 — 거래량순위 전용 API 직접 호출
 public Map<String, Object> fetchVolumeRanking() {
-    return fetchVolumeRanking(0);
+    return fetchVolumeRanking("0000", 40);
 }
 
-public Map<String, Object> fetchVolumeRanking(int blngClsCd) {
+public Map<String, Object> fetchVolumeRanking(String inputIscd) {
+    return fetchVolumeRanking(inputIscd, 40);
+}
+
+public Map<String, Object> fetchVolumeRanking(String inputIscd, int maxRows) {
+    return fetchVolumeRanking(inputIscd, maxRows, "", "");
+}
+
+public Map<String, Object> fetchVolumeRanking(String inputIscd, int maxRows,
+                                               String minPrice, String maxPrice) {
     Map<String, Object> result = new HashMap<>();
     if (!properties.isConfigured()) {
         result.put("status", "ERROR");
@@ -339,44 +348,81 @@ public Map<String, Object> fetchVolumeRanking(int blngClsCd) {
         return result;
     }
 
+    int safeMaxRows = Math.max(1, maxRows);
+    // FID_VOL_CNT is a minimum-volume filter, not a response-size option.
     String query = "FID_COND_MRKT_DIV_CODE=J"
             + "&FID_COND_SCR_DIV_CODE=20171"
-            + "&FID_INPUT_ISCD=0000"
+            + "&FID_INPUT_ISCD=" + inputIscd
             + "&FID_DIV_CLS_CODE=0"
-            + "&FID_BLNG_CLS_CODE=" + blngClsCd
+            + "&FID_BLNG_CLS_CODE=3"
             + "&FID_TRGT_CLS_CODE=111111111"
             + "&FID_TRGT_EXLS_CLS_CODE=0000000000"
-            + "&FID_INPUT_PRICE_1="
-            + "&FID_INPUT_PRICE_2="
+            + "&FID_INPUT_PRICE_1=" + minPrice
+            + "&FID_INPUT_PRICE_2=" + maxPrice
             + "&FID_VOL_CNT="
             + "&FID_INPUT_DATE_1=";
 
     String url = properties.getBaseUrl()
             + "/uapi/domestic-stock/v1/quotations/volume-rank?" + query;
     try {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(Duration.ofSeconds(10))
-                .header("authorization", "Bearer " + token)
-                .header("appkey",    properties.getAppKey())
-                .header("appsecret", properties.getAppSecret())
-                .header("tr_id",     "FHPST01710000")
-                .header("custtype",  properties.getCustomerType())
-                .GET()
-                .build();
+        List<Map<String, Object>> output = new ArrayList<>();
+        String requestContinuation = "";
+        String message = "";
+        int pageCount = 0;
 
-        HttpResponse<String> response = httpClient.send(request,
-                HttpResponse.BodyHandlers.ofString());
-        JsonNode root = objectMapper.readTree(response.body());
-        String rtCd = root.path("rt_cd").asText();
+        do {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("authorization", "Bearer " + token)
+                    .header("appkey",    properties.getAppKey())
+                    .header("appsecret", properties.getAppSecret())
+                    .header("tr_id",     "FHPST01710000")
+                    .header("custtype",  properties.getCustomerType())
+                    .header("tr_cont",   requestContinuation)
+                    .GET()
+                    .build();
 
-        // KIS 거래량순위는 output 배열로 반환
-        List<Map<String, Object>> output = objectMapper.convertValue(
-                root.path("output"), List.class);
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString());
+            JsonNode root = objectMapper.readTree(response.body());
+            String rtCd = root.path("rt_cd").asText();
+            message = root.path("msg1").asText("");
+            if (!"0".equals(rtCd)) {
+                result.put("status",  "ERROR");
+                result.put("message", message);
+                result.put("output",  output);
+                return result;
+            }
 
-        result.put("status",  "0".equals(rtCd) ? "OK" : "ERROR");
-        result.put("message", root.path("msg1").asText(""));
-        result.put("output",  output != null ? output : List.of());
+            List<Map<String, Object>> page = objectMapper.convertValue(
+                    root.path("output"), List.class);
+            if (page != null) output.addAll(page);
+
+            String responseContinuation = response.headers()
+                    .firstValue("tr_cont")
+                    .orElse("");
+            requestContinuation = "M".equalsIgnoreCase(responseContinuation) ? "N" : "";
+            pageCount++;
+            if (StringUtils.hasText(requestContinuation) && output.size() < safeMaxRows) {
+                Thread.sleep(100L);
+            }
+        } while (StringUtils.hasText(requestContinuation)
+                && output.size() < safeMaxRows
+                && pageCount < 5);
+
+        if (output.size() > safeMaxRows) {
+            output = new ArrayList<>(output.subList(0, safeMaxRows));
+        }
+        result.put("status",  "OK");
+        result.put("message", message);
+        result.put("output",  output);
+        return result;
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        result.put("status",  "ERROR");
+        result.put("message", "Volume ranking request interrupted.");
+        result.put("output",  List.of());
         return result;
     } catch (Exception e) {
         logger.error("Volume ranking request failed", e);
@@ -938,16 +984,10 @@ public Map<String, Object> fetchVolumeRanking(int blngClsCd) {
 
         fallbackUsed = true;
         fallbackReason = "OUTSIDE_MOO_MOC_WINDOW";
-        ordDvsn = properties.getOverseasOrdDvsnUsLimit();
-
-        double basePrice = command.getPrice();
-        if (!Double.isFinite(basePrice) || basePrice <= 0.0) {
-            return new OverseasOrderParams(ordDvsn, "0", true, "FALLBACK_PRICE_MISSING", true);
-        }
-
-        double discount = properties.getOverseasUsSellFallbackDiscount();
-        double fallbackPrice = roundUsTick(basePrice * (1.0 - discount));
-        ordUnpr = formatOverseasOrderPrice(fallbackPrice);
+        // 정규장 중 시장가 불가 → 최유리지정가(32)로 즉시 체결
+        // ordUnpr=0 시 KIS가 "주문단가를 입력 하십시오" 거절 → 현재가로 설정
+        ordDvsn = properties.getOverseasOrdDvsnUsSellBestLimit();
+        ordUnpr = formatOverseasOrderPrice(command.getPrice());
         return new OverseasOrderParams(ordDvsn, ordUnpr, true, fallbackReason, false);
     }
 
@@ -2341,7 +2381,7 @@ public Map<String, Object> fetchDailyMinuteChart(String symbol, String date, Str
         .queryParam("FID_INPUT_HOUR_1",        fromTime)   // HHMMSS
         .queryParam("FID_INPUT_DATE_1",        date)       // YYYYMMDD
         .queryParam("FID_PW_DATA_INCU_YN",     "Y")
-        .queryParam("FID_FAKE_TICK_INCU_YN",   " ")        // 공백 필수
+        .queryParam("FID_FAKE_TICK_INCU_YN",   "")
         .build().toUriString();
 
     return get(url, "FHKST03010230");

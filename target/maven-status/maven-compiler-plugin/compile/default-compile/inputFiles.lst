@@ -1,3 +1,4 @@
+C:\workspace\autotrading\src\main\java\com\autotrading\mapper\MinuteBarMapper.java
 C:\workspace\autotrading\src\main\java\com\autotrading\indicator\IndicatorService.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\HistoryController.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\DashboardController.java
@@ -16,6 +17,7 @@ C:\workspace\autotrading\src\main\java\com\autotrading\config\SchemaPatchRunner.
 C:\workspace\autotrading\src\main\java\com\autotrading\strategy\MinuteBarHistory.java
 C:\workspace\autotrading\src\main\java\com\autotrading\model\DashboardData.java
 C:\workspace\autotrading\src\main\java\com\autotrading\dao\WatchlistDao.java
+C:\workspace\autotrading\src\main\java\com\autotrading\model\MinuteBar.java
 C:\workspace\autotrading\src\main\java\com\autotrading\model\MonitorAggregateRow.java
 C:\workspace\autotrading\src\main\java\com\autotrading\mapper\WatchlistMapper.java
 C:\workspace\autotrading\src\main\java\com\autotrading\dao\AutoTradingDao.java
@@ -25,11 +27,14 @@ C:\workspace\autotrading\src\main\java\com\autotrading\model\OrderLog.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\AutoControlController.java
 C:\workspace\autotrading\src\main\java\com\autotrading\service\impl\DashboardServiceImpl.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\AuthApiController.java
+C:\workspace\autotrading\src\main\java\com\autotrading\service\impl\BacktestServiceImpl.java
 C:\workspace\autotrading\src\main\java\com\autotrading\service\impl\AuthServiceImpl.java
 C:\workspace\autotrading\src\main\java\com\autotrading\config\KisProperties.java
+C:\workspace\autotrading\src\main\java\com\autotrading\service\BacktestService.java
 C:\workspace\autotrading\src\main\java\com\autotrading\service\MonitorService.java
 C:\workspace\autotrading\src\main\java\com\autotrading\util\AccountCredentialStore.java
 C:\workspace\autotrading\src\main\java\com\autotrading\model\AccountCredential.java
+C:\workspace\autotrading\src\main\java\com\autotrading\service\TradeHistoryService.java
 C:\workspace\autotrading\src\main\java\com\autotrading\model\MonitorSummary.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\AutoTradingController.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\MonitorController.java
@@ -39,11 +44,15 @@ C:\workspace\autotrading\src\main\java\com\autotrading\strategy\PriceHistory.jav
 C:\workspace\autotrading\src\main\java\com\autotrading\model\PriceLog.java
 C:\workspace\autotrading\src\main\java\com\autotrading\service\impl\HistoryServiceImpl.java
 C:\workspace\autotrading\src\main\java\com\autotrading\config\WebMvcConfig.java
+C:\workspace\autotrading\src\main\java\com\autotrading\service\impl\TradeHistoryServiceImpl.java
+C:\workspace\autotrading\src\main\java\com\autotrading\model\TradeHistory.java
 C:\workspace\autotrading\src\main\java\com\autotrading\market\KoreaInvestmentApiClient.java
 C:\workspace\autotrading\src\main\java\com\autotrading\market\MarketDataService.java
 C:\workspace\autotrading\src\main\java\com\autotrading\service\impl\AutoTradingServiceImpl.java
+C:\workspace\autotrading\src\main\java\com\autotrading\mapper\TradeHistoryMapper.java
 C:\workspace\autotrading\src\main\java\com\autotrading\model\AuthSession.java
 C:\workspace\autotrading\src\main\java\com\autotrading\service\impl\WatchlistServiceImpl.java
+C:\workspace\autotrading\src\main\java\com\autotrading\model\BacktestConfig.java
 C:\workspace\autotrading\src\main\java\com\autotrading\model\AutoPosition.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\BalanceController.java
 C:\workspace\autotrading\src\main\java\com\autotrading\service\RiskManager.java
@@ -51,6 +60,7 @@ C:\workspace\autotrading\src\main\java\com\autotrading\strategy\StrategyEngine.j
 C:\workspace\autotrading\src\main\java\com\autotrading\service\DashboardService.java
 C:\workspace\autotrading\src\main\java\com\autotrading\config\MyBatisConfig.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\HomeController.java
+C:\workspace\autotrading\src\main\java\com\autotrading\controller\BacktestController.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\ApiController.java
 C:\workspace\autotrading\src\main\java\com\autotrading\controller\WatchlistController.java
 C:\workspace\autotrading\src\main\java\com\autotrading\model\StockQuote.java

@@ -114,3 +114,19 @@ CREATE TABLE IF NOT EXISTS tb_trade_mode_daily_stats (
 
   PRIMARY KEY (stat_date, market, entry_mode)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 백테스트용 분봉 저장 테이블
+CREATE TABLE IF NOT EXISTS tb_minute_bar (
+  market      VARCHAR(10)    NOT NULL COMMENT 'KRX / US',
+  symbol      VARCHAR(20)    NOT NULL,
+  bar_time    DATETIME       NOT NULL COMMENT '봉 시각 (KST/NY 기준)',
+  open_price  DECIMAL(20,4)  NOT NULL DEFAULT 0,
+  high_price  DECIMAL(20,4)  NOT NULL DEFAULT 0,
+  low_price   DECIMAL(20,4)  NOT NULL DEFAULT 0,
+  close_price DECIMAL(20,4)  NOT NULL DEFAULT 0,
+  volume      DECIMAL(20,4)  NOT NULL DEFAULT 0,
+  turnover    DECIMAL(24,4)  NOT NULL DEFAULT 0,
+  created_at  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (market, symbol, bar_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백테스트 분봉 데이터';

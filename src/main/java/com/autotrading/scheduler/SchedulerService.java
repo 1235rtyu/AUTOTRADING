@@ -49,6 +49,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     private static final int    BUY_FILL_CONFIRM_MAX_ATTEMPTS  = 5;
 
     private static final int    SELL_FILL_CONFIRM_MAX_ATTEMPTS = 8;
+    private static final int    SELL_FILL_CONFIRM_MAX_ATTEMPTS_OVERSEAS = 25; // 미국 주식 KIS 체결 반영 지연 대응 (~25-30s)
     private static final long   BUY_FILL_CONFIRM_INTERVAL_MS   = 700L;
     private static final long   SELL_FILL_CONFIRM_INTERVAL_MS  = 350L;
 
@@ -334,18 +335,18 @@ public class SchedulerService implements InitializingBean, DisposableBean {
             logger.error("KIS account config still missing after login - sync not started.");
             return;
         }
-        startPositionSyncLoop("login");
+        boolean firstSyncLoopStart = startPositionSyncLoop("login");
         try {
-            syncAllPositions("login");
+            syncAllPositions(firstSyncLoopStart ? "login-bootstrap" : "login");
         } catch (Exception e) {
             logger.warn("Login position sync failed: {}", e.getMessage());
         }
         ensureMarketProxySchedulers();
     }
 
-    private void startPositionSyncLoop(String reason) {
+    private boolean startPositionSyncLoop(String reason) {
         if (!positionSyncStarted.compareAndSet(false, true)) {
-            return;
+            return false;
         }
         logger.info("Position sync loop started ({})", reason);
         positionSyncExecutor.scheduleWithFixedDelay(
@@ -360,6 +361,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                 POSITION_SYNC_INTERVAL_SEC,
                 TimeUnit.SECONDS
         );
+        return true;
     }
 
     // ?逾?fix (??곸겫??곷뭼): ???ル굝利???筌뤴뫀諭?executor ?類ｂ봺
@@ -587,16 +589,18 @@ public class SchedulerService implements InitializingBean, DisposableBean {
     private void applyLivePositions(Map<String, LivePosition> livePositions, String reason) {
         if (livePositions.isEmpty()) return;
 
+        boolean recoverHoldingState = "startup".equals(reason) || "login-bootstrap".equals(reason);
         for (LivePosition pos : livePositions.values()) {
             positionService.updatePosition(pos.symbol, pos.symbolName, pos.quantity, pos.avgPrice);
             if (StringUtils.hasText(pos.symbolName)) {
                 symbolNameCache.put(pos.symbol, pos.symbolName);
             }
-            if (pos.quantity > 0) {
+            if (recoverHoldingState && pos.quantity > 0) {
                 strategyEngine.forceHoldingState(pos.symbol);
             }
         }
-        logger.info("Position sync applied: count={} reason={}", livePositions.size(), reason);
+        logger.info("Position sync applied: count={} reason={} recoverHoldingState={}",
+                livePositions.size(), reason, recoverHoldingState);
     }
 
     private void reconcileMissingPositions(Set<String> liveSymbols, boolean krxMarket, String reason) {
@@ -797,7 +801,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
             if ("BUY".equals(command.getType())) {
                 strategyEngine.notifyBuyRejected(symbol);
             } else {
-                strategyEngine.notifySellRejected(symbol);
+                strategyEngine.notifySellRejected(symbol, "EXCEPTION:" + e.getMessage());
             }
             riskManager.orderFailed(symbol);
             logger.error("Order EXCEPTION for {} side={} msg={}",
@@ -1396,7 +1400,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
             strategyEngine.notifyBuyRejected(symbol);
         } else if ("SELL".equals(command.getType())) {
             cancelSellFillConfirmTask(symbol);
-            strategyEngine.notifySellRejected(symbol);
+            strategyEngine.notifySellRejected(symbol, msg);
 
             RealPosition livePos = isOverseasSymbol(symbol)
                     ? fetchOverseasRealPosition(symbol, orderExchange)
@@ -1422,7 +1426,7 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                     symbol, respStatus, respMsg);
         } else {
             cancelSellFillConfirmTask(symbol);
-            strategyEngine.notifySellRejected(symbol);
+            strategyEngine.notifySellRejected(symbol, respMsg);
             logger.error("Order ERROR (SELL) for {} status={} -> sell pending cleared. msg={}",
                     symbol, respStatus, respMsg);
         }
@@ -1538,7 +1542,22 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                 }
             }
 
-            if (attempt >= SELL_FILL_CONFIRM_MAX_ATTEMPTS) {
+            int maxAttempts = isOverseasSymbol(ctx.symbol)
+                    ? SELL_FILL_CONFIRM_MAX_ATTEMPTS_OVERSEAS
+                    : SELL_FILL_CONFIRM_MAX_ATTEMPTS;
+
+            // 중간 진행 상황 로그 (절반 도달 시 1회)
+            if (attempt == maxAttempts / 2) {
+                if (real == null) {
+                    logger.warn("SELL_FILL_CHECK_MID {} attempt={}/{} — API null (포지션 조회 실패 반복)",
+                            ctx.symbol, attempt, maxAttempts);
+                } else {
+                    logger.warn("SELL_FILL_CHECK_MID {} attempt={}/{} — qty={} > expected={} (미체결 대기 중)",
+                            ctx.symbol, attempt, maxAttempts, real.quantity, ctx.expectedRemainingQty);
+                }
+            }
+
+            if (attempt >= maxAttempts) {
                 cancelSellFillConfirmTask(ctx.symbol);
 
                 // ?逾?fix3: timeout ????쎈７筌왖???????(?癒?쟿??????甕???
@@ -1612,14 +1631,14 @@ public class SchedulerService implements InitializingBean, DisposableBean {
                             logger.warn("SELL fallback scheduled for {} reason={} (unfilled LIMIT)",
                                     ctx.symbol, ctx.reason);
                         }
-                        strategyEngine.notifySellRejected(ctx.symbol);
+                        strategyEngine.notifySellRejected(ctx.symbol, "FILL_UNCONFIRMED");
                         logger.warn("SELL fill not confirmed for {} after {} attempts - live qty={} still holding, sell retry allowed",
                                 ctx.symbol, attempt, retryReal.quantity);
                     }
                 } else {
                     // ?逾?fix3: ??쎈７筌왖???袁⑹읈 鈺곌퀬???븍뜃? ??DB???醫듚?疫꿸퀣???곗쨮 野껋럡????sellPending ??곸젫
                     //   (疫꿸퀣?? notifySellRejected ?紐꾪뀱, entryState ??λ툡???????揶쎛??- ???봔?브쑴? ?醫?)
-                    strategyEngine.notifySellRejected(ctx.symbol);
+                    strategyEngine.notifySellRejected(ctx.symbol, "FILL_UNRESOLVABLE");
                     logger.error("[ACTION_NEEDED] SELL fill unresolvable for {} after {} attempts - live position unknown. Manual check required. DB qty={}",
                             ctx.symbol, attempt,
                             Optional.ofNullable(positionService.getPosition(ctx.symbol))

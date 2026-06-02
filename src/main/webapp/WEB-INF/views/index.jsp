@@ -362,6 +362,7 @@ body{min-height:100%;font-family:var(--sans);font-size:13px;color:var(--t1);back
     <a class="tb-nav-link" href="${pageContext.request.contextPath}/history/orders">Orders</a>
     <a class="tb-nav-link" href="${pageContext.request.contextPath}/balances">Balances</a>
     <a class="tb-nav-link" href="${pageContext.request.contextPath}/watchlist">Watchlist</a>
+    <a class="tb-nav-link" href="${pageContext.request.contextPath}/backtest">Back-Test</a>
   </div>
   <div class="tb-login">
     <form id="loginForm" autocomplete="off">
@@ -527,6 +528,7 @@ body{min-height:100%;font-family:var(--sans);font-size:13px;color:var(--t1);back
         <a class="nav-btn" href="${pageContext.request.contextPath}/history/orders">Orders</a>
         <a class="nav-btn" href="${pageContext.request.contextPath}/balances">Balances</a>
         <a class="nav-btn" href="${pageContext.request.contextPath}/watchlist">Watchlist</a>
+        <a class="nav-btn" href="${pageContext.request.contextPath}/backtest">Back-Test</a>
       </div>
 
     </div>

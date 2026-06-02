@@ -99,6 +99,10 @@ public class MinuteBarHistory {
         return bars.size();
     }
 
+    public synchronized void clear() {
+        bars.clear();
+    }
+
     public synchronized long spanSeconds() {
         MinuteBar first = bars.peekFirst();
         MinuteBar last = bars.peekLast();

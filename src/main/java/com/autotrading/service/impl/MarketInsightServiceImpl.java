@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,13 @@ public class MarketInsightServiceImpl implements MarketInsightService {
      * 1분봉은 390봉 / 30 = 13페이지 필요 → 15로 설정
      */
     private static final int MAX_MINUTE_PAGES = 15;
+    private static final String[][] KR_RANKING_PRICE_RANGES = {
+        {"0", "4999"},
+        {"5000", "19999"},
+        {"20000", "99999"},
+        {"100000", "499999"},
+        {"500000", ""}
+    };
 
     public MarketInsightServiceImpl(KoreaInvestmentApiClient apiClient) {
         this.apiClient = apiClient;
@@ -99,25 +107,79 @@ public class MarketInsightServiceImpl implements MarketInsightService {
             );
         }
 
-        // 코스피(1) + 코스닥(2) 각각 30개씩 조회 후 합산 → 최대 60개 확보
+        // 코스피(0001)+코스닥(1001)에서 필터 통과 종목을 각각 40개씩 확보한다.
         List<Map<String, Object>> allRawRows = new ArrayList<>();
+        Map<String, Integer> sourceRawCounts = new LinkedHashMap<>();
+        Map<String, Integer> sourceSelectedCounts = new LinkedHashMap<>();
         String lastMessage = "";
-        for (int blng : new int[]{1, 2}) {
-            try {
-                Map<String, Object> raw2 = apiClient.fetchVolumeRanking(blng);
-                List<Map<String, Object>> r2 = asList(raw2.get("output"));
-                if (r2 != null) allRawRows.addAll(r2);
-                if (StringUtils.hasText((String) raw2.get("message"))) lastMessage = (String) raw2.get("message");
-            } catch (Exception ignored) {}
+        for (String iscd : new String[]{"0001", "1001"}) {
+            Map<String, Map<String, Object>> marketDedup = new HashMap<>();
+            int rawCount = 0;
+            for (String[] priceRange : KR_RANKING_PRICE_RANGES) {
+                try {
+                    Map<String, Object> raw2 = apiClient.fetchVolumeRanking(
+                            iscd, 40, priceRange[0], priceRange[1]);
+                    List<Map<String, Object>> r2 = asList(raw2.get("output"));
+                    rawCount += r2 != null ? r2.size() : 0;
+                    if (r2 != null) {
+                        for (Map<String, Object> row : r2) {
+                            String symbol = pickString(row, "mksc_shrn_iscd");
+                            Map<String, Object> existing = marketDedup.get(symbol);
+                            if (StringUtils.hasText(symbol)
+                                    && (existing == null || rankingAmount(row) > rankingAmount(existing))) {
+                                marketDedup.put(symbol, row);
+                            }
+                        }
+                    }
+                    if (StringUtils.hasText((String) raw2.get("message"))) {
+                        lastMessage = (String) raw2.get("message");
+                    }
+                    Thread.sleep(100L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (Exception e) {
+                    logger.warn("Domestic ranking fetch failed: iscd={} minPrice={} maxPrice={} message={}",
+                            iscd, priceRange[0], priceRange[1], e.getMessage());
+                }
+            }
+
+            List<Map<String, Object>> marketRows = new ArrayList<>(marketDedup.values());
+            marketRows.sort(Comparator.comparingDouble(this::rankingAmount).reversed());
+            int selected = 0;
+            for (Map<String, Object> row : marketRows) {
+                if (isKrEtf(pickString(row, "mksc_shrn_iscd"), pickString(row, "hts_kor_isnm"))) {
+                    continue;
+                }
+                row.put("_rankingSegment", iscd);
+                allRawRows.add(row);
+                if (++selected >= 40) break;
+            }
+            sourceRawCounts.put(iscd, rawCount);
+            sourceSelectedCounts.put(iscd, selected);
+            logger.info("Domestic ranking fetched: iscd={} raw={} unique={} selected={}",
+                    iscd, rawCount, marketRows.size(), selected);
         }
-        // 합산 결과가 없으면 전체(0) 로 재시도
         if (allRawRows.isEmpty()) {
-            Map<String, Object> raw = apiClient.fetchVolumeRanking(0);
-            List<Map<String, Object>> r0 = asList(raw.get("output"));
-            if (r0 != null) allRawRows.addAll(r0);
-            lastMessage = (String) raw.getOrDefault("message", "");
+            return Map.of("status", "ERROR", "message", "국내 랭킹 데이터가 없습니다.", "data", List.of());
         }
-        List<Map<String, Object>> rows = allRawRows;
+        // 중복 제거: symbol 기준, acml_tr_pbmn 높은 값 유지
+        Map<String, Map<String, Object>> dedupMap = new HashMap<>();
+        for (Map<String, Object> r : allRawRows) {
+            String sym = pickString(r, "mksc_shrn_iscd");
+            if (!StringUtils.hasText(sym)) continue;
+            Map<String, Object> existing = dedupMap.get(sym);
+            if (existing == null || rankingAmount(r) > rankingAmount(existing)) {
+                dedupMap.put(sym, r);
+            }
+        }
+        // 방어적 ETF 재필터 (API 제외 조건 적용 후에도 한 번 더 확인)
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (Map<String, Object> r : dedupMap.values()) {
+            if (!isKrEtf(pickString(r, "mksc_shrn_iscd"), pickString(r, "hts_kor_isnm"))) {
+                rows.add(r);
+            }
+        }
         if (rows.isEmpty()) {
             return Map.of("status", "ERROR", "message", "국내 랭킹 데이터가 없습니다.", "data", List.of());
         }
@@ -138,15 +200,20 @@ public class MarketInsightServiceImpl implements MarketInsightService {
            item.put("acml_tr_pbmn", formatRankMetric(tradeValue));
             item.put("acml_vol",     formatRankMetric(asDouble(volume, 0d)));
             item.put("acml_vol_raw", volume);
+            item.put("rankingSegment", pickString(r, "_rankingSegment"));
             normalized.add(item);
         }
         normalized.sort(Comparator.comparingDouble(this::rankingAmount).reversed());
+        List<Map<String, Object>> top80 = normalized.subList(0, Math.min(80, normalized.size()));
 
         Map<String, Object> result = new HashMap<>();
         result.put("status",   "OK");
         result.put("message",  StringUtils.hasText(lastMessage) ? lastMessage : "정상처리 되었습니다.");
         result.put("exchange", "KRX");
-        result.put("data",     normalized);
+        result.put("data",     top80);
+        result.put("sourceRawCounts", sourceRawCounts);
+        result.put("sourceSelectedCounts", sourceSelectedCounts);
+        result.put("dedupCount", dedupMap.size());
         return result;
     }
 
@@ -858,5 +925,32 @@ public class MarketInsightServiceImpl implements MarketInsightService {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> asList(Object value) {
         return value instanceof List ? (List<Map<String, Object>>) value : null;
+    }
+
+    // ETF 운용사 전용 브랜드명 — 일반 상장사 이름과 겹치지 않는 것만 포함
+    private static final String[] KR_ETF_PREFIXES = {
+        "KODEX ", "TIGER ", "KINDEX ", "ACE ", "KBSTAR ", "RISE ", "ARIRANG ", "HANARO ",
+        "PLUS ", "SOL ", "KOSEF ", "WON ", "TIMEFOLIO ", "TREX ", "VITA ",
+        "KOACT ", "ISELECT ", "파워 ", "KIWOOM ", "1Q "
+    };
+
+    /**
+     * 한국 ETF/ETN/ELW/스팩 여부 판단.
+     * 1) 심볼이 순수 6자리 숫자가 아닌 경우 → ETN(Q680070), 펀드(0103T0) 등
+     * 2) 종목명이 ETF 운용사 고유 브랜드로 시작하는 경우
+     * 3) 종목명에 "ETN" 또는 "스팩" 포함
+     */
+    private boolean isKrEtf(String symbol, String name) {
+        if (StringUtils.hasText(symbol)) {
+            String s = symbol.trim();
+            if (s.length() != 6 || !s.chars().allMatch(Character::isDigit)) return true;
+        }
+        if (!StringUtils.hasText(name)) return false;
+        String upper = name.trim().toUpperCase();
+        if (upper.contains("ETN") || upper.contains("스팩")) return true;
+        for (String prefix : KR_ETF_PREFIXES) {
+            if (upper.startsWith(prefix)) return true;
+        }
+        return false;
     }
 }

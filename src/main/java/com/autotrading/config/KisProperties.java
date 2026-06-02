@@ -69,6 +69,9 @@ public class KisProperties {
     @Value("${kis.overseas.ordDvsnUsSellMoc:33}")
     private String overseasOrdDvsnUsSellMoc;
 
+    @Value("${kis.overseas.ordDvsnUsSellBestLimit:32}")
+    private String overseasOrdDvsnUsSellBestLimit;
+
     public String getEnv() {
         return env;
     }
@@ -177,6 +180,10 @@ public class KisProperties {
 
     public String getOverseasOrdDvsnUsSellMoc() {
         return overseasOrdDvsnUsSellMoc;
+    }
+
+    public String getOverseasOrdDvsnUsSellBestLimit() {
+        return overseasOrdDvsnUsSellBestLimit;
     }
 
     public boolean isConfigured() {

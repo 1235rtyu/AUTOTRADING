@@ -1,0 +1,52 @@
+2026-05-30 00:25:56 INFO  BUY amount set for WEBS: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for LABU: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for LABD: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for BULZ: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for BERZ: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for WEBL: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for NVDQ: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for TSLQ: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for BAIG: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for SMCX: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for NVDL: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for SOXS: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for ETHU: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for TSLL: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for SMU: 230.00
+2026-05-30 00:25:56 INFO  BUY amount set for SOXL: 230.00
+2026-05-30 01:08:09 INFO  BUY [US] NVDL mode=VOLUME_BREAKOUT price=107.2000 qty=2 size=1.0000x score=95(CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(5.02x) | VWAP: 0.46%(ABOVE slope=UP) allowedGap=2.80% | TREND: score=3 vel=0.19%/0.16%/0.39% accel=true | VOL: 3048621.0000/607647.2500 TO: 326812171.2000/64891370.1771 | HIGH: 107.2195 fromHigh=-0.02% | entryNo=1
+2026-05-30 01:08:10 INFO  BUY_FILLED NVDL phase=HOLDING
+2026-05-30 01:12:13 INFO  BUY [US] ETHU mode=VOLUME_BREAKOUT price=20.1100 qty=11 size=1.0000x score=95(CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.89x) | VWAP: 0.50%(ABOVE slope=UP) allowedGap=2.80% | TREND: score=3 vel=0.40%/0.32%/0.55% accel=true | VOL: 1561179.0000/539737.1500 TO: 31387503.7950/10799237.3253 | HIGH: 20.1050 fromHigh=0.00% | entryNo=1
+2026-05-30 01:12:13 WARN  BUY_REJECTED ETHU phase=NONE
+2026-05-30 01:20:14 INFO  SELL_EXECUTED [US] NVDL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=107.5087 qty=2 reason=TIME_STOP_HARD pnl=0.35% peakPnl=1.08% holdMs=723871 high=108.2900 avgPrice=107.1356 weightedPnl=0.32% (pending fill)
+2026-05-30 01:20:14 WARN  SELL_REJECTED NVDL reason=TIME_STOP_HARD phase=HOLDING kisMsg=주문단가를 입력 하십시오
+2026-05-30 01:20:19 INFO  SELL_EXECUTED [US] NVDL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=107.5087 qty=2 reason=TIME_STOP_HARD pnl=0.35% peakPnl=1.08% holdMs=729069 high=108.2900 avgPrice=107.1356 weightedPnl=0.32% (pending fill)
+2026-05-30 01:20:35 WARN  SELL timeout for NVDL — issuing immediate LIMIT sell qty=2 fallbackPrice=107.3800
+2026-05-30 01:20:50 WARN  SELL timeout for NVDL — issuing immediate LIMIT sell qty=2 fallbackPrice=107.3800
+2026-05-30 01:21:00 WARN  SELL_REJECTED NVDL reason=SELL_TIMEOUT_MARKET_RETRY phase=HOLDING kisMsg=FILL_UNRESOLVABLE
+2026-05-30 01:21:06 INFO  SELL_EXECUTED [US] NVDL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=107.6599 qty=2 reason=TIME_STOP_HARD pnl=0.49% peakPnl=1.08% holdMs=775531 high=108.2900 avgPrice=107.1356 weightedPnl=0.46% (pending fill)
+2026-05-30 01:21:06 WARN  SELL_REJECTED NVDL reason=TIME_STOP_HARD phase=HOLDING kisMsg=초당 거래건수를 초과하였습니다.
+2026-05-30 01:21:11 INFO  SELL_EXECUTED [US] NVDL mode=VOLUME_BREAKOUT phase=EXITING exitType=TIMESTOP price=107.6599 qty=2 reason=TIME_STOP_HARD pnl=0.49% peakPnl=1.08% holdMs=780952 high=108.2900 avgPrice=107.1356 weightedPnl=0.46% (pending fill)
+2026-05-30 01:21:27 WARN  SELL timeout for NVDL — issuing immediate LIMIT sell qty=2 fallbackPrice=107.3600
+2026-05-30 02:02:06 INFO  BUY [US] TSLL mode=VOLUME_BREAKOUT price=16.1100 qty=14 size=1.0000x score=95(CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(4.05x) | VWAP: 0.71%(ABOVE slope=UP) allowedGap=2.80% | TREND: score=3 vel=0.22%/0.16%/0.78% accel=true | VOL: 32482338.0000/8025501.4500 TO: 522965641.8000/128713577.2629 | HIGH: 16.1000 fromHigh=0.00% | entryNo=1
+2026-05-30 02:02:06 INFO  BUY_FILLED TSLL phase=HOLDING
+2026-05-30 02:04:46 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:04:51 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:04:56 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:05:02 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:05:07 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:05:12 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:05:17 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:05:22 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:05:27 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:05:32 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:05:37 WARN  SELL_SKIP [US] TSLL reason=PHANTOM_POSITION phase=NONE qty=14 avgPrice=16.1079
+2026-05-30 02:05:42 INFO  FORCE_HOLDING TSLL phase=HOLDING (startup recovery)
+2026-05-30 02:15:01 INFO  SELL_EXECUTED [US] TSLL mode=NONE phase=EXITING exitType=TIMESTOP price=16.0973 qty=14 reason=TIME_STOP_MID pnl=-0.07% peakPnl=0.04% holdMs=559184 high=16.1150 avgPrice=16.1079 weightedPnl=-0.06% (pending fill)
+2026-05-30 02:15:01 WARN  SELL_REJECTED TSLL reason=TIME_STOP_MID phase=HOLDING kisMsg=주문단가를 입력 하십시오
+2026-05-30 02:15:06 INFO  SELL_EXECUTED [US] TSLL mode=NONE phase=EXITING exitType=TIMESTOP price=16.0900 qty=14 reason=TIME_STOP_SOFT pnl=-0.11% peakPnl=0.04% holdMs=564766 high=16.1150 avgPrice=16.1079 weightedPnl=-0.11% (pending fill)
+2026-05-30 02:15:22 WARN  SELL timeout for TSLL — issuing immediate LIMIT sell qty=14 fallbackPrice=16.0500
+2026-05-30 02:15:37 WARN  SELL timeout for TSLL — issuing immediate LIMIT sell qty=14 fallbackPrice=16.0500
+2026-05-30 02:15:47 WARN  SELL_REJECTED TSLL reason=null phase=NONE kisMsg=FILL_UNRESOLVABLE
+2026-05-30 04:18:10 INFO  BUY [US] TSLQ mode=VOLUME_BREAKOUT price=16.7300 qty=13 size=1.0000x score=95(CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(5.01x) | VWAP: 1.27%(ABOVE slope=UP) allowedGap=2.80% | TREND: score=3 vel=0.24%/0.18%/0.48% accel=true | VOL: 5163332.0000/1030932.4000 TO: 86382544.3600/17227187.7197 | HIGH: 16.7450 fromHigh=-0.09% | entryNo=1
+2026-05-30 04:18:10 WARN  BUY_REJECTED TSLQ phase=NONE

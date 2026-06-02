@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.autotrading.mapper.TradeHistoryMapper">
+
+    <insert id="insertTradeHistory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_trade_history (
+            trade_date, symbol, market, entry_mode,
+            entry_price, entry_qty, entry_time,
+            entry_signal_score, entry_vwap_dist_pct, entry_velocity_sht,
+            exit_price, exit_qty, exit_time,
+            exit_reason, exit_type,
+            hold_seconds, pnl_amount, pnl_pct, weighted_pnl,
+            peak_pnl_pct, fee_amount, slippage_pct, is_partial
+        ) VALUES (
+            #{tradeDate}, #{symbol}, #{market}, #{entryMode},
+            #{entryPrice}, #{entryQty}, #{entryTime},
+            #{entrySignalScore}, #{entryVwapDistPct}, #{entryVelocitySht},
+            #{exitPrice}, #{exitQty}, #{exitTime},
+            #{exitReason}, #{exitType},
+            #{holdSeconds}, #{pnlAmount}, #{pnlPct}, #{weightedPnl},
+            #{peakPnlPct}, #{feeAmount}, #{slippagePct}, #{partial}
+        )
+    </insert>
+
+    <select id="findByTradeDate" resultType="com.autotrading.model.TradeHistory">
+        SELECT * FROM tb_trade_history
+        WHERE trade_date = #{tradeDate}
+        ORDER BY entry_time DESC
+    </select>
+
+    <select id="findBySymbolAndDateRange" resultType="com.autotrading.model.TradeHistory">
+        SELECT * FROM tb_trade_history
+        WHERE symbol = #{symbol}
+          AND trade_date BETWEEN #{from} AND #{to}
+        ORDER BY entry_time DESC
+    </select>
+
+    <!-- 일별 집계: tb_trade_history → tb_trade_mode_daily_stats -->
+    <update id="aggregateDailyStats">
+        INSERT INTO tb_trade_mode_daily_stats (
+            stat_date, market, entry_mode,
+            trade_count, win_count, loss_count,
+            win_rate,
+            avg_profit_pct, avg_loss_pct, expectancy_pct,
+            total_pnl_pct, total_pnl_amount,
+            avg_hold_seconds,
+            avg_vwap_dist_pct, avg_velocity_sht, breakout_fail_cnt
+        )
+        SELECT
+            h.trade_date,
+            h.market,
+            h.entry_mode,
+            COUNT(*)                                                    AS trade_count,
+            SUM(h.pnl_pct > 0)                                         AS win_count,
+            SUM(h.pnl_pct &lt;= 0)                                     AS loss_count,
+            SUM(h.pnl_pct > 0) / COUNT(*)                              AS win_rate,
+            COALESCE(AVG(CASE WHEN h.pnl_pct > 0  THEN h.pnl_pct END), 0) AS avg_profit_pct,
+            COALESCE(AVG(CASE WHEN h.pnl_pct &lt;= 0 THEN h.pnl_pct END), 0) AS avg_loss_pct,
+              (SUM(h.pnl_pct > 0) / COUNT(*))
+                * COALESCE(AVG(CASE WHEN h.pnl_pct > 0  THEN h.pnl_pct END), 0)
+            + (SUM(h.pnl_pct &lt;= 0) / COUNT(*))
+                * COALESCE(AVG(CASE WHEN h.pnl_pct &lt;= 0 THEN h.pnl_pct END), 0) AS expectancy_pct,
+            SUM(h.pnl_pct)                                             AS total_pnl_pct,
+            SUM(h.pnl_amount)                                          AS total_pnl_amount,
+            ROUND(AVG(h.hold_seconds))                                 AS avg_hold_seconds,
+            AVG(h.entry_vwap_dist_pct)                                 AS avg_vwap_dist_pct,
+            AVG(h.entry_velocity_sht)                                  AS avg_velocity_sht,
+            SUM(h.exit_reason = 'FAILED_BREAKOUT')                     AS breakout_fail_cnt
+        FROM tb_trade_history h
+        WHERE h.trade_date = #{tradeDate}
+        GROUP BY h.trade_date, h.market, h.entry_mode
+        ON DUPLICATE KEY UPDATE
+            trade_count       = VALUES(trade_count),
+            win_count         = VALUES(win_count),
+            loss_count        = VALUES(loss_count),
+            win_rate          = VALUES(win_rate),
+            avg_profit_pct    = VALUES(avg_profit_pct),
+            avg_loss_pct      = VALUES(avg_loss_pct),
+            expectancy_pct    = VALUES(expectancy_pct),
+            total_pnl_pct     = VALUES(total_pnl_pct),
+            total_pnl_amount  = VALUES(total_pnl_amount),
+            avg_hold_seconds  = VALUES(avg_hold_seconds),
+            avg_vwap_dist_pct = VALUES(avg_vwap_dist_pct),
+            avg_velocity_sht  = VALUES(avg_velocity_sht),
+            breakout_fail_cnt = VALUES(breakout_fail_cnt),
+            updated_at        = CURRENT_TIMESTAMP
+    </update>
+
+</mapper>
