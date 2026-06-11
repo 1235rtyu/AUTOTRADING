@@ -11,4 +11,5 @@ public interface AutoTradingService {
     String stop();
     String status();
     List<Map<String, String>> runningSymbols();
+    int setBuyAmountAll(double amount);
 }

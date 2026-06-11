@@ -17,11 +17,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 public class BacktestServiceImpl implements BacktestService {
@@ -161,14 +164,22 @@ public class BacktestServiceImpl implements BacktestService {
         int done = 0;
         int inserted = 0;
         List<String> failures = new ArrayList<>();
+        List<MinuteBar> prevDayBars = Collections.emptyList(); // 직전 거래일 데이터 (휴장일 탐지용)
         for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
             if (d.getDayOfWeek() == DayOfWeek.SATURDAY || d.getDayOfWeek() == DayOfWeek.SUNDAY) continue;
             status.put("message", d + " 분봉 수집 중...");
             try {
                 List<MinuteBar> dayBars = fetchKrxDay(symbol, d);
                 if (!dayBars.isEmpty()) {
-                    doBatchInsert(dayBars);
-                    inserted += dayBars.size();
+                    if (looksLikeHolidayData(dayBars, prevDayBars)) {
+                        // KIS API가 휴장일 조회 시 직전 거래일 데이터를 반환하는 경우 차단
+                        logger.info("KRX holiday skip: {} {} bars match previous trading day (market closed?)",
+                                symbol, d);
+                    } else {
+                        doBatchInsert(dayBars);
+                        inserted += dayBars.size();
+                        prevDayBars = dayBars;
+                    }
                 }
             } catch (Exception e) {
                 logger.warn("KRX bar fetch failed {} {}: {}", symbol, d, e.getMessage());
@@ -184,6 +195,33 @@ public class BacktestServiceImpl implements BacktestService {
         if (inserted == 0) {
             throw new RuntimeException("KRX 분봉 데이터가 없습니다. 종목코드와 거래일을 확인하세요.");
         }
+    }
+
+    /**
+     * KIS API는 휴장일 조회 시 직전 거래일 데이터를 그대로 반환하는 경우가 있다.
+     * 새로 수집한 bars가 직전 거래일 bars와 시간·종가·거래량이 동일하면 휴장일 데이터로 판단.
+     */
+    private boolean looksLikeHolidayData(List<MinuteBar> newBars, List<MinuteBar> prevBars) {
+        if (prevBars.isEmpty() || newBars.size() != prevBars.size()) return false;
+
+        // 직전 거래일 bars를 시간(LocalTime) 기준으로 빠르게 조회
+        Map<LocalTime, MinuteBar> prevByTime = prevBars.stream()
+                .collect(Collectors.toMap(b -> b.getBarTime().toLocalTime(), b -> b, (a, b) -> a));
+
+        int checks = 0;
+        int matches = 0;
+        for (MinuteBar bar : newBars) {
+            MinuteBar prev = prevByTime.get(bar.getBarTime().toLocalTime());
+            if (prev == null) continue;
+            checks++;
+            if (Math.abs(bar.getClosePrice() - prev.getClosePrice()) < 0.01
+                    && Math.abs(bar.getVolume() - prev.getVolume()) < 0.01) {
+                matches++;
+            }
+            if (checks >= 10) break; // 10봉 샘플로 충분
+        }
+        // 5봉 이상 확인되고 전부 일치하면 휴장일 데이터로 판단
+        return checks >= 5 && matches == checks;
     }
 
     /** Fetch all 1-minute bars for a single KRX trading day via FHKST03010230. */
@@ -265,9 +303,88 @@ public class BacktestServiceImpl implements BacktestService {
     // US 수집 — Yahoo Finance 1분봉
     // ─────────────────────────────────────────────────────────
 
+    private static final String YF_UA =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+    /**
+     * Yahoo Finance 인증에 필요한 [cookie, crumb] 쌍을 반환합니다.
+     * finance.yahoo.com 홈에서 쿠키를 얻은 뒤 query1/query2로 crumb 획득.
+     * 실패 시 ["", ""] 반환.
+     */
+    private String[] fetchYahooCrumb() {
+        // Step 1: finance.yahoo.com 홈에서 쿠키 획득
+        String cookie = "";
+        try {
+            HttpURLConnection home = (HttpURLConnection)
+                    new URL("https://finance.yahoo.com").openConnection();
+            home.setRequestProperty("User-Agent", YF_UA);
+            home.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+            home.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
+            home.setConnectTimeout(12_000);
+            home.setReadTimeout(15_000);
+            home.setInstanceFollowRedirects(true);
+
+            int homeCode = home.getResponseCode();
+            StringBuilder sb = new StringBuilder();
+            for (Map.Entry<String, List<String>> h : home.getHeaderFields().entrySet()) {
+                if ("Set-Cookie".equalsIgnoreCase(h.getKey())) {
+                    for (String v : h.getValue()) {
+                        String kv = v.split(";")[0].trim();
+                        if (kv.isEmpty()) continue;
+                        if (sb.length() > 0) sb.append("; ");
+                        sb.append(kv);
+                    }
+                }
+            }
+            try { home.getInputStream().skip(Long.MAX_VALUE); } catch (Exception ignored) {}
+            home.disconnect();
+            cookie = sb.toString();
+            logger.debug("Yahoo Finance 홈 쿠키 획득 (code={}, cookieLen={})", homeCode, cookie.length());
+        } catch (Exception e) {
+            logger.warn("Yahoo Finance 홈 쿠키 획득 실패: {}", e.getMessage());
+        }
+
+        // Step 2: query1 / query2 순서로 crumb 획득 시도
+        for (String host : new String[]{"query1", "query2"}) {
+            try {
+                HttpURLConnection cc = (HttpURLConnection)
+                        new URL("https://" + host + ".finance.yahoo.com/v1/test/getcrumb").openConnection();
+                cc.setRequestProperty("User-Agent", YF_UA);
+                cc.setRequestProperty("Accept", "application/json, text/plain, */*");
+                cc.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
+                cc.setRequestProperty("Referer", "https://finance.yahoo.com/");
+                if (!cookie.isEmpty()) cc.setRequestProperty("Cookie", cookie);
+                cc.setConnectTimeout(8_000);
+                cc.setReadTimeout(8_000);
+
+                int crumbCode = cc.getResponseCode();
+                String crumb = "";
+                if (crumbCode == 200) {
+                    crumb = new String(cc.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+                } else {
+                    try { if (cc.getErrorStream() != null) cc.getErrorStream().skip(Long.MAX_VALUE); }
+                    catch (Exception ignored) {}
+                }
+                cc.disconnect();
+
+                String preview = crumb.length() > 40 ? crumb.substring(0, 40) + "..." : crumb;
+                logger.debug("Yahoo Finance crumb ({}) code={}, value='{}'", host, crumbCode, preview);
+
+                if (!crumb.isEmpty() && !crumb.startsWith("{") && !crumb.startsWith("<")) {
+                    logger.info("Yahoo Finance crumb 획득 성공 (host={}, len={})", host, crumb.length());
+                    return new String[]{cookie, crumb};
+                }
+            } catch (Exception e) {
+                logger.warn("Yahoo Finance crumb ({}) 실패: {}", host, e.getMessage());
+            }
+        }
+        logger.error("Yahoo Finance crumb 획득 최종 실패 — cookieLen={}", cookie.length());
+        return new String[]{"", ""};
+    }
+
     private void collectUs(String symbol, LocalDate start, LocalDate end,
                             Map<String, Object> status) {
-        // Yahoo Finance provides at most ~30 days of 1-minute bars
+        // Yahoo Finance 1분봉 최대 ~30일
         LocalDate maxStart      = LocalDate.now(NY).minusDays(29);
         final LocalDate effStart = start.isBefore(maxStart) ? maxStart : start;
         final LocalDate effEnd   = end;
@@ -280,18 +397,39 @@ public class BacktestServiceImpl implements BacktestService {
 
         long period1 = effStart.atStartOfDay(NY).toInstant().getEpochSecond();
         long period2 = effEnd.atTime(23, 59, 59).atZone(NY).toInstant().getEpochSecond();
+
+        // 2024년부터 Yahoo Finance v8 API는 cookie + crumb 인증 필요
+        String[] cookieCrumb = fetchYahooCrumb();
+        String cookie = cookieCrumb[0];
+        String crumb  = cookieCrumb[1];
+        if (crumb.isEmpty()) {
+            throw new RuntimeException(
+                "Yahoo Finance 인증 실패 — crumb 획득 불가 (로그에서 원인 확인)");
+        }
+
+        String encodedCrumb;
+        try { encodedCrumb = URLEncoder.encode(crumb, StandardCharsets.UTF_8); }
+        catch (Exception e) { encodedCrumb = crumb; }
+
         String urlStr = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol
-                + "?interval=1m&period1=" + period1 + "&period2=" + period2 + "&includePrePost=false";
+                + "?interval=1m&period1=" + period1 + "&period2=" + period2
+                + "&includePrePost=false&crumb=" + encodedCrumb;
 
         try {
             HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
-            conn.setRequestProperty("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            conn.setRequestProperty("User-Agent", YF_UA);
             conn.setRequestProperty("Accept", "application/json");
+            if (!cookie.isEmpty()) conn.setRequestProperty("Cookie", cookie);
             conn.setConnectTimeout(15_000);
             conn.setReadTimeout(60_000);
             int httpCode = conn.getResponseCode();
             if (httpCode != 200) {
+                String errBody = "";
+                try {
+                    java.io.InputStream es = conn.getErrorStream();
+                    if (es != null) errBody = new String(es.readAllBytes(), StandardCharsets.UTF_8);
+                } catch (Exception ignored) {}
+                logger.error("Yahoo Finance {} for {} | URL={} | body={}", httpCode, symbol, urlStr, errBody.length() > 300 ? errBody.substring(0, 300) : errBody);
                 throw new RuntimeException("Yahoo Finance HTTP " + httpCode + " for " + symbol);
             }
 
@@ -402,21 +540,34 @@ public class BacktestServiceImpl implements BacktestService {
         Map<String, Integer> rejectCounts = new LinkedHashMap<>();
 
         // Entry info captured at BUY time
-        LocalDateTime entryBarTime  = null;
-        double        entryClose    = 0.0;
-        String        entryMode     = "UNKNOWN";
-        int           entryScore    = 0;
-        double        entryVwap     = 0.0;
-        double        entryVel      = 0.0;
-        boolean       snapCaptured  = false;
+        LocalDateTime entryBarTime    = null;
+        double        entryClose      = 0.0;
+        String        entryMode       = "UNKNOWN";
+        int           entryScore      = 0;
+        String        entryGrade      = "D";
+        double        entryVwap       = 0.0;
+        double        entryVel        = 0.0;
+        double        entryVolRatio   = 0.0;
+        double        entryToRatio    = 0.0;
+        int           entryScVwap     = 0;
+        int           entryScTrend    = 0;
+        int           entryScVol      = 0;
+        int           entryScTo       = 0;
+        int           entryScHigh     = 0;
+        int           entryScPat      = 0;
+        double        entryVelMid     = 0.0;
+        double        entryVelLong    = 0.0;
+        int           entryTrendSc    = 0;
+        double        entryFromHigh   = 0.0;
+        boolean       snapCaptured    = false;
 
         List<Map<String, Object>> trades = new ArrayList<>();
 
         for (MinuteBar bar : bars) {
             LocalDate barDay = bar.getBarTime().toLocalDate();
 
-            // Reset daily counters on new trading day
-            if (lastDay != null && !barDay.equals(lastDay) && currentQty == 0) {
+            // Reset daily counters on new trading day (always, regardless of position)
+            if (lastDay != null && !barDay.equals(lastDay)) {
                 engine.advanceBacktestDay(symbol);
                 engine.advanceBacktestDay(proxySymbol);
             }
@@ -461,51 +612,84 @@ public class BacktestServiceImpl implements BacktestService {
                     if (snap != null) {
                         entryMode    = snap.entryMode;
                         entryScore   = snap.signalScore;
+                        entryGrade   = snap.signalGrade;
                         entryVwap    = snap.vwapDistPct;
                         entryVel     = snap.velocityShort;
-                        snapCaptured = true;
+                        entryVolRatio = snap.volumeRatio;
+                        entryToRatio  = snap.turnoverRatio;
+                        entryScVwap   = snap.scoreVwap;
+                        entryScTrend  = snap.scoreTrend;
+                        entryScVol    = snap.scoreVolume;
+                        entryScTo     = snap.scoreTurnover;
+                        entryScHigh   = snap.scoreHigh;
+                        entryScPat    = snap.scorePattern;
+                        entryVelMid   = snap.velocityMid;
+                        entryVelLong  = snap.velocityLong;
+                        entryTrendSc  = snap.trendScore;
+                        entryFromHigh = snap.fromHighPct;
+                        snapCaptured  = true;
                     }
                 }
 
                 if (cmd.isPresent() && "SELL".equals(cmd.get().getType())) {
-                    // Snapshot last chance before sell clears state
                     if (!snapCaptured) {
                         StrategyEngine.EntrySnapshot snap = engine.getEntrySnapshot(symbol);
                         if (snap != null) {
-                            entryMode  = snap.entryMode;
-                            entryScore = snap.signalScore;
-                            entryVwap  = snap.vwapDistPct;
-                            entryVel   = snap.velocityShort;
+                            entryMode    = snap.entryMode;
+                            entryScore   = snap.signalScore;
+                            entryGrade   = snap.signalGrade;
+                            entryVwap    = snap.vwapDistPct;
+                            entryVel     = snap.velocityShort;
+                            entryVolRatio = snap.volumeRatio;
+                            entryToRatio  = snap.turnoverRatio;
+                            entryScVwap   = snap.scoreVwap;
+                            entryScTrend  = snap.scoreTrend;
+                            entryScVol    = snap.scoreVolume;
+                            entryScTo     = snap.scoreTurnover;
+                            entryScHigh   = snap.scoreHigh;
+                            entryScPat    = snap.scorePattern;
+                            entryVelMid   = snap.velocityMid;
+                            entryVelLong  = snap.velocityLong;
+                            entryTrendSc  = snap.trendScore;
+                            entryFromHigh = snap.fromHighPct;
                         }
                     }
 
                     double rawPnl = avgPrice > 0 ? (price - avgPrice) / avgPrice : 0.0;
-                    double pnlPct = rawPnl - (cfg != null ? (cfg.feePct + cfg.slippagePct) / 100.0 : 0.0);
+                    double pnlPct = rawPnl - (cfg != null ? (cfg.feePct + cfg.slippagePct + (rawPnl > 0 ? cfg.taxPct : 0.0)) / 100.0 : 0.0);
                     long holdSec  = entryBarTime != null
                             ? Duration.between(entryBarTime, bar.getBarTime()).getSeconds() : 0L;
+                    double actualEntryAmt = entryClose * currentQty;
 
-                    trades.add(buildTrade(entryBarTime, bar.getBarTime(), entryMode,
+                    trades.add(buildTrade(symbol, entryBarTime, bar.getBarTime(), entryMode,
                             entryClose, price, pnlPct, cmd.get().getReason(),
-                            holdSec, entryScore, entryVwap, entryVel));
+                            holdSec, entryScore, entryGrade, entryVwap, entryVel,
+                            entryVolRatio, entryToRatio,
+                            entryScVwap, entryScTrend, entryScVol, entryScTo, entryScHigh, entryScPat,
+                            entryVelMid, entryVelLong, entryTrendSc, entryFromHigh, actualEntryAmt));
 
                     engine.notifySellFilled(symbol, 0);
                     currentQty = 0; avgPrice = 0.0; entryBarTime = null;
-                    entryMode = "UNKNOWN"; snapCaptured = false;
+                    entryMode = "UNKNOWN"; entryGrade = "D"; snapCaptured = false;
                 }
             }
         }
 
         // Force-close any open position at the last bar
         if (currentQty > 0 && !bars.isEmpty()) {
-            MinuteBar last = bars.get(bars.size() - 1);
-            double price   = last.getClosePrice();
-            double rawPnl  = avgPrice > 0 ? (price - avgPrice) / avgPrice : 0.0;
-            double pnlPct  = rawPnl - (cfg != null ? (cfg.feePct + cfg.slippagePct) / 100.0 : 0.0);
-            long holdSec   = entryBarTime != null
+            MinuteBar last  = bars.get(bars.size() - 1);
+            double lastPrice = last.getClosePrice();
+            double rawPnl    = avgPrice > 0 ? (lastPrice - avgPrice) / avgPrice : 0.0;
+            double pnlPct    = rawPnl - (cfg != null ? (cfg.feePct + cfg.slippagePct + (rawPnl > 0 ? cfg.taxPct : 0.0)) / 100.0 : 0.0);
+            long holdSec     = entryBarTime != null
                     ? Duration.between(entryBarTime, last.getBarTime()).getSeconds() : 0L;
-            trades.add(buildTrade(entryBarTime, last.getBarTime(), entryMode,
-                    entryClose, price, pnlPct, "BACKTEST_END",
-                    holdSec, entryScore, entryVwap, entryVel));
+            double actualEntryAmt = entryClose * currentQty;
+            trades.add(buildTrade(symbol, entryBarTime, last.getBarTime(), entryMode,
+                    entryClose, lastPrice, pnlPct, "BACKTEST_END",
+                    holdSec, entryScore, entryGrade, entryVwap, entryVel,
+                    entryVolRatio, entryToRatio,
+                    entryScVwap, entryScTrend, entryScVol, entryScTo, entryScHigh, entryScPat,
+                    entryVelMid, entryVelLong, entryTrendSc, entryFromHigh, actualEntryAmt));
         }
 
         Map<String, Object> result = buildResult(market, symbol, startDate, endDate, bars.size(), buyAmount, trades,
@@ -526,22 +710,42 @@ public class BacktestServiceImpl implements BacktestService {
         return result;
     }
 
-    private Map<String, Object> buildTrade(LocalDateTime entryTime, LocalDateTime exitTime,
+    private Map<String, Object> buildTrade(String symbol,
+                                            LocalDateTime entryTime, LocalDateTime exitTime,
                                             String mode, double entryPrice, double exitPrice,
                                             double pnlPct, String exitReason, long holdSec,
-                                            int score, double vwap, double vel) {
+                                            int score, String grade, double vwap, double vel,
+                                            double volRatio, double toRatio,
+                                            int scVwap, int scTrend, int scVol, int scTo, int scHigh, int scPat,
+                                            double velMid, double velLong, int trendSc, double fromHigh,
+                                            double actualEntryAmt) {
         Map<String, Object> t = new LinkedHashMap<>();
-        t.put("entryTime",    entryTime  != null ? entryTime.toString()  : "");
-        t.put("exitTime",     exitTime   != null ? exitTime.toString()   : "");
-        t.put("entryMode",    mode);
-        t.put("entryPrice",   entryPrice);
-        t.put("exitPrice",    exitPrice);
-        t.put("pnlPct",       pnlPct);
-        t.put("exitReason",   exitReason != null ? exitReason : "");
-        t.put("holdSeconds",  holdSec);
-        t.put("signalScore",  score);
-        t.put("vwapDistPct",  vwap);
-        t.put("velocityShort", vel);
+        t.put("symbol",         symbol != null ? symbol : "");
+        t.put("entryTime",      entryTime  != null ? entryTime.toString()  : "");
+        t.put("exitTime",       exitTime   != null ? exitTime.toString()   : "");
+        t.put("entryMode",      mode);
+        t.put("entryPrice",     entryPrice);
+        t.put("exitPrice",      exitPrice);
+        t.put("pnlPct",         pnlPct);
+        t.put("actualEntryAmt", actualEntryAmt);
+        t.put("exitReason",     exitReason != null ? exitReason : "");
+        t.put("holdSeconds",    holdSec);
+        t.put("signalScore",    score);
+        t.put("signalGrade",    grade != null ? grade : "D");
+        t.put("vwapDistPct",    vwap);
+        t.put("velocityShort",  vel);
+        t.put("velocityMid",    velMid);
+        t.put("velocityLong",   velLong);
+        t.put("trendScore",     trendSc);
+        t.put("fromHighPct",    fromHigh);
+        t.put("volumeRatio",    volRatio);
+        t.put("turnoverRatio",  toRatio);
+        t.put("scoreVwap",      scVwap);
+        t.put("scoreTrend",     scTrend);
+        t.put("scoreVolume",    scVol);
+        t.put("scoreTurnover",  scTo);
+        t.put("scoreHigh",      scHigh);
+        t.put("scorePattern",   scPat);
         return t;
     }
 
@@ -604,15 +808,76 @@ public class BacktestServiceImpl implements BacktestService {
         r.put("warnings", warnings);
 
         List<Map<String, Object>> modeList = new ArrayList<>();
-        byMode.forEach((k, v) -> modeList.add(statMap(k, v)));
+        byMode.forEach((k, v) -> {
+            Map<String, Object> sm = statMap(k, v);
+            double modeWin = 0, modeLoss = 0;
+            for (double p : v) { if (p > 0) modeWin += p; else modeLoss += Math.abs(p); }
+            sm.put("profitFactor", modeLoss > 0 ? modeWin / modeLoss : (modeWin > 0 ? 9999.0 : 0.0));
+            int mw = (int) v.stream().filter(p -> p > 0).count();
+            int ml = v.size() - mw;
+            double mWr  = v.size() > 0 ? (double) mw / v.size() : 0.0;
+            double avgW = mw > 0 ? modeWin  / mw : 0.0;
+            double avgL = ml > 0 ? modeLoss / ml : 0.0;
+            sm.put("expectancy", mWr * avgW - (1 - mWr) * avgL);
+            sm.put("mdd", computeMdd(v));
+            modeList.add(sm);
+        });
         r.put("modeStats", modeList);
 
         List<Map<String, Object>> exitList = new ArrayList<>();
         byExit.forEach((k, v) -> exitList.add(statMap(k, v)));
         r.put("exitStats", exitList);
 
+        // ── Score range stats ──────────────────────────────────────────────
+        String[][] scoreRanges = {{"95-100","95","100"},{"90-94","90","94"},{"85-89","85","89"},
+                                   {"80-84","80","84"},{"75-79","75","79"},{"<75","0","74"}};
+        List<Map<String, Object>> scoreRangeList = new ArrayList<>();
+        for (String[] sr : scoreRanges) {
+            int lo = Integer.parseInt(sr[1]), hi = Integer.parseInt(sr[2]);
+            List<Double> pnls = new ArrayList<>();
+            for (Map<String, Object> t : trades) {
+                int sc = t.get("signalScore") instanceof Integer ? (Integer) t.get("signalScore") : 0;
+                if (sc >= lo && sc <= hi) pnls.add((Double) t.get("pnlPct"));
+            }
+            Map<String, Object> m = statMap(sr[0], pnls);
+            m.put("profitFactor", pfFromPnls(pnls));
+            scoreRangeList.add(m);
+        }
+        r.put("scoreRangeStats", scoreRangeList);
+
+        // ── Grade stats ────────────────────────────────────────────────────
+        String[] grades = {"SS", "S", "A", "B", "C", "D"};
+        List<Map<String, Object>> gradeList = new ArrayList<>();
+        for (String g : grades) {
+            List<Double> pnls = new ArrayList<>();
+            for (Map<String, Object> t : trades) {
+                if (g.equals(t.get("signalGrade"))) pnls.add((Double) t.get("pnlPct"));
+            }
+            Map<String, Object> m = statMap(g, pnls);
+            m.put("profitFactor", pfFromPnls(pnls));
+            gradeList.add(m);
+        }
+        r.put("gradeStats", gradeList);
+
         r.put("trades", trades);
         return r;
+    }
+
+    private double computeMdd(List<Double> pnls) {
+        double cum = 1.0, peak = 1.0, mdd = 0.0;
+        for (double p : pnls) {
+            cum *= (1 + p);
+            if (cum > peak) peak = cum;
+            double dd = (peak - cum) / peak;
+            if (dd > mdd) mdd = dd;
+        }
+        return mdd;
+    }
+
+    private double pfFromPnls(List<Double> pnls) {
+        double win = 0, loss = 0;
+        for (double p : pnls) { if (p > 0) win += p; else loss += Math.abs(p); }
+        return loss > 0 ? win / loss : (win > 0 ? 9999.0 : 0.0);
     }
 
     private Map<String, Object> statMap(String label, List<Double> pnls) {

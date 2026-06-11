@@ -124,20 +124,34 @@ body { font-family: var(--sans); font-size: 13px; color: var(--t1); min-height: 
 .logo-name span { color: var(--lime); }
 .logo-ver { font-family: var(--mono); font-size: 7px; color: var(--t3); letter-spacing: 2px; margin-top: 2px; }
 .tb-sp { flex: 1; }
-.tb-nav { display: flex; align-items: center; gap: 2px; padding: 0 12px; }
+.tb-pill{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--emerald);
+  padding:3px 9px;border-radius:20px;background:var(--emerald-d);border:1px solid var(--emerald-b);letter-spacing:.5px;}
+.tb-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px rgba(0,232,136,.4);animation:pulse 1.4s ease-in-out infinite;}
+.tb-nav { display: flex; align-items: center; gap: 2px; padding: 0 10px; }
 .tb-a {
-  font-family: var(--mono); font-size: 9px; letter-spacing: .5px; padding: 5px 10px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .4px; padding: 5px 11px;
   border-radius: var(--r); border: 1px solid transparent; background: transparent;
   color: var(--t2); cursor: pointer; transition: all .15s; text-decoration: none;
 }
 .tb-a:hover { background: var(--hover); border-color: var(--rim-hi); color: var(--t1); }
-.tb-a.cur { background: var(--lime-d); border-color: var(--lime-b); color: var(--lime); font-weight: 600; }
+.tb-a.cur { background: var(--lime-d); border-color: var(--lime-b); color: var(--lime); }
+.tb-login{display:flex;align-items:center;gap:5px;padding:0 10px;border-left:1px solid var(--rim);}
+.tb-login form{display:flex;align-items:center;gap:4px;}
+.tb-login input{height:24px;width:100px;background:var(--base);border:1px solid var(--rim-hi);
+  border-radius:var(--r);color:var(--t1);font-family:var(--mono);font-size:9px;padding:0 7px;}
+.tb-login input::placeholder{color:var(--t3);}
+.tb-lbtn{height:24px;padding:0 9px;border-radius:var(--r);border:1px solid var(--lime-b);
+  background:var(--lime-d);color:var(--lime);font-family:var(--mono);font-size:9px;cursor:pointer;transition:all .15s;}
+.tb-lbtn:hover{background:var(--lime);color:var(--void);}
+.tb-login-st{display:none;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;color:var(--t2);}
+.tb-login-st .acc{color:var(--lime);}
+.tb-lerr{font-family:var(--mono);font-size:9px;color:var(--red);display:none;margin-left:3px;}
 .tb-clock {
-  padding: 0 16px; height: 100%; border-left: 1px solid var(--rim);
-  display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px;
+  padding: 0 12px; height: 100%; border-left: 1px solid var(--rim);
+  display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 1px;
 }
-.clk-t { font-family: var(--mono); font-size: 14px; font-weight: 600; letter-spacing: 2.5px; color: var(--t0); }
-.clk-d { font-family: var(--mono); font-size: 7px; color: var(--t3); letter-spacing: 1.5px; }
+.clk-t { font-family: var(--mono); font-size: 13px; font-weight: 500; letter-spacing: 2px; }
+.clk-d { font-family: var(--mono); font-size: 7px; color: var(--t3); letter-spacing: 1px; }
 
 /* ── PAGE ── */
 .page {
@@ -334,7 +348,7 @@ body { font-family: var(--sans); font-size: 13px; color: var(--t1); min-height: 
 .folder-item.active .folder-item-count { color: var(--t2); background: var(--panel); }
 .folder-item.kr .folder-icon { color: var(--lime); }
 .folder-item.us .folder-icon { color: var(--blue); }
-        '<button class="folder-del-btn" onclick="deleteFolder(event,&quot;'+fnameEsc+'&quot;)" title="Delete folder">' +
+.folder-del-btn {
   margin-left: 2px; width: 18px; height: 18px; border: none; background: transparent;
   color: var(--t3); cursor: pointer; border-radius: 3px; display: none; align-items: center; justify-content: center;
   transition: all .12s; flex-shrink: 0;
@@ -377,49 +391,54 @@ body { font-family: var(--sans); font-size: 13px; color: var(--t1); min-height: 
 .pn-count.us { color: var(--blue); border-color: var(--blue-b); background: var(--blue-d); }
 
 /* ── TABLE ── */
-.tbl-wrap { overflow: auto; flex: 1; max-height: 480px; scrollbar-width: thin; scrollbar-color: var(--rim-hi) transparent; }
+.tbl-wrap { overflow: auto; flex: 1; max-height: 520px; scrollbar-width: thin; scrollbar-color: var(--rim-hi) transparent; }
 .tbl-wrap::-webkit-scrollbar { width: 3px; }
 .tbl-wrap::-webkit-scrollbar-thumb { background: var(--rim-hi); border-radius: 2px; }
 table { width: 100%; border-collapse: collapse; }
 thead th {
   position: sticky; top: 0; z-index: 2;
   background: var(--panel-hi); border-bottom: 1px solid var(--rim);
-  font-family: var(--mono); font-size: 8px; font-weight: 600; color: var(--t2);
-  letter-spacing: 1.2px; text-transform: uppercase; padding: 9px 12px; text-align: left; white-space: nowrap;
+  font-family: var(--mono); font-size: 9px; font-weight: 600; color: rgba(255,255,255,.45);
+  letter-spacing: 1px; text-transform: uppercase; padding: 10px 14px; text-align: left; white-space: nowrap;
 }
-tbody td { padding: 10px 12px; border-bottom: 1px solid var(--rim-lo); vertical-align: middle; white-space: nowrap; }
+tbody td { padding: 12px 14px; border-bottom: 1px solid var(--rim-lo); vertical-align: middle; white-space: nowrap; }
 tbody tr:last-child td { border-bottom: none; }
 tbody tr:hover td { background: var(--hover); }
 tbody tr { animation: fadeUp .2s ease both; }
 
-.td-idx { font-family: var(--mono); font-size: 9px; color: var(--t3); width: 28px; }
-.td-sym { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+.td-idx { font-family: var(--mono); font-size: 10px; color: var(--t3); width: 32px; }
+.td-sym { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: .5px; }
 .td-sym.kr { color: var(--lime); }
 .td-sym.us { color: var(--blue); }
-.td-name { font-size: 12px; color: var(--t1); max-width: 180px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
-.td-name.dim { color: var(--t3); font-size: 10px; font-style: italic; }
+.td-name { font-size: 12px; color: rgba(255,255,255,.75); max-width: 200px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.td-name.dim { color: var(--t3); font-size: 10px; }
 .td-folder { font-family: var(--mono); font-size: 9px; color: var(--t3); }
-.td-folder span { padding: 2px 7px; border-radius: 4px; background: var(--panel-2); border: 1px solid var(--rim); color: var(--t2); }
-.td-date { font-family: var(--mono); font-size: 9px; color: var(--t3); }
+.td-date { font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,.3); }
 
 /* Action buttons */
-.action-cell { display: flex; align-items: center; gap: 4px; }
+.action-cell { display: flex; align-items: center; gap: 5px; }
 .del-btn {
-  height: 26px; padding: 0 10px; font-family: var(--mono); font-size: 8px; font-weight: 600; letter-spacing: .3px;
-  border: 1px solid var(--red-b); border-radius: 4px; background: var(--red-d); color: var(--red);
-  cursor: pointer; transition: all .12s;
+  height: 26px; padding: 0 10px; font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: .3px;
+  border: 1px solid rgba(255,79,107,.25); border-radius: 5px; background: rgba(255,79,107,.07); color: var(--red);
+  cursor: pointer; transition: all .15s;
 }
-.del-btn:hover { background: var(--red); color: #fff; }
-.del-btn:disabled { opacity: .35; cursor: not-allowed; }
+.del-btn:hover { background: var(--red-d); border-color: var(--red-b); }
+.del-btn:disabled { opacity: .3; cursor: not-allowed; }
+.del-btn.confirming { background: var(--red); color: #fff; border-color: var(--red); animation: glow-red .5s ease-in-out; }
+@keyframes glow-red { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 12px rgba(255,79,107,.5)} }
 .mv-btn {
-  height: 26px; padding: 0 8px; font-family: var(--mono); font-size: 8px; letter-spacing: .3px;
-  border: 1px solid var(--rim-hi); border-radius: 4px; background: transparent; color: var(--t3);
+  height: 26px; padding: 0 9px; font-family: var(--mono); font-size: 10px; letter-spacing: .3px;
+  border: 1px solid var(--rim-hi); border-radius: 5px; background: transparent; color: var(--t3);
   cursor: pointer; transition: all .12s;
 }
-.mv-btn:hover { background: var(--hover2); color: var(--t1); border-color: var(--rim-hi); }
+.mv-btn:hover { background: var(--hover2); color: var(--t1); }
 
-.tbl-empty { text-align: center; padding: 44px !important; font-family: var(--mono); font-size: 10px; color: var(--t3); letter-spacing: 1.5px; }
-.tbl-empty-icon { font-size: 28px; margin-bottom: 10px; opacity: .3; }
+.tbl-empty { text-align: center; padding: 52px !important; font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,.3); letter-spacing: 1px; line-height: 1.8; }
+.tbl-empty-icon { font-size: 32px; margin-bottom: 12px; opacity: .25; display: block; }
+.retry-btn { margin-top: 12px; padding: 6px 16px; font-family: var(--mono); font-size: 9px; letter-spacing: .5px;
+  border: 1px solid var(--rim-hi); border-radius: 5px; background: var(--panel-hi); color: var(--t1);
+  cursor: pointer; transition: all .13s; }
+.retry-btn:hover { background: var(--hover2); color: var(--t0); }
 
 /* ── FOLDER NEW MODAL ── */
 .modal-overlay {
@@ -516,6 +535,7 @@ tbody tr { animation: fadeUp .2s ease both; }
     </div>
   </div>
   <div class="tb-sp"></div>
+  <div class="tb-pill"><div class="tb-dot"></div><span id="hdSt">—</span></div>
   <div class="tb-nav">
     <a class="tb-a" href="${pageContext.request.contextPath}/dashboard">Dashboard</a>
     <a class="tb-a" href="${pageContext.request.contextPath}/control/kr">Control·KR</a>
@@ -524,7 +544,19 @@ tbody tr { animation: fadeUp .2s ease both; }
     <a class="tb-a" href="${pageContext.request.contextPath}/history/orders">Orders</a>
     <a class="tb-a" href="${pageContext.request.contextPath}/balances">Balances</a>
     <a class="tb-a cur" href="${pageContext.request.contextPath}/watchlist">Watchlist</a>
-    <a class="tb-a" href="${pageContext.request.contextPath}/">Home</a>
+    <a class="tb-a" href="${pageContext.request.contextPath}/backtest">Backtest</a>
+  </div>
+  <div class="tb-login">
+    <form id="lf" autocomplete="off">
+      <input type="text" name="accountNo" placeholder="계좌번호" autocomplete="off" maxlength="20"/>
+      <input type="password" name="accountPassword" placeholder="Password" autocomplete="new-password" maxlength="50"/>
+      <button class="tb-lbtn" type="submit">Login</button>
+    </form>
+    <div class="tb-login-st" id="lst">
+      <span class="acc" id="lacc">****</span>
+      <button id="lob" type="button" class="tb-lbtn">Logout</button>
+    </div>
+    <div class="tb-lerr" id="lerr"></div>
   </div>
   <div class="tb-clock">
     <div class="clk-t" id="clkT">--:--:--</div>
@@ -540,6 +572,10 @@ tbody tr { animation: fadeUp .2s ease both; }
       <div class="page-title">Watch<span>list</span></div>
       <div class="page-sub">종목 관심 목록 관리</div>
     </div>
+    <button onclick="load()" id="refreshBtn" style="margin-left:auto;height:30px;padding:0 14px;font-family:var(--mono);font-size:9px;letter-spacing:.5px;border:1px solid var(--rim-hi);border-radius:var(--r);background:transparent;color:var(--t2);cursor:pointer;transition:all .13s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.color='var(--t0)'" onmouseout="this.style.color='var(--t2)'">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      새로고침
+    </button>
   </div>
 
   <!-- STAT CARDS -->
@@ -773,6 +809,26 @@ const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     document.getElementById('clkD').textContent=n.getFullYear()+'.'+p2(n.getMonth()+1)+'.'+p2(n.getDate())+' '+DAYS[n.getDay()];
   }
   setInterval(tick,1000); tick();
+
+  /* ── Login ── */
+  (function(){
+    var _B='${pageContext.request.contextPath}';
+    var f=document.getElementById('lf'),sb=document.getElementById('lst');
+    var as=document.getElementById('lacc'),lb=document.getElementById('lob'),eb=document.getElementById('lerr');
+    var showIn=function(m){f.style.display='none';sb.style.display='inline-flex';eb.style.display='none';as.textContent=m||'****';};
+    var showOut=function(){sb.style.display='none';f.style.display='';eb.style.display='none';};
+    var showErr=function(m){eb.textContent=m||'';eb.style.display=m?'inline-flex':'none';};
+    fetch(_B+'/api/auth/status').then(function(r){return r.json();}).then(function(d){d&&d.loggedIn?showIn(d.accountMasked):showOut();}).catch(function(){showOut();});
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      var no=(f.accountNo.value||'').trim(),pw=(f.accountPassword.value||'').trim();
+      if(!no||!pw)return;
+      fetch(_B+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({accountNo:no,accountPassword:pw}).toString()})
+        .then(function(r){return r.json();}).then(function(d){d.status==='OK'?showIn(d.accountMasked):showErr(d.message||'Login failed');})
+        .catch(function(){showErr('서버 오류');});
+    });
+    lb.addEventListener('click',function(){fetch(_B+'/api/auth/logout',{method:'POST'}).then(function(){showOut();});});
+  })();
 
   /* ───── XSS ───── */
   function esc(s){
@@ -1053,6 +1109,11 @@ const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   /* ───── Load watchlist ───── */
   function load(){
+    const loadingRow='<tr><td colspan="6" class="tbl-empty"><span class="skeleton" style="width:140px;height:11px;display:inline-block;"></span></td></tr>';
+    document.getElementById('krBody').innerHTML=loadingRow;
+    document.getElementById('usBody').innerHTML=loadingRow;
+    const btn=document.getElementById('refreshBtn');
+    if(btn){ btn.disabled=true; btn.style.opacity='.5'; }
     fetch(BASE+'/api/watchlist')
       .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
       .then(rows=>{
@@ -1065,10 +1126,15 @@ const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
         renderAll(allItems);
       })
       .catch(e=>{
-        const msg='<tr><td colspan="6" class="tbl-empty">로드 실패: '+esc(e.message)+'</td></tr>';
-        document.getElementById('krBody').innerHTML=msg;
-        document.getElementById('usBody').innerHTML=msg;
-      });
+        const errRow='<tr><td colspan="6" class="tbl-empty">'
+          +'<span class="tbl-empty-icon">⚠</span>'
+          +'로드 실패: '+esc(e.message)+'<br>'
+          +'<button class="retry-btn" onclick="load()">↺ 다시 시도</button>'
+          +'</td></tr>';
+        document.getElementById('krBody').innerHTML=errRow;
+        document.getElementById('usBody').innerHTML=errRow;
+      })
+      .finally(()=>{ if(btn){ btn.disabled=false; btn.style.opacity='1'; } });
   }
 
   /* ───── AUTOCOMPLETE ───── */
@@ -1175,14 +1241,28 @@ const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     .finally(()=>{ btn.disabled=false; btn.classList.remove('loading'); });
   };
 
-  /* ───── Delete ───── */
+  /* ───── Delete (두 번 클릭 확인 — confirm() 없음) ───── */
   function onDelete(e){
     const btn=e.target.closest('.del-btn');
     if(!btn) return;
     const id=btn.dataset.id;
     if(!id||isNaN(Number(id))||Number(id)<=0) return;
-    if(!confirm('삭제하시겠습니까?')) return;
-    btn.disabled=true; btn.textContent='…';
+
+    if(btn.dataset.confirm!=='yes'){
+      btn.dataset.confirm='yes';
+      btn.textContent='확인?';
+      btn.classList.add('confirming');
+      setTimeout(()=>{
+        if(btn.dataset.confirm==='yes'){
+          btn.dataset.confirm='';
+          btn.textContent='삭제';
+          btn.classList.remove('confirming');
+        }
+      }, 2500);
+      return;
+    }
+
+    btn.disabled=true; btn.textContent='…'; btn.classList.remove('confirming');
     fetch(BASE+'/api/watchlist/delete',{
       method:'POST',
       headers:{'Content-Type':'application/x-www-form-urlencoded'},

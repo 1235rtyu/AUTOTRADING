@@ -2435,6 +2435,34 @@ private Map<String, Object> get(String url, String trId) {
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // 401: 토큰 만료 → 강제 갱신 후 1회 재시도
+        if (response.statusCode() == 401) {
+            logger.warn("KIS 401 Unauthorized for trId={} — forcing token refresh", trId);
+            synchronized (this) {
+                accessToken = null;
+                accessTokenExpiresAt = null;
+            }
+            String retryToken = generateAccessToken();
+            if (!StringUtils.hasText(retryToken)) {
+                result.put("status", "ERROR");
+                result.put("message", "Token refresh failed after 401");
+                return result;
+            }
+            HttpRequest retryReq = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("authorization", "Bearer " + retryToken)
+                    .header("appkey", properties.getAppKey())
+                    .header("appsecret", properties.getAppSecret())
+                    .header("tr_id", trId)
+                    .header("custtype", properties.getCustomerType())
+                    .GET()
+                    .build();
+            response = httpClient.send(retryReq, HttpResponse.BodyHandlers.ofString());
+            logger.info("KIS retry after 401 trId={} -> status={}", trId, response.statusCode());
+        }
+
         if (response.statusCode() != 200) {
             result.put("status", "ERROR");
             result.put("message", "HTTP " + response.statusCode());

@@ -55,7 +55,7 @@ body{font-family:var(--sans);font-size:13px;color:var(--t1);background:var(--voi
   padding:3px 9px;border-radius:20px;background:var(--emerald-d);border:1px solid var(--emerald-b);letter-spacing:.5px;}
 .tb-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:var(--emerald-glow);animation:pd 1.4s ease-in-out infinite;}
 .tb-nav{display:flex;align-items:center;gap:2px;padding:0 10px;}
-.tb-a{font-family:var(--mono);font-size:9px;letter-spacing:.4px;padding:4px 9px;border-radius:var(--r);
+.tb-a{font-family:var(--mono);font-size:10px;letter-spacing:.4px;padding:5px 11px;border-radius:var(--r);
   border:1px solid transparent;background:transparent;color:var(--t2);cursor:pointer;transition:all .15s;text-decoration:none;}
 .tb-a:hover{background:var(--hover);border-color:var(--rim-hi);color:var(--t1);}
 .tb-a.cur{background:var(--lime-d);border-color:var(--lime-b);color:var(--lime);}
@@ -374,7 +374,7 @@ canvas{display:block;width:100%;height:100%;}
     <a class="tb-a"     href="${pageContext.request.contextPath}/history/orders">Orders</a>
     <a class="tb-a"     href="${pageContext.request.contextPath}/balances">Balances</a>
     <a class="tb-a"     href="${pageContext.request.contextPath}/watchlist">Watchlist</a>
-    <a class="tb-a"     href="${pageContext.request.contextPath}/">Home</a>
+    <a class="tb-a"     href="${pageContext.request.contextPath}/backtest">Backtest</a>
   </div>
   <div class="tb-login">
     <form id="lf" autocomplete="off">

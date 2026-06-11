@@ -28,6 +28,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -489,7 +490,144 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         schedulers.put(sym, exec);
         tickTasks.put(sym, task);
         logger.info("Auto-trading scheduler started for {}", sym);
+
+        // 시스템 시작 시 당일 누적 분봉을 StrategyEngine에 미리 주입 (30봉 대기 제거)
+        preloadTodayBars(sym);
+
         return "Started " + sym;
+    }
+
+    /**
+     * KRX 종목 한정: KIS API에서 당일 9:00~ 분봉을 가져와 StrategyEngine에 seed.
+     * 이를 통해 시스템 시작 직후에도 최소 히스토리(30봉) 조건을 즉시 충족할 수 있다.
+     */
+    @SuppressWarnings("unchecked")
+    private void preloadTodayBars(String symbol) {
+        if (isOverseasSymbol(symbol)) return;  // KRX 전용
+
+        LocalDateTime nowKst  = LocalDateTime.now(KST_ZONE);
+        LocalTime     nowTime = nowKst.toLocalTime();
+        if (nowTime.isBefore(LocalTime.of(9, 1))) {
+            logger.debug("[BAR_PRELOAD] {} : market not yet open, skip", symbol);
+            return;
+        }
+
+        // 현재 시각부터 역방향으로 9:00까지 페이지 조회
+        String today    = String.format("%04d%02d%02d",
+                nowKst.getYear(), nowKst.getMonthValue(), nowKst.getDayOfMonth());
+        String fromTime = String.format("%02d%02d%02d",
+                nowTime.getHour(), nowTime.getMinute(), nowTime.getSecond());
+
+        List<Map<String, Object>> allBars = new ArrayList<>();
+        try {
+            for (int page = 0; page < 12; page++) {
+                Map<String, Object> raw = kisApiClient.fetchDailyMinuteChart(symbol, today, fromTime);
+                if (!"OK".equals(raw.get("status"))) break;
+
+                List<Map<String, Object>> chunk = (List<Map<String, Object>>) raw.get("output2");
+                if (chunk == null || chunk.isEmpty()) break;
+                allBars.addAll(chunk);
+
+                // KIS는 최신→과거 역순. 마지막 원소가 가장 오래된 봉
+                Map<String, Object> oldest  = chunk.get(chunk.size() - 1);
+                String earliest = barStrField(oldest, "stck_cntg_hour", "xhms");
+                if (earliest == null) break;
+                earliest = earliest.replaceAll("[^0-9]", "");
+                if (earliest.length() < 6 || earliest.compareTo("090100") <= 0) break;
+                fromTime = preloadDecrOneMin(earliest);
+            }
+        } catch (Exception e) {
+            logger.warn("[BAR_PRELOAD] {} fetch error: {}", symbol, e.getMessage());
+            return;
+        }
+
+        if (allBars.isEmpty()) {
+            logger.info("[BAR_PRELOAD] {} : no bars available yet", symbol);
+            return;
+        }
+
+        // 오름차순 정렬 (날짜+시간 문자열 기준)
+        allBars.sort(Comparator.comparing(b ->
+                barStrField(b, "stck_bsop_date", "xymd", "") +
+                barStrField(b, "stck_cntg_hour", "xhms", "")));
+
+        // 중복 제거용 마지막 처리 시간 추적
+        String lastKey = "";
+        int seeded = 0;
+        for (Map<String, Object> bar : allBars) {
+            double close = barDoubleField(bar, "stck_prpr", "stck_clpr");
+            if (close <= 0) continue;
+            double open   = barDoubleField(bar, "stck_oprc");   if (open   <= 0) open   = close;
+            double high   = barDoubleField(bar, "stck_hgpr");   if (high   <= 0) high   = close;
+            double low    = barDoubleField(bar, "stck_lwpr");   if (low    <= 0) low    = close;
+            double volume = barDoubleField(bar, "cntg_vol", "acml_vol");
+
+            String dateStr = barStrField(bar, "stck_bsop_date", "xymd", "");
+            String timeStr = barStrField(bar, "stck_cntg_hour", "xhms", "");
+            String dedupKey = dateStr + timeStr;
+            if (dedupKey.equals(lastKey)) continue;
+            lastKey = dedupKey;
+
+            long tsMs = preloadParseTs(dateStr, timeStr);
+            if (tsMs <= 0) continue;
+
+            // 9:00 이전 봉 제외 (VWAP은 정규장 시작부터 누적)
+            LocalTime barTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(tsMs), KST_ZONE).toLocalTime();
+            if (barTime.isBefore(LocalTime.of(9, 0))) continue;
+
+            strategyEngine.record(symbol, open, high, low, close, volume, tsMs);
+            seeded++;
+        }
+        logger.info("[BAR_PRELOAD] {} : {} bars preloaded (total fetched: {})", symbol, seeded, allBars.size());
+    }
+
+    private String barStrField(Map<String, Object> m, String... keys) {
+        for (String k : keys) {
+            Object v = m.get(k);
+            if (v != null && !v.toString().isBlank()) return v.toString().trim();
+        }
+        return "";
+    }
+
+    private double barDoubleField(Map<String, Object> m, String... keys) {
+        for (String k : keys) {
+            Object v = m.get(k);
+            if (v != null) {
+                try { double d = Double.parseDouble(v.toString().trim()); if (d > 0) return d; }
+                catch (NumberFormatException ignored) {}
+            }
+        }
+        return 0.0;
+    }
+
+    private long preloadParseTs(String dateStr, String timeStr) {
+        try {
+            String d = dateStr.replaceAll("[^0-9]", "");
+            String t = timeStr.replaceAll("[^0-9]", "");
+            if (d.length() < 8 || t.length() < 6) return 0L;
+            return LocalDateTime.of(
+                    Integer.parseInt(d.substring(0, 4)),
+                    Integer.parseInt(d.substring(4, 6)),
+                    Integer.parseInt(d.substring(6, 8)),
+                    Integer.parseInt(t.substring(0, 2)),
+                    Integer.parseInt(t.substring(2, 4)),
+                    Integer.parseInt(t.substring(4, 6)))
+                    .atZone(KST_ZONE).toInstant().toEpochMilli();
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    private String preloadDecrOneMin(String hhmmss) {
+        try {
+            int h = Integer.parseInt(hhmmss.substring(0, 2));
+            int m = Integer.parseInt(hhmmss.substring(2, 4));
+            int totalMins = h * 60 + m - 1;
+            if (totalMins < 0) totalMins = 0;
+            return String.format("%02d%02d00", totalMins / 60, totalMins % 60);
+        } catch (Exception e) {
+            return "090000";
+        }
     }
 
     private void syncAllPositions(String reason) {
@@ -763,6 +901,10 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         }
 
         if (!passesRejectCooldown(symbol, command)) {
+            if ("SELL".equals(command.getType())) {
+                // 쿨다운 블록 시 StrategyEngine에 알려 sellPending 팬텀 방지
+                strategyEngine.notifySellRejected(symbol, "COOLDOWN_BLOCKED");
+            }
             return;
         }
 
@@ -1759,10 +1901,9 @@ public class SchedulerService implements InitializingBean, DisposableBean {
 
     private boolean isShortCooldownExit(String reason) {
         if (reason == null) return false;
-        return "TIME_STOP_SOFT".equals(reason)
-                || "TIME_STOP_HARD".equals(reason)
-                || "BREAKEVEN_GUARD".equals(reason)
+        return "BREAKEVEN_GUARD".equals(reason)
                 || "SELL_TIMEOUT_MARKET_RETRY".equals(reason)
+                || "EOD_FORCE_SELL".equals(reason)
                 || reason.startsWith("TRAIL_");
     }
 
@@ -2001,6 +2142,17 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         if (exec == null) return "Not Running: " + sym;
         logger.info("Scheduler stopped for {} -> state cleared", sym);
         return "Stopped " + sym;
+    }
+
+    /** 현재 실행 중인 모든 종목에 동일한 주문금액 적용 */
+    public synchronized int setBuyAmountAll(double amount) {
+        int count = 0;
+        for (String sym : schedulers.keySet()) {
+            strategyEngine.setBuyAmount(sym, amount);
+            count++;
+        }
+        logger.info("setBuyAmountAll: amount={} applied to {} symbols", amount, count);
+        return count;
     }
 
     public synchronized String stop() {

@@ -72,6 +72,9 @@ public class KisProperties {
     @Value("${kis.overseas.ordDvsnUsSellBestLimit:32}")
     private String overseasOrdDvsnUsSellBestLimit;
 
+    @Value("${kis.defaultBuyAmount:0}")
+    private double defaultBuyAmount;
+
     public String getEnv() {
         return env;
     }
@@ -184,6 +187,14 @@ public class KisProperties {
 
     public String getOverseasOrdDvsnUsSellBestLimit() {
         return overseasOrdDvsnUsSellBestLimit;
+    }
+
+    public double getDefaultBuyAmount() {
+        return defaultBuyAmount;
+    }
+
+    public synchronized void setDefaultBuyAmount(double amount) {
+        this.defaultBuyAmount = amount;
     }
 
     public boolean isConfigured() {

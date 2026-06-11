@@ -285,6 +285,14 @@ public class ApiController {
         return Map.of("status", autoTradingService.status(), "message", result);
     }
 
+    @PostMapping("/control/buyAmountAll")
+    public Map<String, Object> setBuyAmountAll(@RequestParam double amount) {
+        Double validated = validateBuyAmount(amount);
+        if (validated == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "amount는 필수입니다.");
+        int count = autoTradingService.setBuyAmountAll(validated);
+        return Map.of("status", autoTradingService.status(), "updated", count, "amount", validated);
+    }
+
     @PostMapping("/control/toggle")
     public Map<String, Object> toggleSymbol(
             @RequestParam("symbol")                         String  symbol,

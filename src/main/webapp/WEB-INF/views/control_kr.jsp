@@ -53,11 +53,25 @@ body{font-family:var(--mono);font-size:13px;color:var(--t1);}
 .logo-name b{color:var(--lime);}
 .logo-ver{font-size:7px;color:var(--t3);letter-spacing:1.2px;margin-top:1px;}
 .tb-sp{flex:1;}
+.tb-pill{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--emerald);
+  padding:3px 9px;border-radius:20px;background:var(--emerald-d);border:1px solid var(--emerald-b);letter-spacing:.5px;}
+.tb-dot-s{width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px rgba(0,224,122,.4);animation:chip-glow 1.4s ease-in-out infinite;}
 .tb-nav{display:flex;align-items:center;gap:2px;padding:0 8px;}
-.tb-a{font-size:9px;letter-spacing:.4px;padding:4px 8px;border-radius:var(--r);
+.tb-a{font-size:10px;letter-spacing:.4px;padding:5px 11px;border-radius:var(--r);
   border:1px solid transparent;background:transparent;color:var(--t2);cursor:pointer;transition:all .15s;text-decoration:none;}
 .tb-a:hover{background:var(--hover);border-color:var(--rim-hi);color:var(--t1);}
 .tb-a.cur{background:var(--lime-d);border-color:var(--lime-b);color:var(--lime);}
+.tb-login{display:flex;align-items:center;gap:5px;padding:0 10px;border-left:1px solid var(--rim);}
+.tb-login form{display:flex;align-items:center;gap:4px;}
+.tb-login input{height:24px;width:100px;background:var(--base);border:1px solid var(--rim-hi);
+  border-radius:var(--r);color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:9px;padding:0 7px;}
+.tb-login input::placeholder{color:var(--t3);}
+.tb-lbtn{height:24px;padding:0 9px;border-radius:var(--r);border:1px solid var(--lime-b);
+  background:var(--lime-d);color:var(--lime);font-family:'JetBrains Mono',monospace;font-size:9px;cursor:pointer;transition:all .15s;}
+.tb-lbtn:hover{background:var(--lime);color:var(--void);}
+.tb-login-st{display:none;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t2);}
+.tb-login-st .acc{color:var(--lime);}
+.tb-lerr{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--red);display:none;margin-left:3px;}
 .tb-mkt{display:flex;align-items:center;gap:3px;padding:0 12px;border-left:1px solid var(--rim);}
 .mkt-pill{font-size:9px;padding:3px 9px;border-radius:20px;border:1px solid var(--rim);color:var(--t2);background:var(--base);}
 .mkt-pill.kr{color:var(--lime);border-color:var(--lime-b);background:var(--lime-d);}
@@ -391,6 +405,7 @@ body{font-family:var(--mono);font-size:13px;color:var(--t1);}
     <div><div class="logo-name">AUTO<b>TRADE</b></div><div class="logo-ver">TERMINAL v2.0</div></div>
   </div>
   <div class="tb-sp"></div>
+  <div class="tb-pill"><div class="tb-dot-s"></div><span id="hdSt">—</span></div>
   <div class="tb-nav">
     <a class="tb-a" href="${pageContext.request.contextPath}/dashboard">Dashboard</a>
     <a class="tb-a cur" href="${pageContext.request.contextPath}/control/kr">Control·KR</a>
@@ -399,7 +414,19 @@ body{font-family:var(--mono);font-size:13px;color:var(--t1);}
     <a class="tb-a" href="${pageContext.request.contextPath}/history/orders">Orders</a>
     <a class="tb-a" href="${pageContext.request.contextPath}/balances">Balances</a>
     <a class="tb-a" href="${pageContext.request.contextPath}/watchlist">Watchlist</a>
-    <a class="tb-a" href="${pageContext.request.contextPath}/">Home</a>
+    <a class="tb-a" href="${pageContext.request.contextPath}/backtest">Backtest</a>
+  </div>
+  <div class="tb-login">
+    <form id="lf" autocomplete="off">
+      <input type="text" name="accountNo" placeholder="계좌번호" autocomplete="off" maxlength="20"/>
+      <input type="password" name="accountPassword" placeholder="Password" autocomplete="new-password" maxlength="50"/>
+      <button class="tb-lbtn" type="submit">Login</button>
+    </form>
+    <div class="tb-login-st" id="lst">
+      <span class="acc" id="lacc">****</span>
+      <button id="lob" type="button" class="tb-lbtn">Logout</button>
+    </div>
+    <div class="tb-lerr" id="lerr"></div>
   </div>
   <div class="tb-mkt"><span class="mkt-pill kr">KR</span></div>
   <div class="tb-clock">
@@ -646,6 +673,26 @@ function tick(){
   document.getElementById('clkD').textContent=n.getFullYear()+'.'+p2(n.getMonth()+1)+'.'+p2(n.getDate())+' '+DAYS[n.getDay()];
 }
 setInterval(tick,1000); tick();
+
+/* ── Login ── */
+(function(){
+  var _B='${pageContext.request.contextPath}';
+  var f=document.getElementById('lf'),sb=document.getElementById('lst');
+  var as=document.getElementById('lacc'),lb=document.getElementById('lob'),eb=document.getElementById('lerr');
+  var showIn=function(m){f.style.display='none';sb.style.display='inline-flex';eb.style.display='none';as.textContent=m||'****';};
+  var showOut=function(){sb.style.display='none';f.style.display='';eb.style.display='none';};
+  var showErr=function(m){eb.textContent=m||'';eb.style.display=m?'inline-flex':'none';};
+  fetch(_B+'/api/auth/status').then(function(r){return r.json();}).then(function(d){d&&d.loggedIn?showIn(d.accountMasked):showOut();}).catch(function(){showOut();});
+  f.addEventListener('submit',function(e){
+    e.preventDefault();
+    var no=(f.accountNo.value||'').trim(),pw=(f.accountPassword.value||'').trim();
+    if(!no||!pw)return;
+    fetch(_B+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({accountNo:no,accountPassword:pw}).toString()})
+      .then(function(r){return r.json();}).then(function(d){d.status==='OK'?showIn(d.accountMasked):showErr(d.message||'Login failed');})
+      .catch(function(){showErr('서버 오류');});
+  });
+  lb.addEventListener('click',function(){fetch(_B+'/api/auth/logout',{method:'POST'}).then(function(){showOut();});});
+})();
 
 /* ── 유틸 ── */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}

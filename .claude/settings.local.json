@@ -5,7 +5,22 @@
       "Bash(mvn compile *)",
       "Bash(mvn package *)",
       "Bash(\"D:/apache-maven-3.9.9/bin/mvn.cmd\" -DskipTests clean package)",
-      "Bash(echo \"EXIT_CODE=$?\")"
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "PowerShell($r = Invoke-WebRequest -Uri \"http://localhost:8080/auto-trading/\" -TimeoutSec 5 -ErrorAction SilentlyContinue; if \\($r\\) { \"HTTP $\\($r.StatusCode\\) - 실행 중\" } else { \"응답 없음 - 재시작 필요\" })",
+      "PowerShell(Start-Process cmd.exe -ArgumentList '/c', 'set CATALINA_HOME=D:\\\\apache-tomcat-9.0.115 && set JAVA_HOME=C:\\\\Program Files\\\\Java\\\\jdk-11 && set PATH=C:\\\\Program Files\\\\Java\\\\jdk-11\\\\bin;%PATH% && D:\\\\apache-tomcat-9.0.115\\\\bin\\\\startup.bat' -WorkingDirectory \"D:\\\\apache-tomcat-9.0.115\\\\bin\" -WindowStyle Normal)",
+      "PowerShell(Start-Sleep -Seconds 18; $r = Invoke-WebRequest -Uri \"http://localhost:8080/auto-trading/\" -TimeoutSec 5 -ErrorAction SilentlyContinue; if \\($r\\) { \"HTTP $\\($r.StatusCode\\) - OK\" } else { \"아직 기동 중\" })",
+      "PowerShell(Start-Process cmd.exe -ArgumentList '/k', 'cd /d c:\\\\workspace\\\\autotrading && redeploy.cmd' -WindowStyle Normal)",
+      "PowerShell(Start-Process cmd.exe -ArgumentList '/k', '\"c:\\\\workspace\\\\autotrading\\\\redeploy.cmd\"' -WorkingDirectory \"c:\\\\workspace\\\\autotrading\" -WindowStyle Normal)",
+      "Bash(Invoke-WebRequest -Uri \"http://localhost:8080/auto-trading/\" -TimeoutSec 5 -UseBasicParsing)",
+      "Bash(Select-Object -First 3)",
+      "Bash(git merge *)",
+      "PowerShell(Copy-Item \"target\\\\auto-trading.war\" \"D:\\\\apache-tomcat-9.0.115\\\\webapps\\\\auto-trading.war\" -Force)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8080/auto-trading/backtest\" -UseBasicParsing -TimeoutSec 10)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8080/auto-trading/backtest\" -UseBasicParsing -TimeoutSec 15)",
+      "PowerShell(& \"D:\\\\apache-tomcat-9.0.115\\\\bin\\\\startup.bat\" 2>&1)",
+      "PowerShell($env:CATALINA_HOME = \"D:\\\\apache-tomcat-9.0.115\"; & \"D:\\\\apache-tomcat-9.0.115\\\\bin\\\\startup.bat\")",
+      "PowerShell($env:CATALINA_HOME = \"D:\\\\apache-tomcat-9.0.115\"; $env:JRE_HOME = \"C:\\\\Program Files\\\\Java\\\\jdk-11\"; & \"D:\\\\apache-tomcat-9.0.115\\\\bin\\\\startup.bat\")",
+      "PowerShell($env:CATALINA_HOME = \"D:\\\\apache-tomcat-9.0.115\"; & \"$env:CATALINA_HOME\\\\bin\\\\shutdown.bat\" 2>&1; Start-Sleep -Seconds 3)"
     ]
   }
 }

@@ -49,4 +49,9 @@ public class AutoTradingServiceImpl implements AutoTradingService {
     public List<Map<String, String>> runningSymbols() {
         return schedulerService.runningSymbols();
     }
+
+    @Override
+    public int setBuyAmountAll(double amount) {
+        return schedulerService.setBuyAmountAll(amount);
+    }
 }
