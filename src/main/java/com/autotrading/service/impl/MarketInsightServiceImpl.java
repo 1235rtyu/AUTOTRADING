@@ -49,6 +49,11 @@ public class MarketInsightServiceImpl implements MarketInsightService {
         {"500000", ""}
     };
 
+    // ── 국내 랭킹 인메모리 캐시 (3분 TTL) ──────────────────────────────────
+    private volatile Map<String, Object> krRankingCache     = null;
+    private volatile long                krRankingCacheTime = 0L;
+    private static final long RANKING_CACHE_TTL_MS = 3 * 60_000L;
+
     public MarketInsightServiceImpl(KoreaInvestmentApiClient apiClient) {
         this.apiClient = apiClient;
     }
@@ -105,6 +110,13 @@ public class MarketInsightServiceImpl implements MarketInsightService {
                 "exchange", normalizeExchange(exchange),
                 "data",     List.of()
             );
+        }
+
+        // 캐시 유효 시 즉시 반환
+        long nowMs = System.currentTimeMillis();
+        if (krRankingCache != null && (nowMs - krRankingCacheTime) < RANKING_CACHE_TTL_MS) {
+            logger.debug("Ranking cache hit (age={}ms)", nowMs - krRankingCacheTime);
+            return krRankingCache;
         }
 
         // 코스피(0001)+코스닥(1001)에서 필터 통과 종목을 각각 40개씩 확보한다.
@@ -214,6 +226,8 @@ public class MarketInsightServiceImpl implements MarketInsightService {
         result.put("sourceRawCounts", sourceRawCounts);
         result.put("sourceSelectedCounts", sourceSelectedCounts);
         result.put("dedupCount", dedupMap.size());
+        krRankingCache     = result;
+        krRankingCacheTime = System.currentTimeMillis();
         return result;
     }
 

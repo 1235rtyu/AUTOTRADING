@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -61,6 +62,7 @@ public class ApiController {
     private final MarketInsightService marketInsightService;
     private final MonitorService      monitorService;
     private final PositionService     positionService;
+    private final JdbcTemplate        jdbcTemplate;
 
     public ApiController(DashboardService dashboardService,
                          HistoryService historyService,
@@ -68,7 +70,8 @@ public class ApiController {
                          AutoTradingService autoTradingService,
                          MarketInsightService marketInsightService,
                          MonitorService monitorService,
-                         PositionService positionService) {
+                         PositionService positionService,
+                         JdbcTemplate jdbcTemplate) {
         this.dashboardService    = dashboardService;
         this.historyService      = historyService;
         this.watchlistService    = watchlistService;
@@ -76,6 +79,7 @@ public class ApiController {
         this.marketInsightService= marketInsightService;
         this.monitorService      = monitorService;
         this.positionService     = positionService;
+        this.jdbcTemplate        = jdbcTemplate;
     }
 
     /* ════════════════════════════════════════════
@@ -754,6 +758,55 @@ public class ApiController {
             "cash",    pickString(data, "dnca_tot_amt", "ord_psbl_amt", "ord_psbl_cash", "cash"),
             "data",    data == null ? Map.of() : data
         );
+    }
+
+    /* ════════════════════════════════════════════
+       Top50 Cache
+    ════════════════════════════════════════════ */
+
+    @GetMapping("/top50/cache")
+    public Map<String, Object> getTop50Cache() {
+        try {
+            List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(
+                "SELECT rows_json, saved_at FROM tb_top50_cache WHERE id = 1 LIMIT 1"
+            );
+            if (dbRows.isEmpty()) {
+                return Map.of("status", "OK", "rows", List.of());
+            }
+            String json    = (String) dbRows.get(0).get("rows_json");
+            Object savedAt = dbRows.get(0).get("saved_at");
+            com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+            List<?> rows = om.readValue(json, List.class);
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("status",  "OK");
+            result.put("savedAt", savedAt != null ? savedAt.toString() : null);
+            result.put("rows",    rows);
+            return result;
+        } catch (Exception e) {
+            logger.error("top50/cache GET error", e);
+            return Map.of("status", "OK", "rows", List.of());
+        }
+    }
+
+    @PostMapping("/top50/cache")
+    public Map<String, Object> saveTop50Cache(@RequestBody Map<String, Object> body) {
+        try {
+            Object rowsObj = body.get("rows");
+            if (rowsObj == null) {
+                return Map.of("status", "ERROR", "message", "rows 필드 없음");
+            }
+            com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+            String json = om.writeValueAsString(rowsObj);
+            jdbcTemplate.update(
+                "INSERT INTO tb_top50_cache (id, rows_json) VALUES (1, ?) " +
+                "ON DUPLICATE KEY UPDATE rows_json = VALUES(rows_json), saved_at = CURRENT_TIMESTAMP",
+                json
+            );
+            return Map.of("status", "OK");
+        } catch (Exception e) {
+            logger.error("top50/cache POST error", e);
+            return Map.of("status", "ERROR", "message", "저장 실패");
+        }
     }
 
     /* ════════════════════════════════════════════

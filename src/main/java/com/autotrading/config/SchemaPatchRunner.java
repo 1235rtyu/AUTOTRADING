@@ -19,6 +19,7 @@ public class SchemaPatchRunner implements InitializingBean {
     public void afterPropertiesSet() {
         patchWatchlistExchangeColumn();
         patchWatchlistUniqueSymbol();
+        createTop50CacheTable();
     }
 
     private void patchWatchlistExchangeColumn() {
@@ -38,6 +39,22 @@ public class SchemaPatchRunner implements InitializingBean {
             logger.info("Schema patch applied: tb_auto_watchlist.exchange");
         } catch (Exception e) {
             logger.warn("Schema patch skipped for watchlist.exchange: {}", e.getMessage());
+        }
+    }
+
+    private void createTop50CacheTable() {
+        try {
+            jdbcTemplate.execute(
+                "CREATE TABLE IF NOT EXISTS tb_top50_cache (" +
+                "  id TINYINT NOT NULL DEFAULT 1," +
+                "  rows_json MEDIUMTEXT NOT NULL," +
+                "  saved_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
+                "  PRIMARY KEY (id)" +
+                ")"
+            );
+            logger.info("Schema: tb_top50_cache ready");
+        } catch (Exception e) {
+            logger.warn("Schema patch skipped for tb_top50_cache: {}", e.getMessage());
         }
     }
 

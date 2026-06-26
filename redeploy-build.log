@@ -6,7 +6,7 @@
 [INFO] --------------------------------[ war ]---------------------------------
 [INFO] 
 [INFO] --- clean:3.2.0:clean (default-clean) @ auto-trading ---
-[INFO] Deleting c:\workspace\autotrading\target
+[INFO] Deleting C:\workspace\autotrading\target
 [INFO] 
 [INFO] --- resources:3.3.1:resources (default-resources) @ auto-trading ---
 [INFO] Copying 6 resources from src\main\resources to target\classes
@@ -14,12 +14,12 @@
 [INFO] --- compiler:3.11.0:compile (default-compile) @ auto-trading ---
 [INFO] Changes detected - recompiling the module! :source
 [INFO] Compiling 69 source files with javac [debug target 11] to target\classes
-[WARNING] /c:/workspace/autotrading/src/main/java/com/autotrading/model/BacktestConfig.java:[124,19] deprecated item is not annotated with @Deprecated
-[INFO] /c:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: c:\workspace\autotrading\src\main\java\com\autotrading\market\KoreaInvestmentApiClient.java uses unchecked or unsafe operations.
-[INFO] /c:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: Recompile with -Xlint:unchecked for details.
+[WARNING] /C:/workspace/autotrading/src/main/java/com/autotrading/model/BacktestConfig.java:[139,19] deprecated item is not annotated with @Deprecated
+[INFO] /C:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: C:\workspace\autotrading\src\main\java\com\autotrading\market\KoreaInvestmentApiClient.java uses unchecked or unsafe operations.
+[INFO] /C:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: Recompile with -Xlint:unchecked for details.
 [INFO] 
 [INFO] --- resources:3.3.1:testResources (default-testResources) @ auto-trading ---
-[INFO] skip non existing resourceDirectory c:\workspace\autotrading\src\test\resources
+[INFO] skip non existing resourceDirectory C:\workspace\autotrading\src\test\resources
 [INFO] 
 [INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ auto-trading ---
 [INFO] Changes detected - recompiling the module! :dependency
@@ -29,13 +29,13 @@
 [INFO] 
 [INFO] --- war:3.3.2:war (default-war) @ auto-trading ---
 [INFO] Packaging webapp
-[INFO] Assembling webapp [auto-trading] in [c:\workspace\autotrading\target\auto-trading]
+[INFO] Assembling webapp [auto-trading] in [C:\workspace\autotrading\target\auto-trading]
 [INFO] Processing war project
-[INFO] Copying webapp resources [c:\workspace\autotrading\src\main\webapp]
-[INFO] Building war: c:\workspace\autotrading\target\auto-trading.war
+[INFO] Copying webapp resources [C:\workspace\autotrading\src\main\webapp]
+[INFO] Building war: C:\workspace\autotrading\target\auto-trading.war
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  5.749 s
-[INFO] Finished at: 2026-06-10T15:38:49+09:00
+[INFO] Total time:  7.821 s
+[INFO] Finished at: 2026-06-26T12:40:58+09:00
 [INFO] ------------------------------------------------------------------------

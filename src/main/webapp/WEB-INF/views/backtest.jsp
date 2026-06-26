@@ -335,6 +335,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
 .mb-early{background:rgba(176,127,255,.12);color:var(--purple);}
 .mb-sp{background:rgba(0,217,126,.12);color:var(--emerald);}
 .mb-vr{background:rgba(255,185,56,.12);color:var(--gold);}
+.mb-rsiBb{background:rgba(255,100,180,.12);color:#ff64b4;}
 .mb-unknown{background:var(--t4);color:var(--t2);}
 .exit-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;}
 .eb-tp{background:rgba(0,217,126,.12);color:var(--emerald);}
@@ -559,7 +560,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">최소 가격 (원/USD)</label>
-              <input type="number" class="f-input" id="p_minPrice" value="500" step="100" min="0">
+              <input type="number" class="f-input" id="p_minPrice" value="1000" step="100" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">VWAP Hard Limit %</label>
@@ -579,7 +580,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Buy Cooldown (초)</label>
-              <input type="number" class="f-input" id="p_buyCooldownSec" value="0" step="30" min="0">
+              <input type="number" class="f-input" id="p_buyCooldownSec" value="60" step="30" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Max Daily Entry</label>
@@ -591,7 +592,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
           </div>
           <div class="cb-row">
-            <input type="checkbox" id="p_useMarketFilter">
+            <input type="checkbox" id="p_useMarketFilter" checked>
             <label class="cb-label" for="p_useMarketFilter">Market Filter 사용 (시장 약세 차단)</label>
           </div>
         </div>
@@ -605,7 +606,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
         </div>
         <div class="acc-body is-open">
           <div class="mode-enable">
-            <input type="checkbox" id="p_enablePullback" checked>
+            <input type="checkbox" id="p_enablePullback">
             <label for="p_enablePullback">Enable PULLBACK</label>
           </div>
           <div class="acc-sub">진입 조건</div>
@@ -683,11 +684,11 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Min Score ≥</label>
-              <input type="number" class="f-input" id="p_breakoutMinScore" value="78" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_breakoutMinScore" value="83" step="1" min="0" max="100">
             </div>
             <div class="f-group">
               <label class="f-label">VWAP Gap %</label>
-              <input type="number" class="f-input" id="p_vwapMaxGapBreakoutPct" value="2.2" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vwapMaxGapBreakoutPct" value="1.5" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Retest Lower %</label>
@@ -717,11 +718,11 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Take Profit %</label>
-              <input type="number" class="f-input" id="p_breakoutTpPct" value="2.8" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_breakoutTpPct" value="2.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Start %</label>
-              <input type="number" class="f-input" id="p_breakoutTrailSt" value="2.3" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_breakoutTrailSt" value="1.8" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Drop %</label>
@@ -791,23 +792,23 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Pullback Min %</label>
-              <input type="number" class="f-input" id="p_spPullbackMinPct" value="1.2" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_spPullbackMinPct" value="0.8" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Pullback Max %</label>
-              <input type="number" class="f-input" id="p_spPullbackMaxPct" value="2.5" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_spPullbackMaxPct" value="3.8" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Vol3/Vol10 Max</label>
-              <input type="number" class="f-input" id="p_spVol3RatioMax" value="0.6" step="0.05" min="0">
+              <input type="number" class="f-input" id="p_spVol3RatioMax" value="0.7" step="0.05" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Body Ratio Min</label>
-              <input type="number" class="f-input" id="p_spBodyRatioMin" value="0.6" step="0.05" min="0">
+              <input type="number" class="f-input" id="p_spBodyRatioMin" value="0.4" step="0.05" min="0">
             </div>
             <div class="f-group" style="grid-column:span 2;">
               <label class="f-label">Min Score ≥</label>
-              <input type="number" class="f-input" id="p_spMinScore" value="85" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_spMinScore" value="83" step="1" min="0" max="100">
             </div>
           </div>
           <div class="acc-sub">청산 조건</div>
@@ -847,38 +848,148 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Lookback Bars</label>
-              <input type="number" class="f-input" id="p_vrLookbackBars" value="5" step="1" min="1">
+              <input type="number" class="f-input" id="p_vrLookbackBars" value="12" step="1" min="1">
             </div>
             <div class="f-group">
               <label class="f-label">Volume Mult ×</label>
-              <input type="number" class="f-input" id="p_vrVolMult" value="1.8" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vrVolMult" value="2.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Min Above VWAP Bars</label>
-              <input type="number" class="f-input" id="p_vrMinAboveVwapBars" value="3" step="1" min="1">
+              <input type="number" class="f-input" id="p_vrMinAboveVwapBars" value="5" step="1" min="1">
             </div>
-            <div class="f-group" style="grid-column:span 2;">
+            <div class="f-group">
               <label class="f-label">Min Score ≥</label>
-              <input type="number" class="f-input" id="p_vrMinScore" value="80" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_vrMinScore" value="87" step="1" min="0" max="100">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Max Score ≤</label>
+              <input type="number" class="f-input" id="p_vrMaxScore" value="88" step="1" min="0" max="100">
             </div>
           </div>
           <div class="acc-sub">청산 조건</div>
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Stop Loss %</label>
-              <input type="number" class="f-input" id="p_vrStopPct" value="1.5" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vrStopPct" value="1.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Take Profit %</label>
-              <input type="number" class="f-input" id="p_vrTpPct" value="2.0" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vrTpPct" value="2.2" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Start %</label>
-              <input type="number" class="f-input" id="p_vrTrailSt" value="1.5" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vrTrailSt" value="1.8" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Drop %</label>
               <input type="number" class="f-input" id="p_vrTrailDrop" value="1.0" step="0.1" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. RSI_BOLLINGER_REBOUND -->
+      <div class="acc-section">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-hdr-l"><div class="acc-dot" style="background:#b07fff;"></div>RSI BOLLINGER REBOUND</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="mode-enable">
+            <input type="checkbox" id="p_enableRsiBbRebound" checked>
+            <label for="p_enableRsiBbRebound">Enable RSI BOLLINGER REBOUND</label>
+          </div>
+          <div class="acc-sub">진입 조건</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">RSI 기간</label>
+              <input type="number" class="f-input" id="p_rsiBbRsiPeriod" value="14" step="1" min="5">
+            </div>
+            <div class="f-group">
+              <label class="f-label">RSI Signal 기간</label>
+              <input type="number" class="f-input" id="p_rsiBbSignalPeriod" value="9" step="1" min="3">
+            </div>
+            <div class="f-group">
+              <label class="f-label">BB 기간</label>
+              <input type="number" class="f-input" id="p_rsiBbPeriod" value="20" step="1" min="10">
+            </div>
+            <div class="f-group">
+              <label class="f-label">BB 표준편차 배수</label>
+              <input type="number" class="f-input" id="p_rsiBbStdMult" value="2.0" step="0.1" min="0.5">
+            </div>
+            <div class="f-group">
+              <label class="f-label">BB 하단 터치 버퍼 %</label>
+              <input type="number" class="f-input" id="p_rsiBbLowerTouchBufferPct" value="0.2" step="0.05" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">최대 하방 이탈 %</label>
+              <input type="number" class="f-input" id="p_rsiBbMaxBreakdownPct" value="0.5" step="0.05" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">VWAP 대비 최소 % (음수)</label>
+              <input type="number" class="f-input" id="p_rsiBbMinVwapPct" value="-0.5" step="0.1">
+            </div>
+            <div class="f-group">
+              <label class="f-label">RSI 저점 기준 ≤</label>
+              <input type="number" class="f-input" id="p_rsiBbRsiLowThreshold" value="45.0" step="1" min="20" max="60">
+            </div>
+            <div class="f-group" style="grid-column:span 2;">
+              <label class="f-label">Min Score ≥</label>
+              <input type="number" class="f-input" id="p_rsiBbMinScore" value="75" step="1" min="0" max="100">
+            </div>
+          </div>
+          <div class="acc-sub">청산 조건</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">Stop Loss %</label>
+              <input type="number" class="f-input" id="p_rsiBbStopPct" value="1.2" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Take Profit %</label>
+              <input type="number" class="f-input" id="p_rsiBbTpPct" value="1.6" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Start %</label>
+              <input type="number" class="f-input" id="p_rsiBbTrailSt" value="1.2" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Drop %</label>
+              <input type="number" class="f-input" id="p_rsiBbTrailDrop" value="0.6" step="0.1" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6-2. OPENING RANGE BREAKOUT -->
+      <div class="acc-section">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-hdr-l"><div class="acc-dot" style="background:#ff9f40;"></div>OPENING RANGE BREAKOUT (ORB)</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="mode-enable">
+            <input type="checkbox" id="p_enableOpeningRangeBreakout" checked>
+            <label for="p_enableOpeningRangeBreakout">Enable OPENING RANGE BREAKOUT</label>
+          </div>
+          <div class="acc-sub">개념: 09:00~09:10 고가 기록 → 09:10~10:30 고가+0.1% 돌파 + VWAP위 + 거래량2배 + 추세↑ 진입</div>
+          <div class="acc-sub">청산 조건</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">Stop Loss %</label>
+              <input type="number" class="f-input" id="p_orbStopPct" value="1.8" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Take Profit %</label>
+              <input type="number" class="f-input" id="p_orbTpPct" value="2.2" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Start %</label>
+              <input type="number" class="f-input" id="p_orbTrailSt" value="1.8" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Drop %</label>
+              <input type="number" class="f-input" id="p_orbTrailDrop" value="1.0" step="0.1" min="0">
             </div>
           </div>
         </div>
@@ -894,11 +1005,15 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Emergency Stop %</label>
-              <input type="number" class="f-input" id="p_emergencyStopPct" value="5.0" step="0.5" min="0">
+              <input type="number" class="f-input" id="p_emergencyStopPct" value="3.0" step="0.5" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">VWAP Break Buffer %</label>
-              <input type="number" class="f-input" id="p_vwapBreakBuffer" value="0.2" step="0.05" min="0">
+              <input type="number" class="f-input" id="p_vwapBreakBuffer" value="1.0" step="0.05" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">VWAP Break 유예 (초)</label>
+              <input type="number" class="f-input" id="p_vwapBreakGraceSec" value="480" step="30" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Breakeven Peak %</label>
@@ -906,7 +1021,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Breakeven Loss %</label>
-              <input type="number" class="f-input" id="p_breakevenLoss" value="-0.3" step="0.05">
+              <input type="number" class="f-input" id="p_breakevenLoss" value="-0.1" step="0.05">
             </div>
           </div>
           <div class="cb-row"><input type="checkbox" id="p_useVwapBreak" checked><label class="cb-label" for="p_useVwapBreak">VWAP Break 청산 사용</label></div>
@@ -1153,11 +1268,11 @@ document.addEventListener('click', function(e) {
 /* ── Params ── */
 const PARAM_DEFAULTS = {
   // 공통 진입
-  minHistoryBars:30, minHistoryMinutes:30, minPrice:500, vwapHardLimitPct:8.0,
+  minHistoryBars:30, minHistoryMinutes:30, minPrice:1000, vwapHardLimitPct:8.0,
   minTurnoverKrx:50000000, minAvgTurnoverKrx:30000000, minTurnoverUs:10000,
-  useMarketFilter:false, buyCooldownSec:0, maxDailyEntryCount:2, maxSamePatternEntry:1,
+  useMarketFilter:true, buyCooldownSec:60, maxDailyEntryCount:2, maxSamePatternEntry:1,
   // PULLBACK 활성
-  enablePullback:true,
+  enablePullback:false,
   // PULLBACK 진입
   pullbackMinScore:80, vwapMaxGapPullbackPct:1.0,
   pullbackUpperPct:1.0, pullbackLowerPct:2.0,
@@ -1169,11 +1284,11 @@ const PARAM_DEFAULTS = {
   // BREAKOUT 활성
   enableBreakout:true,
   // BREAKOUT 진입
-  breakoutMinScore:78, vwapMaxGapBreakoutPct:2.2,
+  breakoutMinScore:83, vwapMaxGapBreakoutPct:1.5,
   breakoutRetestLower:1.0, breakoutRetestUpper:0.1, breakoutStrongVolMult:2.0, breakoutKrxVolMult:1.8, volumeMult:1.5,
   breakoutRequireAcceleration:true, breakoutRequireMultiUptrend:true, breakoutOverheatBlock:true,
   // BREAKOUT 청산
-  breakoutStopPct:2.0, breakoutTpPct:2.8, breakoutTrailSt:2.3, breakoutTrailDrop:1.5,
+  breakoutStopPct:2.0, breakoutTpPct:2.0, breakoutTrailSt:1.8, breakoutTrailDrop:1.5,
   // EARLY_MOMENTUM 활성
   enableEarlyMomentum:false,
   // EARLY_MOMENTUM 진입
@@ -1183,19 +1298,31 @@ const PARAM_DEFAULTS = {
   // STRONG_PULLBACK 활성
   enableStrongPullback:true,
   // STRONG_PULLBACK 진입
-  spPullbackMinPct:1.2, spPullbackMaxPct:2.5,
-  spVwapMinAbovePct:0.2, spVol3RatioMax:0.6, spBodyRatioMin:0.6, spMinScore:85,
+  spPullbackMinPct:0.8, spPullbackMaxPct:3.8,
+  spVwapMinAbovePct:0.2, spVol3RatioMax:0.7, spBodyRatioMin:0.4, spMinScore:83,
   // STRONG_PULLBACK 청산
   spStopPct:1.8, spTpPct:3.0, spTrailSt:2.0, spTrailDrop:0.8,
   // VWAP_RECLAIM 활성
   enableVwapReclaim:true,
   // VWAP_RECLAIM 진입
-  vrLookbackBars:5, vrVolMult:1.8, vrMinAboveVwapBars:3, vrMinScore:80,
+  vrLookbackBars:12, vrVolMult:2.0, vrMinAboveVwapBars:5, vrMinScore:87, vrMaxScore:88,
   // VWAP_RECLAIM 청산
-  vrStopPct:1.5, vrTpPct:2.0, vrTrailSt:1.5, vrTrailDrop:1.0,
+  vrStopPct:1.0, vrTpPct:2.2, vrTrailSt:1.8, vrTrailDrop:1.0,
+  // RSI_BOLLINGER_REBOUND 활성
+  enableRsiBbRebound:true,
+  // RSI_BOLLINGER_REBOUND 진입
+  rsiBbRsiPeriod:14, rsiBbSignalPeriod:9, rsiBbPeriod:20, rsiBbStdMult:2.0,
+  rsiBbLowerTouchBufferPct:0.2, rsiBbMaxBreakdownPct:0.5, rsiBbMinVwapPct:-0.5, rsiBbRsiLowThreshold:45.0,
+  rsiBbMinScore:75,
+  // RSI_BOLLINGER_REBOUND 청산
+  rsiBbStopPct:1.2, rsiBbTpPct:1.6, rsiBbTrailSt:1.2, rsiBbTrailDrop:0.6,
+  // OPENING_RANGE_BREAKOUT 활성
+  enableOpeningRangeBreakout:true,
+  // OPENING_RANGE_BREAKOUT 청산
+  orbStopPct:1.8, orbTpPct:2.2, orbTrailSt:1.8, orbTrailDrop:1.0,
   // 공통 청산
-  emergencyStopPct:5.5, useVwapBreak:true, vwapBreakBuffer:0.5,
-  useBreakevenGuard:true, breakevenPeak:1.5, breakevenLoss:-0.3,
+  emergencyStopPct:3.0, useVwapBreak:true, vwapBreakBuffer:1.0, vwapBreakGraceSec:480,
+  useBreakevenGuard:true, breakevenPeak:1.5, breakevenLoss:-0.1,
   useFailedBreakout:true, useFailedPullback:true,
   useEodForceSell:true,
   // 진입 등급 필터
@@ -1831,6 +1958,17 @@ function rejectLabel(r) {
     'PULLBACK_COND_FAIL':      'PULLBACK 조건 불충족',
     'SP_COND_FAIL':            'STRONG_PULLBACK 조건 불충족',
     'VR_COND_FAIL':            'VWAP_RECLAIM 조건 불충족',
+    'RSI_BB_NOT_ENOUGH_HISTORY': 'RSI_BB 히스토리 부족',
+    'RSI_BB_BB_INVALID':         'RSI_BB 볼린저밴드 계산 불가',
+    'RSI_BB_RSI_INVALID':        'RSI_BB RSI 계산 불가',
+    'RSI_BB_NO_LOWER_TOUCH':     'RSI_BB 하단밴드 미터치',
+    'RSI_BB_RSI_NOT_LOW':        'RSI_BB RSI 저점 미달',
+    'RSI_BB_NO_RSI_CROSS':       'RSI_BB RSI 상향돌파 없음',
+    'RSI_BB_BROKEN_DOWN':        'RSI_BB 밴드 과하방 이탈',
+    'RSI_BB_TOO_FAR_BELOW_VWAP': 'RSI_BB VWAP 과리이탈',
+    'RSI_BB_DAY_DOWN_BLOCKED':   'RSI_BB 당일급락 차단',
+    'RSI_BB_SCORE_LOW':          'RSI_BB 점수 미달',
+    'RSI_BB_VOLUME_LOW':         'RSI_BB 거래량 미달',
     'BREAKOUT_RETEST_FAIL':    'BREAKOUT 재테스트 실패',
     'BREAKOUT_NO_MULTITREND':  'BREAKOUT 다중 상승추세 부재',
     'MOMENTUM_NO_MULTITREND':  'MOMENTUM 다중 상승추세 부재',
@@ -1986,11 +2124,11 @@ function fmtHold(sec) {
 function modeBadge(m) {
   const map = {
     PULLBACK:'mb-pullback', BREAKOUT:'mb-breakout', EARLY_MOMENTUM:'mb-early',
-    STRONG_PULLBACK:'mb-sp', VWAP_RECLAIM:'mb-vr'
+    STRONG_PULLBACK:'mb-sp', VWAP_RECLAIM:'mb-vr', RSI_BOLLINGER_REBOUND:'mb-rsiBb'
   };
   const lbl = {
     PULLBACK:'PULLBACK', BREAKOUT:'BREAKOUT', EARLY_MOMENTUM:'EARLY MOM',
-    STRONG_PULLBACK:'STR-PB', VWAP_RECLAIM:'VWP-RCLM'
+    STRONG_PULLBACK:'STR-PB', VWAP_RECLAIM:'VWP-RCLM', RSI_BOLLINGER_REBOUND:'RSI-BB'
   };
   return '<span class="mode-badge ' + (map[m]||'mb-unknown') + '">' + (lbl[m]||m||'?') + '</span>';
 }
@@ -2249,6 +2387,7 @@ var TOOLTIPS = {
   p_vrVolMult:          '현재 거래량 ≥ 최근 5봉 평균 × 이 배수\n(필수 조건 — 재탈환 강도 확인)',
   p_vrMinAboveVwapBars: 'VWAP 위에서 연속으로 마감한 최소 봉 수\n(필수 조건)',
   p_vrMinScore:         'VWAP재탈환 전략 최소 진입 점수 (0~100)\n4개 연속값 항목 합산 — 거래량/안착봉/이격/속도 강도 반영',
+  p_vrMaxScore:         'VWAP재탈환 전략 최대 진입 점수 (0~100)\n89점 PF 0.45 → 과열 직전 종목 차단',
   // VWAP_RECLAIM 청산
   p_vrStopPct:   '진입가 대비 손절 하락폭(%)',
   p_vrTpPct:     '진입가 대비 고정 익절 목표(%)\n0이면 비활성',

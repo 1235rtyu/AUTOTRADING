@@ -9,6 +9,44 @@ import java.util.List;
 
 public class MinuteBarHistory {
 
+    public static class FiveMinuteBar {
+        public final boolean valid;
+        public final double open;
+        public final double high;
+        public final double low;
+        public final double close;
+        public final double volume;
+        FiveMinuteBar(boolean valid, double open, double high, double low, double close, double volume) {
+            this.valid = valid; this.open = open; this.high = high;
+            this.low = low; this.close = close; this.volume = volume;
+        }
+    }
+
+    public static class BollingerBands {
+        public final boolean valid;
+        public final double middle;
+        public final double upper;
+        public final double lower;
+        public final double bandwidth;
+        BollingerBands(boolean valid, double middle, double upper, double lower, double bandwidth) {
+            this.valid = valid; this.middle = middle; this.upper = upper;
+            this.lower = lower; this.bandwidth = bandwidth;
+        }
+    }
+
+    public static class RsiResult {
+        public final boolean valid;
+        public final double rsi;
+        public final double rsiSignal;
+        public final double prevRsi;
+        public final double prevRsiSignal;
+        public final boolean crossedUp;
+        RsiResult(boolean valid, double rsi, double rsiSignal, double prevRsi, double prevRsiSignal, boolean crossedUp) {
+            this.valid = valid; this.rsi = rsi; this.rsiSignal = rsiSignal;
+            this.prevRsi = prevRsi; this.prevRsiSignal = prevRsiSignal; this.crossedUp = crossedUp;
+        }
+    }
+
     public static class MinuteBar {
         private final double open;
         private final double high;
@@ -334,5 +372,88 @@ public class MinuteBarHistory {
             list.add(bar);
         }
         return list;
+    }
+
+    public synchronized FiveMinuteBar latestFiveMinuteBar() {
+        List<MinuteBar> list = latestBars(5);
+        if (list.size() < 5) return new FiveMinuteBar(false, 0, 0, 0, 0, 0);
+        double open   = list.get(0).getOpen();
+        double high   = 0;
+        double low    = Double.MAX_VALUE;
+        double volume = 0;
+        for (MinuteBar b : list) {
+            if (b.getHigh() > high) high = b.getHigh();
+            if (b.getLow() < low) low = b.getLow();
+            volume += b.getVolume();
+        }
+        double close = list.get(list.size() - 1).getClose();
+        return new FiveMinuteBar(true, open, high, low == Double.MAX_VALUE ? 0 : low, close, volume);
+    }
+
+    public synchronized BollingerBands computeBollingerBands(int period, double mult) {
+        List<MinuteBar> list = latestBars(period);
+        if (list.size() < period) return new BollingerBands(false, 0, 0, 0, 0);
+        double sum = 0;
+        for (MinuteBar b : list) sum += b.getClose();
+        double middle = sum / period;
+        double variance = 0;
+        for (MinuteBar b : list) { double d = b.getClose() - middle; variance += d * d; }
+        double stddev = Math.sqrt(variance / period);
+        double upper = middle + mult * stddev;
+        double lower = middle - mult * stddev;
+        double bandwidth = middle > 0 ? (upper - lower) / middle : 0;
+        return new BollingerBands(true, middle, upper, lower, bandwidth);
+    }
+
+    public synchronized RsiResult computeRsiSignal(int rsiPeriod, int signalPeriod) {
+        int needed = rsiPeriod + signalPeriod + 1;
+        List<MinuteBar> list = latestBars(needed + 2);
+        if (list.size() < needed) return new RsiResult(false, 50, 50, 50, 50, false);
+
+        // close 배열
+        double[] closes = new double[list.size()];
+        for (int i = 0; i < list.size(); i++) closes[i] = list.get(i).getClose();
+
+        // Wilder RSI 계산
+        double[] gains = new double[closes.length - 1];
+        double[] losses = new double[closes.length - 1];
+        for (int i = 0; i < closes.length - 1; i++) {
+            double diff = closes[i + 1] - closes[i];
+            gains[i]  = diff > 0 ? diff : 0;
+            losses[i] = diff < 0 ? -diff : 0;
+        }
+
+        // 최초 평균 (단순 평균으로 시드)
+        double avgGain = 0, avgLoss = 0;
+        for (int i = 0; i < rsiPeriod; i++) { avgGain += gains[i]; avgLoss += losses[i]; }
+        avgGain /= rsiPeriod; avgLoss /= rsiPeriod;
+
+        // RSI 시리즈 빌드 (signalPeriod + 2개 필요)
+        int rsiNeeded = signalPeriod + 2;
+        double[] rsiSeries = new double[rsiNeeded];
+        int rsiIdx = 0;
+
+        for (int i = rsiPeriod; i < gains.length && rsiIdx < rsiNeeded; i++) {
+            avgGain = (avgGain * (rsiPeriod - 1) + gains[i]) / rsiPeriod;
+            avgLoss = (avgLoss * (rsiPeriod - 1) + losses[i]) / rsiPeriod;
+            double rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
+            rsiSeries[rsiIdx++] = 100 - (100 / (1 + rs));
+        }
+        if (rsiIdx < rsiNeeded) return new RsiResult(false, 50, 50, 50, 50, false);
+
+        // Signal (SMA of last signalPeriod RSI values)
+        double sigSum = 0;
+        for (int i = 0; i < signalPeriod; i++) sigSum += rsiSeries[i];
+        double prevRsiSignal = sigSum / signalPeriod;
+
+        double sigSum2 = 0;
+        for (int i = 1; i <= signalPeriod; i++) sigSum2 += rsiSeries[i];
+        double curRsiSignal = sigSum2 / signalPeriod;
+
+        double prevRsi = rsiSeries[signalPeriod - 1];
+        double curRsi  = rsiSeries[signalPeriod];
+
+        boolean crossedUp = prevRsi <= prevRsiSignal && curRsi > curRsiSignal;
+        return new RsiResult(true, curRsi, curRsiSignal, prevRsi, prevRsiSignal, crossedUp);
     }
 }

@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <title>Backtest · AUTOTRADE TERMINAL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --void:#060709;--base:#0a0c10;--surface:#0f1117;--panel:#141720;--panel-hi:#191d28;--hover:#1e2330;
@@ -16,8 +16,8 @@
   --blue:#4d9fff;--blue-d:rgba(77,159,255,.08);--blue-b:rgba(77,159,255,.25);
   --purple:#b07fff;--purple-d:rgba(176,127,255,.08);--purple-b:rgba(176,127,255,.22);
   --rim:rgba(255,255,255,.055);--rim-hi:rgba(255,255,255,.11);
-  --t1:#e8edf5;--t2:#7a8499;--t3:#3a4155;--t4:#1c2130;
-  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+  --t1:#f0f4ff;--t2:#c8d4e8;--t3:#8a96aa;--t4:#1c2130;
+  --mono:'JetBrains Mono',monospace;--sans:'Malgun Gothic','맑은 고딕',sans-serif;
   --r:6px;--r2:10px;--topbar-h:56px;--sidebar-w:510px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -89,7 +89,7 @@ html,body{height:100%;font-family:var(--sans);font-size:13px;color:var(--t1);bac
 .bt-content{flex:1;min-width:0;padding:28px 28px 72px;}
 
 /* FORM ELEMENTS */
-.f-label{font-family:var(--mono);font-size:9px;color:#c8d4e4;letter-spacing:1px;
+.f-label{font-family:var(--sans);font-size:10px;color:var(--t2);letter-spacing:.3px;
   text-transform:uppercase;margin-bottom:5px;display:block;}
 /* GLOBAL TOOLTIP */
 #_gtip{position:fixed;z-index:9999;background:#111d2d;color:#c0ccdc;border:1px solid #3a4e6a;
@@ -97,7 +97,7 @@ html,body{height:100%;font-family:var(--sans);font-size:13px;color:var(--t1);bac
   font-weight:normal;letter-spacing:0;text-transform:none;max-width:220px;line-height:1.55;
   pointer-events:none;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.5);white-space:pre-line;}
 .f-input{width:100%;height:32px;background:var(--base);border:1px solid var(--rim-hi);
-  border-radius:var(--r);color:var(--t1);font-family:var(--mono);font-size:11px;
+  border-radius:var(--r);color:var(--t1);font-family:var(--sans);font-size:12px;
   padding:0 10px;outline:none;transition:border-color .15s;}
 .f-input:focus{border-color:var(--lime-b);}
 .f-group{margin-bottom:12px;}
@@ -140,6 +140,50 @@ html,body{height:100%;font-family:var(--sans);font-size:13px;color:var(--t1);bac
 .btn-sym-add:hover{background:var(--hover);}
 .sym-count{font-family:var(--mono);font-size:9px;color:var(--t3);margin-left:2px;}
 
+/* TOP50 PANEL */
+.top50-panel{background:var(--base);border:1px solid var(--rim);border-radius:var(--r2);
+  margin-bottom:12px;overflow:hidden;}
+.top50-hd{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--rim);background:var(--panel);}
+.top50-title{font-family:var(--sans);font-size:11px;font-weight:700;color:var(--gold);}
+.top50-sel-info{font-family:var(--sans);font-size:10px;color:var(--t2);}
+.top50-ctrl{display:flex;align-items:center;gap:5px;padding:7px 10px;border-bottom:1px solid var(--rim);}
+.top50-ctrl input[type=number]{width:52px;height:26px;background:var(--panel-hi);
+  border:1px solid var(--rim-hi);border-radius:var(--r);color:var(--t1);
+  font-family:var(--sans);font-size:11px;padding:0 6px;text-align:center;}
+.top50-btn{height:26px;padding:0 10px;border-radius:var(--r);border:1px solid;
+  font-family:var(--sans);font-size:11px;cursor:pointer;transition:all .12s;white-space:nowrap;flex-shrink:0;}
+.top50-btn-add{background:var(--gold-d);border-color:var(--gold-b);color:var(--gold);}
+.top50-btn-add:hover{background:var(--gold);color:var(--void);}
+.top50-btn-clr{background:transparent;border-color:var(--rim-hi);color:var(--t2);}
+.top50-btn-clr:hover{border-color:var(--rim-hi);color:var(--t1);}
+.top50-btn-ref{background:transparent;border-color:var(--rim-hi);color:var(--t2);width:26px;padding:0;display:flex;align-items:center;justify-content:center;}
+.top50-btn-ref:hover{color:var(--t1);}
+.top50-list{max-height:260px;overflow-y:auto;}
+.top50-list::-webkit-scrollbar{width:3px;}
+.top50-list::-webkit-scrollbar-track{background:transparent;}
+.top50-list::-webkit-scrollbar-thumb{background:var(--t4);border-radius:2px;}
+.top50-row{display:flex;align-items:center;gap:0;padding:5px 10px;cursor:pointer;
+  border-bottom:1px solid var(--rim);transition:background .1s;}
+.top50-row:last-child{border-bottom:none;}
+.top50-row:hover{background:var(--hover);}
+.top50-row.sel{background:rgba(245,200,66,.09);border-bottom-color:rgba(245,200,66,.18);}
+.top50-rank{font-family:var(--mono);font-size:10px;color:var(--t2);min-width:20px;flex-shrink:0;}
+.top50-rank.r1{color:#ffd700;font-weight:700;}
+.top50-rank.r2{color:#c0c0c0;font-weight:700;}
+.top50-rank.r3{color:#cd7f32;font-weight:700;}
+.top50-sym{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--lime);min-width:58px;flex-shrink:0;}
+.top50-nm{font-family:var(--sans);font-size:11px;color:var(--t1);flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top50-rate{font-family:var(--mono);font-size:10px;min-width:46px;text-align:right;flex-shrink:0;}
+.top50-rate.up{color:var(--red);}
+.top50-rate.dn{color:var(--blue);}
+.top50-rate.fl{color:var(--t2);}
+.top50-chk{width:13px;height:13px;border-radius:3px;border:1px solid var(--rim-hi);
+  background:transparent;flex-shrink:0;margin-right:6px;display:flex;align-items:center;justify-content:center;}
+.top50-row.sel .top50-chk{background:var(--gold);border-color:var(--gold);}
+.top50-row.sel .top50-chk::after{content:'✓';font-size:9px;color:var(--void);font-weight:900;}
+
 /* PERIOD CHIPS */
 .period-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
 .chip{padding:4px 10px;border:1px solid var(--rim-hi);border-radius:20px;background:transparent;
@@ -159,7 +203,7 @@ html,body{height:100%;font-family:var(--sans);font-size:13px;color:var(--t1);bac
 /* PARAM GRID */
 .p-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
 .p-grid .f-group{margin-bottom:0;}
-.p-grid .f-input{font-size:10px;height:28px;}
+.p-grid .f-input{font-family:var(--sans);font-size:11px;height:28px;}
 
 /* BUTTONS */
 .btn{width:100%;height:36px;border-radius:var(--r);border:1px solid;font-family:var(--mono);
@@ -291,6 +335,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
 .mb-early{background:rgba(176,127,255,.12);color:var(--purple);}
 .mb-sp{background:rgba(0,217,126,.12);color:var(--emerald);}
 .mb-vr{background:rgba(255,185,56,.12);color:var(--gold);}
+.mb-rsiBb{background:rgba(255,100,180,.12);color:#ff64b4;}
 .mb-unknown{background:var(--t4);color:var(--t2);}
 .exit-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;}
 .eb-tp{background:rgba(0,217,126,.12);color:var(--emerald);}
@@ -331,10 +376,10 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
 /* ── ACCORDION ── */
 .acc-section{border:1px solid var(--rim);border-radius:var(--r);margin-bottom:5px;overflow:hidden;}
 .acc-header{padding:9px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
-  background:var(--panel-hi);font-family:var(--mono);font-size:9px;letter-spacing:1.2px;
-  text-transform:uppercase;color:#e0e8f4;user-select:none;transition:background .15s;}
+  background:var(--panel-hi);font-family:var(--sans);font-size:11px;letter-spacing:.3px;
+  color:var(--t1);user-select:none;transition:background .15s;}
 .acc-header:hover{background:var(--hover);}
-.acc-arrow{font-size:8px;transition:transform .2s;color:#8090a8;margin-left:6px;}
+.acc-arrow{font-size:8px;transition:transform .2s;color:var(--t2);margin-left:6px;}
 .acc-header.is-open .acc-arrow{transform:rotate(180deg);}
 .acc-body{display:none;padding:10px 12px 12px;border-top:1px solid var(--rim);}
 .acc-body.is-open{display:block;}
@@ -345,16 +390,16 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
 .mode-enable{display:flex;align-items:center;gap:9px;padding:7px 10px;
   background:var(--lime-d);border:1px solid var(--lime-b);border-radius:var(--r);margin-bottom:10px;}
 .mode-enable input[type=checkbox]{accent-color:var(--lime);width:15px;height:15px;cursor:pointer;}
-.mode-enable label{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--lime);cursor:pointer;}
+.mode-enable label{font-family:var(--sans);font-size:12px;font-weight:700;color:var(--lime);cursor:pointer;}
 
 /* Checkbox row */
 .cb-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
 .cb-row input[type=checkbox]{width:13px;height:13px;accent-color:var(--lime);cursor:pointer;flex-shrink:0;}
-.cb-label{font-family:var(--mono);font-size:10px;color:#dde6f4;cursor:pointer;line-height:1.4;}
+.cb-label{font-family:var(--sans);font-size:11px;color:var(--t1);cursor:pointer;line-height:1.4;}
 
 /* Accordion sub-section label */
-.acc-sub{font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;
-  color:var(--gold);margin:10px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.04);}
+.acc-sub{font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.5px;
+  color:var(--gold);margin:10px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.06);}
 
 /* Sidebar padding tighter in accordion */
 .acc-body .p-grid{margin-bottom:2px;}
@@ -443,6 +488,26 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
         </div>
       </div>
 
+      <!-- 거래대금 Top50 picker (KRX only) -->
+      <div class="top50-panel" id="top50Panel" style="display:none;">
+        <div class="top50-hd">
+          <span class="top50-title">거래대금 Top 50 · KRX</span>
+          <span class="top50-sel-info" id="top50SelInfo">선택 0</span>
+        </div>
+        <div class="top50-ctrl">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--t3);flex-shrink:0;">Top</span>
+          <input type="number" id="top50N" value="10" min="1" max="50">
+          <button class="top50-btn top50-btn-add" onclick="top50AddToSymbols()">종목 추가</button>
+          <button class="top50-btn top50-btn-clr" onclick="top50ClearSel()">해제</button>
+          <button class="top50-btn top50-btn-ref" onclick="fetchTop50()" title="새로고침">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
+        <div class="top50-list" id="top50List">
+          <div style="padding:12px 10px;font-size:9px;color:var(--t3);font-family:var(--mono);">로딩 중…</div>
+        </div>
+      </div>
+
       <!-- Period chips -->
       <div class="f-group">
         <label class="f-label">기간</label>
@@ -495,7 +560,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">최소 가격 (원/USD)</label>
-              <input type="number" class="f-input" id="p_minPrice" value="500" step="100" min="0">
+              <input type="number" class="f-input" id="p_minPrice" value="1000" step="100" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">VWAP Hard Limit %</label>
@@ -515,7 +580,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Buy Cooldown (초)</label>
-              <input type="number" class="f-input" id="p_buyCooldownSec" value="0" step="30" min="0">
+              <input type="number" class="f-input" id="p_buyCooldownSec" value="60" step="30" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Max Daily Entry</label>
@@ -527,7 +592,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
           </div>
           <div class="cb-row">
-            <input type="checkbox" id="p_useMarketFilter">
+            <input type="checkbox" id="p_useMarketFilter" checked>
             <label class="cb-label" for="p_useMarketFilter">Market Filter 사용 (시장 약세 차단)</label>
           </div>
         </div>
@@ -541,7 +606,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
         </div>
         <div class="acc-body is-open">
           <div class="mode-enable">
-            <input type="checkbox" id="p_enablePullback" checked>
+            <input type="checkbox" id="p_enablePullback">
             <label for="p_enablePullback">Enable PULLBACK</label>
           </div>
           <div class="acc-sub">진입 조건</div>
@@ -568,7 +633,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Velocity Short</label>
-              <input type="number" class="f-input" id="p_pullbackVelocityShort" value="0.0015" step="0.0001" min="0">
+              <input type="number" class="f-input" id="p_pullbackVelocityShort" value="0.0010" step="0.0001" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Velocity Mid</label>
@@ -619,11 +684,11 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Min Score ≥</label>
-              <input type="number" class="f-input" id="p_breakoutMinScore" value="78" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_breakoutMinScore" value="83" step="1" min="0" max="100">
             </div>
             <div class="f-group">
               <label class="f-label">VWAP Gap %</label>
-              <input type="number" class="f-input" id="p_vwapMaxGapBreakoutPct" value="2.2" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vwapMaxGapBreakoutPct" value="1.5" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Retest Lower %</label>
@@ -653,11 +718,11 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Take Profit %</label>
-              <input type="number" class="f-input" id="p_breakoutTpPct" value="2.8" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_breakoutTpPct" value="2.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Start %</label>
-              <input type="number" class="f-input" id="p_breakoutTrailSt" value="2.3" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_breakoutTrailSt" value="1.8" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Drop %</label>
@@ -731,15 +796,15 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Pullback Max %</label>
-              <input type="number" class="f-input" id="p_spPullbackMaxPct" value="2.5" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_spPullbackMaxPct" value="3.5" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Vol3/Vol10 Max</label>
-              <input type="number" class="f-input" id="p_spVol3RatioMax" value="0.6" step="0.05" min="0">
+              <input type="number" class="f-input" id="p_spVol3RatioMax" value="0.8" step="0.05" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Body Ratio Min</label>
-              <input type="number" class="f-input" id="p_spBodyRatioMin" value="0.6" step="0.05" min="0">
+              <input type="number" class="f-input" id="p_spBodyRatioMin" value="0.5" step="0.05" min="0">
             </div>
             <div class="f-group" style="grid-column:span 2;">
               <label class="f-label">Min Score ≥</label>
@@ -783,38 +848,114 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Lookback Bars</label>
-              <input type="number" class="f-input" id="p_vrLookbackBars" value="5" step="1" min="1">
+              <input type="number" class="f-input" id="p_vrLookbackBars" value="12" step="1" min="1">
             </div>
             <div class="f-group">
               <label class="f-label">Volume Mult ×</label>
-              <input type="number" class="f-input" id="p_vrVolMult" value="1.8" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vrVolMult" value="2.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Min Above VWAP Bars</label>
-              <input type="number" class="f-input" id="p_vrMinAboveVwapBars" value="3" step="1" min="1">
+              <input type="number" class="f-input" id="p_vrMinAboveVwapBars" value="5" step="1" min="1">
             </div>
-            <div class="f-group" style="grid-column:span 2;">
+            <div class="f-group">
               <label class="f-label">Min Score ≥</label>
-              <input type="number" class="f-input" id="p_vrMinScore" value="80" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_vrMinScore" value="87" step="1" min="0" max="100">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Max Score ≤</label>
+              <input type="number" class="f-input" id="p_vrMaxScore" value="88" step="1" min="0" max="100">
             </div>
           </div>
           <div class="acc-sub">청산 조건</div>
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Stop Loss %</label>
-              <input type="number" class="f-input" id="p_vrStopPct" value="1.5" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vrStopPct" value="1.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Take Profit %</label>
-              <input type="number" class="f-input" id="p_vrTpPct" value="2.0" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vrTpPct" value="2.2" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Start %</label>
-              <input type="number" class="f-input" id="p_vrTrailSt" value="1.5" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vrTrailSt" value="1.8" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Drop %</label>
               <input type="number" class="f-input" id="p_vrTrailDrop" value="1.0" step="0.1" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. RSI_BOLLINGER_REBOUND -->
+      <div class="acc-section">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-hdr-l"><div class="acc-dot" style="background:#b07fff;"></div>RSI BOLLINGER REBOUND</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="mode-enable">
+            <input type="checkbox" id="p_enableRsiBbRebound">
+            <label for="p_enableRsiBbRebound">Enable RSI BOLLINGER REBOUND</label>
+          </div>
+          <div class="acc-sub">진입 조건</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">RSI 기간</label>
+              <input type="number" class="f-input" id="p_rsiBbRsiPeriod" value="14" step="1" min="5">
+            </div>
+            <div class="f-group">
+              <label class="f-label">RSI Signal 기간</label>
+              <input type="number" class="f-input" id="p_rsiBbSignalPeriod" value="9" step="1" min="3">
+            </div>
+            <div class="f-group">
+              <label class="f-label">BB 기간</label>
+              <input type="number" class="f-input" id="p_rsiBbPeriod" value="20" step="1" min="10">
+            </div>
+            <div class="f-group">
+              <label class="f-label">BB 표준편차 배수</label>
+              <input type="number" class="f-input" id="p_rsiBbStdMult" value="2.0" step="0.1" min="0.5">
+            </div>
+            <div class="f-group">
+              <label class="f-label">BB 하단 터치 버퍼 %</label>
+              <input type="number" class="f-input" id="p_rsiBbLowerTouchBufferPct" value="0.2" step="0.05" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">최대 하방 이탈 %</label>
+              <input type="number" class="f-input" id="p_rsiBbMaxBreakdownPct" value="0.5" step="0.05" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">VWAP 대비 최소 % (음수)</label>
+              <input type="number" class="f-input" id="p_rsiBbMinVwapPct" value="-0.5" step="0.1">
+            </div>
+            <div class="f-group">
+              <label class="f-label">RSI 저점 기준 ≤</label>
+              <input type="number" class="f-input" id="p_rsiBbRsiLowThreshold" value="45.0" step="1" min="20" max="60">
+            </div>
+            <div class="f-group" style="grid-column:span 2;">
+              <label class="f-label">Min Score ≥</label>
+              <input type="number" class="f-input" id="p_rsiBbMinScore" value="75" step="1" min="0" max="100">
+            </div>
+          </div>
+          <div class="acc-sub">청산 조건</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">Stop Loss %</label>
+              <input type="number" class="f-input" id="p_rsiBbStopPct" value="1.0" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Take Profit %</label>
+              <input type="number" class="f-input" id="p_rsiBbTpPct" value="1.8" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Start %</label>
+              <input type="number" class="f-input" id="p_rsiBbTrailSt" value="1.4" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Drop %</label>
+              <input type="number" class="f-input" id="p_rsiBbTrailDrop" value="0.7" step="0.1" min="0">
             </div>
           </div>
         </div>
@@ -830,11 +971,15 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Emergency Stop %</label>
-              <input type="number" class="f-input" id="p_emergencyStopPct" value="5.0" step="0.5" min="0">
+              <input type="number" class="f-input" id="p_emergencyStopPct" value="3.0" step="0.5" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">VWAP Break Buffer %</label>
-              <input type="number" class="f-input" id="p_vwapBreakBuffer" value="0.2" step="0.05" min="0">
+              <input type="number" class="f-input" id="p_vwapBreakBuffer" value="1.0" step="0.05" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">VWAP Break 유예 (초)</label>
+              <input type="number" class="f-input" id="p_vwapBreakGraceSec" value="480" step="30" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Breakeven Peak %</label>
@@ -842,7 +987,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Breakeven Loss %</label>
-              <input type="number" class="f-input" id="p_breakevenLoss" value="-0.3" step="0.05">
+              <input type="number" class="f-input" id="p_breakevenLoss" value="-0.1" step="0.05">
             </div>
           </div>
           <div class="cb-row"><input type="checkbox" id="p_useVwapBreak" checked><label class="cb-label" for="p_useVwapBreak">VWAP Break 청산 사용</label></div>
@@ -940,7 +1085,89 @@ function setMarket(mkt) {
   symbols = []; renderTags();
   document.getElementById('amtLabel').textContent  = mkt === 'KRX' ? '주문금액 (원)' : '주문금액 (USD)';
   hideDropdown();
+  // Top50 패널은 KRX에서만 표시
+  var panel = document.getElementById('top50Panel');
+  if (mkt === 'KRX') { panel.style.display = 'block'; fetchTop50(); }
+  else               { panel.style.display = 'none'; }
 }
+
+/* ── Top50 Picker ── */
+var top50Rows = [];
+var top50Sel  = new Set();
+
+function renderTop50() {
+  var wrap = document.getElementById('top50List');
+  var info = document.getElementById('top50SelInfo');
+  info.textContent = '선택 ' + top50Sel.size;
+  if (!top50Rows.length) {
+    wrap.innerHTML = '<div style="padding:12px 10px;font-size:9px;color:var(--t3);font-family:var(--mono);">데이터 없음</div>';
+    return;
+  }
+  wrap.innerHTML = top50Rows.map(function(r, i) {
+    var sym  = String(r.symbol || '');
+    var nm   = r.name || sym;
+    var rate = Number(r.prdy_ctrt || 0);
+    var rc   = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
+    var sel  = top50Sel.has(sym);
+    var rateClass = rate > 0 ? 'up' : rate < 0 ? 'dn' : 'fl';
+    var rateStr   = (rate > 0 ? '+' : '') + rate.toFixed(2) + '%';
+    var price = Number(r.stck_prpr || 0);
+    return '<div class="top50-row' + (sel ? ' sel' : '') + '" onclick="top50Toggle(\'' + sym.replace(/'/g,"\\'")+  '\')">'
+      + '<div class="top50-chk"></div>'
+      + '<span class="top50-rank ' + rc + '">' + (i + 1) + '</span>'
+      + '<span class="top50-sym">' + sym + '</span>'
+      + '<span class="top50-nm" title="' + nm.replace(/"/g,'&quot;') + '">' + nm + '</span>'
+      + '<span class="top50-rate ' + rateClass + '">' + rateStr + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function top50Toggle(sym) {
+  if (!sym) return;
+  top50Sel.has(sym) ? top50Sel.delete(sym) : top50Sel.add(sym);
+  renderTop50();
+}
+
+function fetchTop50() {
+  fetch(ctx + '/api/market/ranking?market=KR&exch=KRX')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      top50Rows = (d.data || d.output || []).slice(0, 50);
+      // 이전 선택 중 랭킹에서 빠진 종목 자동 해제
+      var symsInRank = new Set(top50Rows.map(function(r){ return String(r.symbol||''); }));
+      top50Sel.forEach(function(s){ if (!symsInRank.has(s)) top50Sel.delete(s); });
+      renderTop50();
+    })
+    .catch(function() { top50Rows = []; renderTop50(); });
+}
+
+function top50ClearSel() {
+  top50Sel.clear();
+  renderTop50();
+}
+
+function top50AddToSymbols() {
+  var n = parseInt(document.getElementById('top50N').value, 10) || 10;
+  n = Math.min(Math.max(n, 1), 50);
+  // 선택된 게 있으면 선택 우선, 없으면 Top N 자동 선택
+  var toAdd;
+  if (top50Sel.size > 0) {
+    toAdd = Array.from(top50Sel);
+  } else {
+    toAdd = top50Rows.slice(0, n).map(function(r){ return String(r.symbol || ''); });
+  }
+  toAdd = toAdd.filter(function(s){ return /^\d{5,6}$/.test(s); });
+  if (!toAdd.length) { toast('추가할 종목이 없습니다', 'err'); return; }
+  toAdd.forEach(function(s){ addSymbol(s); });
+  toast(toAdd.length + '개 종목 추가됨', 'ok');
+}
+
+// 초기 로드 시 KRX가 기본 선택이므로 바로 패널 표시 및 데이터 fetch
+(function() {
+  document.getElementById('top50Panel').style.display = 'block';
+  fetchTop50();
+  setInterval(fetchTop50, 60000);
+})();
 
 /* ── Period ── */
 function setPeriod(days, el) {
@@ -1007,15 +1234,15 @@ document.addEventListener('click', function(e) {
 /* ── Params ── */
 const PARAM_DEFAULTS = {
   // 공통 진입
-  minHistoryBars:30, minHistoryMinutes:30, minPrice:500, vwapHardLimitPct:8.0,
+  minHistoryBars:30, minHistoryMinutes:30, minPrice:1000, vwapHardLimitPct:8.0,
   minTurnoverKrx:50000000, minAvgTurnoverKrx:30000000, minTurnoverUs:10000,
-  useMarketFilter:false, buyCooldownSec:0, maxDailyEntryCount:2, maxSamePatternEntry:1,
+  useMarketFilter:true, buyCooldownSec:60, maxDailyEntryCount:2, maxSamePatternEntry:1,
   // PULLBACK 활성
-  enablePullback:true,
+  enablePullback:false,
   // PULLBACK 진입
   pullbackMinScore:80, vwapMaxGapPullbackPct:1.0,
   pullbackUpperPct:1.0, pullbackLowerPct:2.0,
-  pullbackVolumeMult:1.0, pullbackVelocityShort:0.0015, pullbackVelocityMid:0.0,
+  pullbackVolumeMult:1.0, pullbackVelocityShort:0.0010, pullbackVelocityMid:0.0,
   pullbackRequiredBullishBars:1,
   pullbackRequireAboveVwap:true, pullbackRequireVwapSlope:true, pullbackRequireRecentHighBreakout:false,
   // PULLBACK 청산
@@ -1023,11 +1250,11 @@ const PARAM_DEFAULTS = {
   // BREAKOUT 활성
   enableBreakout:true,
   // BREAKOUT 진입
-  breakoutMinScore:78, vwapMaxGapBreakoutPct:2.2,
-  breakoutRetestLower:1.0, breakoutRetestUpper:0.1, breakoutStrongVolMult:2.0, volumeMult:1.5,
+  breakoutMinScore:83, vwapMaxGapBreakoutPct:1.5,
+  breakoutRetestLower:1.0, breakoutRetestUpper:0.1, breakoutStrongVolMult:2.0, breakoutKrxVolMult:1.8, volumeMult:1.5,
   breakoutRequireAcceleration:true, breakoutRequireMultiUptrend:true, breakoutOverheatBlock:true,
   // BREAKOUT 청산
-  breakoutStopPct:2.0, breakoutTpPct:2.8, breakoutTrailSt:2.3, breakoutTrailDrop:1.5,
+  breakoutStopPct:2.0, breakoutTpPct:2.0, breakoutTrailSt:1.8, breakoutTrailDrop:1.5,
   // EARLY_MOMENTUM 활성
   enableEarlyMomentum:false,
   // EARLY_MOMENTUM 진입
@@ -1037,19 +1264,27 @@ const PARAM_DEFAULTS = {
   // STRONG_PULLBACK 활성
   enableStrongPullback:true,
   // STRONG_PULLBACK 진입
-  spPullbackMinPct:1.2, spPullbackMaxPct:2.5,
-  spVwapMinAbovePct:0.2, spVol3RatioMax:0.6, spBodyRatioMin:0.6, spMinScore:85,
+  spPullbackMinPct:1.2, spPullbackMaxPct:3.5,
+  spVwapMinAbovePct:0.2, spVol3RatioMax:0.8, spBodyRatioMin:0.5, spMinScore:85,
   // STRONG_PULLBACK 청산
   spStopPct:1.8, spTpPct:3.0, spTrailSt:2.0, spTrailDrop:0.8,
   // VWAP_RECLAIM 활성
   enableVwapReclaim:true,
   // VWAP_RECLAIM 진입
-  vrLookbackBars:5, vrVolMult:1.8, vrMinAboveVwapBars:3, vrMinScore:80,
+  vrLookbackBars:12, vrVolMult:2.0, vrMinAboveVwapBars:5, vrMinScore:87, vrMaxScore:88,
   // VWAP_RECLAIM 청산
-  vrStopPct:1.5, vrTpPct:2.0, vrTrailSt:1.5, vrTrailDrop:1.0,
+  vrStopPct:1.0, vrTpPct:2.2, vrTrailSt:1.8, vrTrailDrop:1.0,
+  // RSI_BOLLINGER_REBOUND 활성
+  enableRsiBbRebound:false,
+  // RSI_BOLLINGER_REBOUND 진입
+  rsiBbRsiPeriod:14, rsiBbSignalPeriod:9, rsiBbPeriod:20, rsiBbStdMult:2.0,
+  rsiBbLowerTouchBufferPct:0.2, rsiBbMaxBreakdownPct:0.5, rsiBbMinVwapPct:-0.5, rsiBbRsiLowThreshold:45.0,
+  rsiBbMinScore:75,
+  // RSI_BOLLINGER_REBOUND 청산
+  rsiBbStopPct:1.0, rsiBbTpPct:1.8, rsiBbTrailSt:1.4, rsiBbTrailDrop:0.7,
   // 공통 청산
-  emergencyStopPct:5.5, useVwapBreak:true, vwapBreakBuffer:0.5,
-  useBreakevenGuard:true, breakevenPeak:1.5, breakevenLoss:-0.3,
+  emergencyStopPct:3.0, useVwapBreak:true, vwapBreakBuffer:1.0, vwapBreakGraceSec:480,
+  useBreakevenGuard:true, breakevenPeak:1.5, breakevenLoss:-0.1,
   useFailedBreakout:true, useFailedPullback:true,
   useEodForceSell:true,
   // 진입 등급 필터
@@ -1685,6 +1920,17 @@ function rejectLabel(r) {
     'PULLBACK_COND_FAIL':      'PULLBACK 조건 불충족',
     'SP_COND_FAIL':            'STRONG_PULLBACK 조건 불충족',
     'VR_COND_FAIL':            'VWAP_RECLAIM 조건 불충족',
+    'RSI_BB_NOT_ENOUGH_HISTORY': 'RSI_BB 히스토리 부족',
+    'RSI_BB_BB_INVALID':         'RSI_BB 볼린저밴드 계산 불가',
+    'RSI_BB_RSI_INVALID':        'RSI_BB RSI 계산 불가',
+    'RSI_BB_NO_LOWER_TOUCH':     'RSI_BB 하단밴드 미터치',
+    'RSI_BB_RSI_NOT_LOW':        'RSI_BB RSI 저점 미달',
+    'RSI_BB_NO_RSI_CROSS':       'RSI_BB RSI 상향돌파 없음',
+    'RSI_BB_BROKEN_DOWN':        'RSI_BB 밴드 과하방 이탈',
+    'RSI_BB_TOO_FAR_BELOW_VWAP': 'RSI_BB VWAP 과리이탈',
+    'RSI_BB_DAY_DOWN_BLOCKED':   'RSI_BB 당일급락 차단',
+    'RSI_BB_SCORE_LOW':          'RSI_BB 점수 미달',
+    'RSI_BB_VOLUME_LOW':         'RSI_BB 거래량 미달',
     'BREAKOUT_RETEST_FAIL':    'BREAKOUT 재테스트 실패',
     'BREAKOUT_NO_MULTITREND':  'BREAKOUT 다중 상승추세 부재',
     'MOMENTUM_NO_MULTITREND':  'MOMENTUM 다중 상승추세 부재',
@@ -1840,11 +2086,11 @@ function fmtHold(sec) {
 function modeBadge(m) {
   const map = {
     PULLBACK:'mb-pullback', BREAKOUT:'mb-breakout', EARLY_MOMENTUM:'mb-early',
-    STRONG_PULLBACK:'mb-sp', VWAP_RECLAIM:'mb-vr'
+    STRONG_PULLBACK:'mb-sp', VWAP_RECLAIM:'mb-vr', RSI_BOLLINGER_REBOUND:'mb-rsiBb'
   };
   const lbl = {
     PULLBACK:'PULLBACK', BREAKOUT:'BREAKOUT', EARLY_MOMENTUM:'EARLY MOM',
-    STRONG_PULLBACK:'STR-PB', VWAP_RECLAIM:'VWP-RCLM'
+    STRONG_PULLBACK:'STR-PB', VWAP_RECLAIM:'VWP-RCLM', RSI_BOLLINGER_REBOUND:'RSI-BB'
   };
   return '<span class="mode-badge ' + (map[m]||'mb-unknown') + '">' + (lbl[m]||m||'?') + '</span>';
 }
@@ -2103,6 +2349,7 @@ var TOOLTIPS = {
   p_vrVolMult:          '현재 거래량 ≥ 최근 5봉 평균 × 이 배수\n(필수 조건 — 재탈환 강도 확인)',
   p_vrMinAboveVwapBars: 'VWAP 위에서 연속으로 마감한 최소 봉 수\n(필수 조건)',
   p_vrMinScore:         'VWAP재탈환 전략 최소 진입 점수 (0~100)\n4개 연속값 항목 합산 — 거래량/안착봉/이격/속도 강도 반영',
+  p_vrMaxScore:         'VWAP재탈환 전략 최대 진입 점수 (0~100)\n89점 PF 0.45 → 과열 직전 종목 차단',
   // VWAP_RECLAIM 청산
   p_vrStopPct:   '진입가 대비 손절 하락폭(%)',
   p_vrTpPct:     '진입가 대비 고정 익절 목표(%)\n0이면 비활성',

@@ -1,0 +1,815 @@
+2026-06-17 13:17:01 INFO  BUY amount set for 402340: 10000000.00
+2026-06-17 13:17:01 INFO  BUY [KRX] 402340 mode=VWAP_RECLAIM price=513000.0000 qty=19 size=1.0000x score=85[A](CONV) | WHY: dayChg=1.99% vrScore=86 aboveBars=11 hadBelow=true vol/vol5=2.93x | VWAP: 0.80%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.59%/0.59%/0.39% accel=false | VOL: 5025.0000/1328.8000 TO: 2577825000.0000/678757350.0000 | HIGH: 513000.0000 fromHigh=0.00% | VR: score=86 aboveBars=11 hadBelow=true vol/vol5=2.93x | entryNo=1
+2026-06-17 13:17:01 INFO  BUY_FILLED 402340 phase=HOLDING
+2026-06-17 13:17:01 INFO  SELL [EOD_FORCE_SELL] 402340 pnl=-0.58% time=15:30
+2026-06-17 13:17:01 INFO  SELL_EXECUTED [KRX] 402340 mode=VWAP_RECLAIM phase=EXITING exitType=TIMESTOP price=510000.0000 qty=19 reason=EOD_FORCE_SELL pnl=-0.58% peakPnl=-0.19% holdMs=3480000 high=512000.0000 avgPrice=513000.0000 weightedPnl=-0.57% (pending fill)
+2026-06-17 13:17:01 INFO  SELL_FILLED_PNL 402340 reason=EOD_FORCE_SELL filledQty=19/19 fillRatio=1.00 weightedPnl=-0.57% dailyPnl=-0.57%
+2026-06-17 13:17:01 INFO  SELL_FILLED 402340 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:01 INFO  BUY [KRX] 402340 mode=VWAP_RECLAIM price=576000.0000 qty=17 size=1.0000x score=62[D] | WHY: dayChg=3.23% vrScore=83 aboveBars=9 hadBelow=true vol/vol5=2.29x | VWAP: 1.48%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.52%/0.70%/1.05% accel=false | VOL: 4552.0000/2403.2500 TO: 2621952000.0000/1369912175.0000 | HIGH: 576000.0000 fromHigh=0.00% | VR: score=83 aboveBars=9 hadBelow=true vol/vol5=2.29x | entryNo=1
+2026-06-17 13:17:01 INFO  BUY_FILLED 402340 phase=HOLDING
+2026-06-17 13:17:01 INFO  SELL_EXECUTED [KRX] 402340 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=567000.0000 qty=17 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.56% peakPnl=0.17% holdMs=3120000 high=577000.0000 avgPrice=576000.0000 weightedPnl=-1.53% (pending fill)
+2026-06-17 13:17:01 INFO  SELL_FILLED_PNL 402340 reason=STOP_LOSS_VWAP_RECLAIM filledQty=17/17 fillRatio=1.00 weightedPnl=-1.53% dailyPnl=-1.53%
+2026-06-17 13:17:01 INFO  SELL_FILLED 402340 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:01 INFO  BUY [KRX] 402340 mode=VWAP_RECLAIM price=578000.0000 qty=17 size=1.0000x score=72[D] | WHY: dayChg=1.05% vrScore=85 aboveBars=9 hadBelow=true vol/vol5=2.32x | VWAP: 0.98%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.70%/0.87%/1.05% accel=false | VOL: 3347.0000/1756.7500 TO: 1934566000.0000/1005872700.0000 | HIGH: 578000.0000 fromHigh=0.00% | VR: score=85 aboveBars=9 hadBelow=true vol/vol5=2.32x | entryNo=1
+2026-06-17 13:17:01 INFO  BUY_FILLED 402340 phase=HOLDING
+2026-06-17 13:17:01 INFO  SELL_EXECUTED [KRX] 402340 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=571000.0000 qty=17 reason=VWAP_BREAK pnl=-1.21% peakPnl=-0.35% holdMs=660000 high=576000.0000 avgPrice=578000.0000 weightedPnl=-1.19% (pending fill)
+2026-06-17 13:17:01 INFO  SELL_FILLED_PNL 402340 reason=VWAP_BREAK filledQty=17/17 fillRatio=1.00 weightedPnl=-1.19% dailyPnl=-1.19%
+2026-06-17 13:17:01 INFO  SELL_FILLED 402340 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:01 INFO  BUY [KRX] 402340 mode=BREAKOUT price=679000.0000 qty=14 size=1.0000x score=78[C] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.28x) | VWAP: 1.02%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.44%/0.30%/0.44% accel=true | VOL: 3799.0000/1159.9000 TO: 2579521000.0000/785892725.0000 | HIGH: 680000.0000 fromHigh=-0.15% | entryNo=1
+2026-06-17 13:17:01 INFO  BUY_FILLED 402340 phase=HOLDING
+2026-06-17 13:17:01 INFO  SELL_EXECUTED [KRX] 402340 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=675000.0000 qty=14 reason=VWAP_BREAK pnl=-0.59% peakPnl=0.59% holdMs=4860000 high=683000.0000 avgPrice=679000.0000 weightedPnl=-0.56% (pending fill)
+2026-06-17 13:17:01 INFO  SELL_FILLED_PNL 402340 reason=VWAP_BREAK filledQty=14/14 fillRatio=1.00 weightedPnl=-0.56% dailyPnl=-0.56%
+2026-06-17 13:17:01 INFO  SELL_FILLED 402340 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:02 INFO  BUY [KRX] 402340 mode=BREAKOUT price=1263000.0000 qty=7 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.60x) | VWAP: 1.39%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.64%/0.48%/0.56% accel=true | VOL: 5019.0000/1929.2500 TO: 6338997000.0000/2422925650.0000 | HIGH: 1266000.0000 fromHigh=-0.24% | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 402340 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 402340 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=1240000.0000 qty=7 reason=VWAP_BREAK pnl=-1.82% peakPnl=-0.16% holdMs=4020000 high=1261000.0000 avgPrice=1263000.0000 weightedPnl=-1.61% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 402340 reason=VWAP_BREAK filledQty=7/7 fillRatio=1.00 weightedPnl=-1.61% dailyPnl=-1.61%
+2026-06-17 13:17:02 INFO  SELL_FILLED 402340 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:02 INFO  BUY amount set for 080220: 10000000.00
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=BREAKOUT price=43450.0000 qty=184 size=0.8000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.10x) | VWAP: 1.15%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=2.00%/1.76%/1.52% accel=true | VOL: 30633.0000/14592.0000 TO: 1331003850.0000/626787116.6667 | HIGH: 43500.0000 fromHigh=-0.11% | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=42850.0000 qty=184 reason=VWAP_BREAK pnl=-1.38% peakPnl=1.04% holdMs=1500000 high=43900.0000 avgPrice=43450.0000 weightedPnl=-1.10% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=VWAP_BREAK filledQty=184/184 fillRatio=1.00 weightedPnl=-1.10% dailyPnl=-1.10%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=BREAKOUT price=44100.0000 qty=226 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.55x) | VWAP: 0.84%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.92%/0.57%/0.46% accel=true | VOL: 32005.0000/12545.2353 TO: 1411420500.0000/548663025.0000 | HIGH: 44150.0000 fromHigh=-0.11% | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=43950.0000 qty=226 reason=VWAP_BREAK pnl=-0.34% peakPnl=1.47% holdMs=6960000 high=44750.0000 avgPrice=44100.0000 weightedPnl=-0.34% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=VWAP_BREAK filledQty=226/226 fillRatio=1.00 weightedPnl=-0.34% dailyPnl=-0.34%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=BREAKOUT price=40000.0000 qty=250 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.81x) | VWAP: 1.37%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.50%/0.38%/0.50% accel=true | VOL: 4864.0000/1275.1500 TO: 194560000.0000/50689685.0000 | HIGH: 40000.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL [TRAIL_BREAKOUT] 080220 pnl=0.88% peakPnl=2.75% high=41100.0000 current=40350.0000
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=BREAKOUT phase=EXITING exitType=TRAIL price=40350.0000 qty=250 reason=TRAIL_BREAKOUT pnl=0.88% peakPnl=2.75% holdMs=5100000 high=41100.0000 avgPrice=40000.0000 weightedPnl=0.88% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=TRAIL_BREAKOUT filledQty=250/250 fillRatio=1.00 weightedPnl=0.88% dailyPnl=0.88%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=TRAIL_BREAKOUT remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=BREAKOUT price=37850.0000 qty=264 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.34x) | VWAP: 1.36%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.66%/0.53%/0.40% accel=true | VOL: 9265.0000/2771.1500 TO: 350680250.0000/104383110.0000 | HIGH: 37900.0000 fromHigh=-0.13% | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL [TRAIL_BREAKOUT] 080220 pnl=0.92% peakPnl=2.64% high=38850.0000 current=38200.0000
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=BREAKOUT phase=EXITING exitType=TRAIL price=38200.0000 qty=264 reason=TRAIL_BREAKOUT pnl=0.92% peakPnl=2.64% holdMs=4560000 high=38850.0000 avgPrice=37850.0000 weightedPnl=0.92% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=TRAIL_BREAKOUT filledQty=264/264 fillRatio=1.00 weightedPnl=0.92% dailyPnl=0.92%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=TRAIL_BREAKOUT remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=41800.0000 qty=239 size=1.0000x score=65[D] | WHY: dayChg=1.83% vrScore=85 aboveBars=7 hadBelow=true vol/vol5=3.13x | VWAP: 1.94%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.03%/0.97%/1.58% accel=true | VOL: 70566.0000/7984.6000 TO: 2949658800.0000/331130468.7500 | HIGH: 41800.0000 fromHigh=0.00% | VR: score=85 aboveBars=7 hadBelow=true vol/vol5=3.13x | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=42700.0000 qty=239 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.15% peakPnl=2.15% holdMs=6720000 high=42700.0000 avgPrice=41800.0000 weightedPnl=2.15% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=239/239 fillRatio=1.00 weightedPnl=2.15% dailyPnl=2.15%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=42700.0000 qty=234 size=1.0000x score=85[A](CONV) | WHY: dayChg=0.35% vrScore=83 aboveBars=5 hadBelow=true vol/vol5=3.62x | VWAP: 0.98%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.83%/0.95%/1.18% accel=false | VOL: 25843.0000/3625.8500 TO: 1103496100.0000/153619877.5000 | HIGH: 42750.0000 fromHigh=-0.12% | VR: score=83 aboveBars=5 hadBelow=true vol/vol5=3.62x | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL [TRAIL_VWAP_RECLAIM] 080220 pnl=0.47% peakPnl=1.52% high=43350.0000 current=42900.0000
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=TRAIL price=42900.0000 qty=234 reason=TRAIL_VWAP_RECLAIM pnl=0.47% peakPnl=1.52% holdMs=2520000 high=43350.0000 avgPrice=42700.0000 weightedPnl=0.47% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=TRAIL_VWAP_RECLAIM filledQty=234/234 fillRatio=1.00 weightedPnl=0.47% dailyPnl=0.47%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=TRAIL_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=BREAKOUT price=43400.0000 qty=230 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(5.22x) | VWAP: 1.34%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.58%/0.46%/0.70% accel=true | VOL: 15267.0000/2922.3500 TO: 662587800.0000/126088270.0000 | HIGH: 43400.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=42850.0000 qty=230 reason=VWAP_BREAK pnl=-1.27% peakPnl=0.35% holdMs=13320000 high=43550.0000 avgPrice=43400.0000 weightedPnl=-1.27% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=VWAP_BREAK filledQty=230/230 fillRatio=1.00 weightedPnl=-1.27% dailyPnl=-1.27%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=56700.0000 qty=176 size=1.0000x score=40[D] | WHY: dayChg=3.28% vrScore=83 aboveBars=6 hadBelow=true vol/vol5=3.24x | VWAP: 2.65%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=2.53%/2.53%/2.35% accel=false | VOL: 205473.0000/73002.3500 TO: 11650319100.0000/4042556245.0000 | HIGH: 56900.0000 fromHigh=-0.35% | VR: score=83 aboveBars=6 hadBelow=true vol/vol5=3.24x | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=55400.0000 qty=176 reason=STOP_LOSS_VWAP_RECLAIM pnl=-2.29% peakPnl=-0.35% holdMs=540000 high=56500.0000 avgPrice=56700.0000 weightedPnl=-2.29% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=STOP_LOSS_VWAP_RECLAIM filledQty=176/176 fillRatio=1.00 weightedPnl=-2.29% dailyPnl=-2.29%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=56800.0000 qty=176 size=1.0000x score=45[D] | WHY: dayChg=3.46% vrScore=85 aboveBars=7 hadBelow=true vol/vol5=3.14x | VWAP: 2.15%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.89%/0.89%/1.61% accel=false | VOL: 122307.0000/16986.6500 TO: 6947037600.0000/956769945.0000 | HIGH: 56900.0000 fromHigh=-0.18% | VR: score=85 aboveBars=7 hadBelow=true vol/vol5=3.14x | entryNo=2
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=58400.0000 qty=176 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.82% peakPnl=2.82% holdMs=240000 high=58400.0000 avgPrice=56800.0000 weightedPnl=2.82% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=176/176 fillRatio=1.00 weightedPnl=2.82% dailyPnl=0.53%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=BREAKOUT price=55600.0000 qty=179 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.25x) | VWAP: 1.30%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.72%/0.54%/0.72% accel=true | VOL: 16177.0000/4972.7500 TO: 899441200.0000/275652247.5000 | HIGH: 55600.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=55000.0000 qty=179 reason=VWAP_BREAK pnl=-1.08% peakPnl=0.36% holdMs=4200000 high=55800.0000 avgPrice=55600.0000 weightedPnl=-1.07% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=VWAP_BREAK filledQty=179/179 fillRatio=1.00 weightedPnl=-1.07% dailyPnl=-1.07%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=54300.0000 qty=184 size=1.0000x score=70[D] | WHY: dayChg=0.37% vrScore=84 aboveBars=9 hadBelow=true vol/vol5=1.93x | VWAP: 1.30%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.12%/1.12%/1.31% accel=false | VOL: 26565.0000/9579.7000 TO: 1442479500.0000/515586075.0000 | HIGH: 54400.0000 fromHigh=-0.18% | VR: score=84 aboveBars=9 hadBelow=true vol/vol5=1.93x | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=53400.0000 qty=184 reason=VWAP_BREAK pnl=-1.66% peakPnl=-0.37% holdMs=540000 high=54100.0000 avgPrice=54300.0000 weightedPnl=-1.66% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=VWAP_BREAK filledQty=184/184 fillRatio=1.00 weightedPnl=-1.66% dailyPnl=-1.66%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=BREAKOUT price=58400.0000 qty=171 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(5.30x) | VWAP: 0.96%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.69%/0.52%/0.69% accel=true | VOL: 28137.0000/5309.6000 TO: 1643200800.0000/308590695.0000 | HIGH: 58500.0000 fromHigh=-0.17% | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=57600.0000 qty=171 reason=VWAP_BREAK pnl=-1.37% peakPnl=-0.17% holdMs=1320000 high=58300.0000 avgPrice=58400.0000 weightedPnl=-1.37% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=VWAP_BREAK filledQty=171/171 fillRatio=1.00 weightedPnl=-1.37% dailyPnl=-1.37%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=54600.0000 qty=183 size=1.0000x score=80[B] | WHY: dayChg=2.82% vrScore=84 aboveBars=11 hadBelow=true vol/vol5=4.05x | VWAP: 0.84%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.37%/0.55%/0.37% accel=false | VOL: 18107.0000/2276.2500 TO: 988642200.0000/123776340.0000 | HIGH: 54600.0000 fromHigh=0.00% | VR: score=84 aboveBars=11 hadBelow=true vol/vol5=4.05x | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL [EOD_FORCE_SELL] 080220 pnl=0.18% time=15:30
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=TIMESTOP price=54700.0000 qty=183 reason=EOD_FORCE_SELL pnl=0.18% peakPnl=0.37% holdMs=2940000 high=54800.0000 avgPrice=54600.0000 weightedPnl=0.18% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=EOD_FORCE_SELL filledQty=183/183 fillRatio=1.00 weightedPnl=0.18% dailyPnl=0.18%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:02 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=58500.0000 qty=170 size=1.0000x score=45[D] | WHY: dayChg=3.17% vrScore=89 aboveBars=8 hadBelow=true vol/vol5=3.42x | VWAP: 2.44%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.83%/1.92%/2.81% accel=false | VOL: 137483.0000/21342.3500 TO: 8042755500.0000/1225968922.5000 | HIGH: 58600.0000 fromHigh=-0.17% | VR: score=89 aboveBars=8 hadBelow=true vol/vol5=3.42x | entryNo=1
+2026-06-17 13:17:02 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:02 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=57400.0000 qty=170 reason=VWAP_BREAK pnl=-1.88% peakPnl=0.85% holdMs=1020000 high=59000.0000 avgPrice=58500.0000 weightedPnl=-1.87% (pending fill)
+2026-06-17 13:17:02 INFO  SELL_FILLED_PNL 080220 reason=VWAP_BREAK filledQty=170/170 fillRatio=1.00 weightedPnl=-1.87% dailyPnl=-1.87%
+2026-06-17 13:17:02 INFO  SELL_FILLED 080220 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:03 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=96700.0000 qty=103 size=1.0000x score=39[D] | WHY: dayChg=6.62% vrScore=85 aboveBars=9 hadBelow=true vol/vol5=2.18x | VWAP: 1.27%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.83%/0.52%/1.15% accel=true | VOL: 8683.0000/5800.8500 TO: 839646100.0000/554899550.0000 | HIGH: 96700.0000 fromHigh=0.00% | VR: score=85 aboveBars=9 hadBelow=true vol/vol5=2.18x | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL [EOD_FORCE_SELL] 080220 pnl=-0.83% time=15:30
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=TIMESTOP price=95900.0000 qty=103 reason=EOD_FORCE_SELL pnl=-0.83% peakPnl=-0.10% holdMs=1920000 high=96600.0000 avgPrice=96700.0000 weightedPnl=-0.82% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 080220 reason=EOD_FORCE_SELL filledQty=103/103 fillRatio=1.00 weightedPnl=-0.82% dailyPnl=-0.82%
+2026-06-17 13:17:03 INFO  SELL_FILLED 080220 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:03 INFO  BUY [KRX] 080220 mode=BREAKOUT price=95000.0000 qty=105 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(4.10x) | VWAP: 1.58%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.74%/0.64%/0.96% accel=true | VOL: 9706.0000/2364.5000 TO: 922070000.0000/223125335.0000 | HIGH: 95000.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 080220 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=94100.0000 qty=105 reason=VWAP_BREAK pnl=-0.95% peakPnl=1.37% holdMs=4020000 high=96300.0000 avgPrice=95000.0000 weightedPnl=-0.95% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 080220 reason=VWAP_BREAK filledQty=105/105 fillRatio=1.00 weightedPnl=-0.95% dailyPnl=-0.95%
+2026-06-17 13:17:03 INFO  SELL_FILLED 080220 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:03 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=100500.0000 qty=99 size=1.0000x score=18[D] | WHY: dayChg=1.52% vrScore=87 aboveBars=9 hadBelow=true vol/vol5=2.44x | VWAP: 3.00%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=2.03%/1.62%/2.97% accel=true | VOL: 156172.0000/26436.5000 TO: 15679668800.0000/2595719630.0000 | HIGH: 102600.0000 fromHigh=-2.14% | VR: score=87 aboveBars=9 hadBelow=true vol/vol5=2.44x | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=98600.0000 qty=99 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.79% peakPnl=-0.30% holdMs=180000 high=100100.0000 avgPrice=100400.0000 weightedPnl=-1.78% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 080220 reason=STOP_LOSS_VWAP_RECLAIM filledQty=99/99 fillRatio=1.00 weightedPnl=-1.78% dailyPnl=-1.78%
+2026-06-17 13:17:03 INFO  SELL_FILLED 080220 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:03 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=119500.0000 qty=83 size=1.0000x score=43[D] | WHY: dayChg=-0.25% vrScore=83 aboveBars=8 hadBelow=true vol/vol5=2.33x | VWAP: 2.06%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.84%/1.62%/1.96% accel=false | VOL: 39270.0000/8034.8000 TO: 4692765000.0000/947240370.0000 | HIGH: 119800.0000 fromHigh=-0.25% | VR: score=83 aboveBars=8 hadBelow=true vol/vol5=2.33x | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=122000.0000 qty=83 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.09% peakPnl=2.09% holdMs=420000 high=122000.0000 avgPrice=119500.0000 weightedPnl=2.07% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 080220 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=83/83 fillRatio=1.00 weightedPnl=2.07% dailyPnl=2.07%
+2026-06-17 13:17:03 INFO  SELL_FILLED 080220 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:03 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=104000.0000 qty=96 size=1.0000x score=46[D] | WHY: dayChg=0.29% vrScore=88 aboveBars=10 hadBelow=true vol/vol5=2.40x | VWAP: 1.73%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.37%/1.07%/1.47% accel=true | VOL: 23782.0000/18714.5500 TO: 2468571600.0000/1904547410.0000 | HIGH: 103900.0000 fromHigh=-0.10% | VR: score=88 aboveBars=10 hadBelow=true vol/vol5=2.40x | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=107500.0000 qty=96 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=3.37% peakPnl=3.37% holdMs=240000 high=107300.0000 avgPrice=103800.0000 weightedPnl=3.36% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 080220 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=96/96 fillRatio=1.00 weightedPnl=3.36% dailyPnl=3.36%
+2026-06-17 13:17:03 INFO  SELL_FILLED 080220 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:03 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=103500.0000 qty=96 size=1.0000x score=45[D] | WHY: dayChg=0.00% vrScore=88 aboveBars=9 hadBelow=true vol/vol5=2.66x | VWAP: 2.18%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.17%/1.27%/1.07% accel=false | VOL: 14711.0000/3824.7500 TO: 1522588500.0000/390451705.0000 | HIGH: 103500.0000 fromHigh=0.00% | VR: score=88 aboveBars=9 hadBelow=true vol/vol5=2.66x | entryNo=2
+2026-06-17 13:17:03 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=106500.0000 qty=96 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.71% peakPnl=2.71% holdMs=720000 high=106300.0000 avgPrice=103500.0000 weightedPnl=2.69% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 080220 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=96/96 fillRatio=1.00 weightedPnl=2.69% dailyPnl=6.05%
+2026-06-17 13:17:03 INFO  SELL_FILLED 080220 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:03 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=111500.0000 qty=89 size=1.0000x score=45[D] | WHY: dayChg=10.20% vrScore=89 aboveBars=12 hadBelow=true vol/vol5=2.50x | VWAP: 4.57%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.37%/2.02%/3.06% accel=false | VOL: 84570.0000/16205.3000 TO: 9412641000.0000/1758074000.0000 | HIGH: 111300.0000 fromHigh=0.00% | VR: score=89 aboveBars=12 hadBelow=true vol/vol5=2.50x | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=108400.0000 qty=89 reason=STOP_LOSS_VWAP_RECLAIM pnl=-2.61% peakPnl=0.81% holdMs=180000 high=112200.0000 avgPrice=111300.0000 weightedPnl=-2.58% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 080220 reason=STOP_LOSS_VWAP_RECLAIM filledQty=89/89 fillRatio=1.00 weightedPnl=-2.58% dailyPnl=-2.58%
+2026-06-17 13:17:03 INFO  SELL_FILLED 080220 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:03 INFO  BUY [KRX] 080220 mode=VWAP_RECLAIM price=109500.0000 qty=91 size=1.0000x score=75[C] | WHY: dayChg=10.60% vrScore=83 aboveBars=9 hadBelow=true vol/vol5=2.03x | VWAP: 0.94%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.83%/0.55%/0.64% accel=true | VOL: 11480.0000/3681.6500 TO: 1258208000.0000/400909430.0000 | HIGH: 109700.0000 fromHigh=-0.09% | VR: score=83 aboveBars=9 hadBelow=true vol/vol5=2.03x | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 080220 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 080220 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=102200.0000 qty=91 reason=EMERGENCY_STOP pnl=-6.75% peakPnl=0.09% holdMs=2340000 high=109700.0000 avgPrice=109600.0000 weightedPnl=-6.73% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 080220 reason=EMERGENCY_STOP filledQty=91/91 fillRatio=1.00 weightedPnl=-6.73% dailyPnl=-6.73%
+2026-06-17 13:17:03 INFO  SELL_FILLED 080220 reason=EMERGENCY_STOP remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:03 INFO  BUY amount set for 009150: 10000000.00
+2026-06-17 13:17:03 INFO  BUY [KRX] 009150 mode=BREAKOUT price=462000.0000 qty=21 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.86x) | VWAP: 0.87%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.27%/0.22%/0.33% accel=true | VOL: 5618.0000/1455.6500 TO: 2595516000.0000/670230600.0000 | HIGH: 462500.0000 fromHigh=-0.11% | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 009150 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=454000.0000 qty=21 reason=VWAP_BREAK pnl=-1.73% peakPnl=0.22% holdMs=2940000 high=463000.0000 avgPrice=462000.0000 weightedPnl=-1.68% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 009150 reason=VWAP_BREAK filledQty=21/21 fillRatio=1.00 weightedPnl=-1.68% dailyPnl=-1.68%
+2026-06-17 13:17:03 INFO  SELL_FILLED 009150 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:03 INFO  BUY [KRX] 009150 mode=VWAP_RECLAIM price=504000.0000 qty=19 size=1.0000x score=70[D] | WHY: dayChg=2.86% vrScore=84 aboveBars=9 hadBelow=true vol/vol5=1.92x | VWAP: 1.19%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.60%/0.60%/0.40% accel=false | VOL: 4807.0000/1841.3500 TO: 2422728000.0000/921007975.0000 | HIGH: 504000.0000 fromHigh=0.00% | VR: score=84 aboveBars=9 hadBelow=true vol/vol5=1.92x | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 009150 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=515000.0000 qty=19 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.18% peakPnl=2.18% holdMs=2700000 high=515000.0000 avgPrice=504000.0000 weightedPnl=2.09% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 009150 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=19/19 fillRatio=1.00 weightedPnl=2.09% dailyPnl=2.09%
+2026-06-17 13:17:03 INFO  SELL_FILLED 009150 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:03 INFO  BUY [KRX] 009150 mode=VWAP_RECLAIM price=629000.0000 qty=15 size=1.0000x score=90[S](CONV) | WHY: dayChg=2.53% vrScore=87 aboveBars=12 hadBelow=true vol/vol5=3.64x | VWAP: 1.09%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.40%/0.56%/0.88% accel=false | VOL: 9693.0000/1960.0500 TO: 6092050500.0000/1221284900.0000 | HIGH: 630000.0000 fromHigh=-0.24% | VR: score=87 aboveBars=12 hadBelow=true vol/vol5=3.64x | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 009150 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=619000.0000 qty=15 reason=VWAP_BREAK pnl=-1.51% peakPnl=-0.24% holdMs=900000 high=627000.0000 avgPrice=628500.0000 weightedPnl=-1.42% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 009150 reason=VWAP_BREAK filledQty=15/15 fillRatio=1.00 weightedPnl=-1.42% dailyPnl=-1.42%
+2026-06-17 13:17:03 INFO  SELL_FILLED 009150 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:03 INFO  BUY [KRX] 009150 mode=BREAKOUT price=688000.0000 qty=14 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(4.59x) | VWAP: 1.12%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.29%/0.15%/0.44% accel=true | VOL: 8617.0000/1876.9500 TO: 5928496000.0000/1290345900.0000 | HIGH: 689000.0000 fromHigh=-0.15% | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 009150 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=678500.0000 qty=14 reason=VWAP_BREAK pnl=-1.38% peakPnl=0.29% holdMs=2280000 high=690000.0000 avgPrice=688000.0000 weightedPnl=-1.33% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 009150 reason=VWAP_BREAK filledQty=14/14 fillRatio=1.00 weightedPnl=-1.33% dailyPnl=-1.33%
+2026-06-17 13:17:03 INFO  SELL_FILLED 009150 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:03 INFO  BUY [KRX] 009150 mode=BREAKOUT price=812000.0000 qty=12 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(4.06x) | VWAP: 0.73%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.31%/0.25%/0.31% accel=true | VOL: 7539.0000/1855.0000 TO: 6117898500.0000/1501338225.0000 | HIGH: 812000.0000 fromHigh=-0.06% | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL [EOD_FORCE_SELL] 009150 pnl=0.06% time=15:30
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 009150 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=812000.0000 qty=12 reason=EOD_FORCE_SELL pnl=0.06% peakPnl=0.18% holdMs=2040000 high=813000.0000 avgPrice=811500.0000 weightedPnl=0.06% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 009150 reason=EOD_FORCE_SELL filledQty=12/12 fillRatio=1.00 weightedPnl=0.06% dailyPnl=0.06%
+2026-06-17 13:17:03 INFO  SELL_FILLED 009150 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:03 INFO  BUY [KRX] 009150 mode=BREAKOUT price=821000.0000 qty=9 size=0.8000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.25x) | VWAP: 0.73%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.61%/0.49%/0.49% accel=true | VOL: 5421.0000/2411.3000 TO: 4450641000.0000/1969790600.0000 | HIGH: 822000.0000 fromHigh=-0.12% | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL [EOD_FORCE_SELL] 009150 pnl=0.73% time=15:30
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 009150 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=827000.0000 qty=9 reason=EOD_FORCE_SELL pnl=0.73% peakPnl=1.40% holdMs=21600000 high=832500.0000 avgPrice=821000.0000 weightedPnl=0.54% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 009150 reason=EOD_FORCE_SELL filledQty=9/9 fillRatio=1.00 weightedPnl=0.54% dailyPnl=0.54%
+2026-06-17 13:17:03 INFO  SELL_FILLED 009150 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:03 INFO  BUY [KRX] 009150 mode=BREAKOUT price=883000.0000 qty=11 size=1.0000x score=78[C] | WHY: strongBreakout volBreakout retestOK multiUp vol(5.25x) | VWAP: 1.15%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.17%/0.11%/0.11% accel=true | VOL: 8258.0000/1572.3000 TO: 7291814000.0000/1385721000.0000 | HIGH: 885000.0000 fromHigh=-0.23% | entryNo=1
+2026-06-17 13:17:03 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 009150 mode=BREAKOUT phase=EXITING exitType=PROFIT price=909000.0000 qty=11 reason=TAKE_PROFIT_BREAKOUT pnl=2.89% peakPnl=2.89% holdMs=6960000 high=908500.0000 avgPrice=883000.0000 weightedPnl=2.81% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 009150 reason=TAKE_PROFIT_BREAKOUT filledQty=11/11 fillRatio=1.00 weightedPnl=2.81% dailyPnl=2.81%
+2026-06-17 13:17:03 INFO  SELL_FILLED 009150 reason=TAKE_PROFIT_BREAKOUT remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:03 INFO  BUY [KRX] 009150 mode=BREAKOUT price=925000.0000 qty=10 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(4.84x) | VWAP: 1.73%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.65%/0.54%/0.49% accel=true | VOL: 9235.0000/1908.1500 TO: 8542375000.0000/1755827400.0000 | HIGH: 925000.0000 fromHigh=0.00% | entryNo=2
+2026-06-17 13:17:03 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:03 INFO  SELL [EOD_FORCE_SELL] 009150 pnl=-0.76% time=15:30
+2026-06-17 13:17:03 INFO  SELL_EXECUTED [KRX] 009150 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=918000.0000 qty=10 reason=EOD_FORCE_SELL pnl=-0.76% peakPnl=-0.22% holdMs=5820000 high=923000.0000 avgPrice=925000.0000 weightedPnl=-0.70% (pending fill)
+2026-06-17 13:17:03 INFO  SELL_FILLED_PNL 009150 reason=EOD_FORCE_SELL filledQty=10/10 fillRatio=1.00 weightedPnl=-0.70% dailyPnl=2.11%
+2026-06-17 13:17:03 INFO  SELL_FILLED 009150 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:04 INFO  BUY [KRX] 009150 mode=VWAP_RECLAIM price=1105000.0000 qty=9 size=1.0000x score=32[D] | WHY: dayChg=14.15% vrScore=84 aboveBars=9 hadBelow=true vol/vol5=1.99x | VWAP: 7.38%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.28%/2.60%/2.70% accel=false | VOL: 44480.0000/17202.5000 TO: 49150400000.0000/18453964550.0000 | HIGH: 1106000.0000 fromHigh=-0.09% | VR: score=84 aboveBars=9 hadBelow=true vol/vol5=1.99x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 009150 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=1088000.0000 qty=9 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.54% peakPnl=-1.22% holdMs=120000 high=1091500.0000 avgPrice=1105000.0000 weightedPnl=-1.53% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 009150 reason=STOP_LOSS_VWAP_RECLAIM filledQty=9/9 fillRatio=1.00 weightedPnl=-1.53% dailyPnl=-1.53%
+2026-06-17 13:17:04 INFO  SELL_FILLED 009150 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:04 INFO  BUY [KRX] 009150 mode=VWAP_RECLAIM price=1202000.0000 qty=8 size=1.0000x score=85[A](CONV) | WHY: dayChg=5.90% vrScore=84 aboveBars=6 hadBelow=true vol/vol5=3.45x | VWAP: 1.09%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.75%/1.01%/1.18% accel=false | VOL: 26461.0000/3202.0000 TO: 31806122000.0000/3816722850.0000 | HIGH: 1206000.0000 fromHigh=-0.33% | VR: score=84 aboveBars=6 hadBelow=true vol/vol5=3.45x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 009150 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=1188000.0000 qty=8 reason=VWAP_BREAK pnl=-1.16% peakPnl=0.42% holdMs=3240000 high=1207000.0000 avgPrice=1202000.0000 weightedPnl=-1.12% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 009150 reason=VWAP_BREAK filledQty=8/8 fillRatio=1.00 weightedPnl=-1.12% dailyPnl=-1.12%
+2026-06-17 13:17:04 INFO  SELL_FILLED 009150 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 009150 mode=VWAP_RECLAIM price=1263000.0000 qty=7 size=1.0000x score=62[D] | WHY: dayChg=1.85% vrScore=86 aboveBars=11 hadBelow=true vol/vol5=1.90x | VWAP: 1.36%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.88%/1.12%/1.04% accel=false | VOL: 7056.0000/3999.5500 TO: 8911728000.0000/4995799100.0000 | HIGH: 1265000.0000 fromHigh=-0.16% | VR: score=86 aboveBars=11 hadBelow=true vol/vol5=1.90x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 009150 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=1244000.0000 qty=7 reason=VWAP_BREAK pnl=-1.50% peakPnl=0.16% holdMs=1320000 high=1265000.0000 avgPrice=1263000.0000 weightedPnl=-1.33% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 009150 reason=VWAP_BREAK filledQty=7/7 fillRatio=1.00 weightedPnl=-1.33% dailyPnl=-1.33%
+2026-06-17 13:17:04 INFO  SELL_FILLED 009150 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 009150 mode=VWAP_RECLAIM price=1263000.0000 qty=7 size=1.0000x score=62[D] | WHY: dayChg=1.85% vrScore=86 aboveBars=11 hadBelow=true vol/vol5=1.90x | VWAP: 1.36%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.88%/1.12%/1.04% accel=false | VOL: 7056.0000/3999.5500 TO: 8911728000.0000/4995799100.0000 | HIGH: 1265000.0000 fromHigh=-0.16% | VR: score=86 aboveBars=11 hadBelow=true vol/vol5=1.90x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 009150 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=1244000.0000 qty=7 reason=VWAP_BREAK pnl=-1.50% peakPnl=0.16% holdMs=1320000 high=1265000.0000 avgPrice=1263000.0000 weightedPnl=-1.33% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 009150 reason=VWAP_BREAK filledQty=7/7 fillRatio=1.00 weightedPnl=-1.33% dailyPnl=-1.33%
+2026-06-17 13:17:04 INFO  SELL_FILLED 009150 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 009150 mode=VWAP_RECLAIM price=1984000.0000 qty=5 size=1.0000x score=56[D] | WHY: dayChg=2.01% vrScore=86 aboveBars=10 hadBelow=true vol/vol5=1.90x | VWAP: 1.15%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.61%/0.71%/0.81% accel=false | VOL: 12491.0000/8727.5000 TO: 24782144000.0000/17096515500.0000 | HIGH: 1987000.0000 fromHigh=-0.15% | VR: score=86 aboveBars=10 hadBelow=true vol/vol5=1.90x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 009150 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=2028000.0000 qty=5 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.22% peakPnl=2.22% holdMs=1620000 high=2028000.0000 avgPrice=1984000.0000 weightedPnl=2.20% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 009150 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=5/5 fillRatio=1.00 weightedPnl=2.20% dailyPnl=2.20%
+2026-06-17 13:17:04 INFO  SELL_FILLED 009150 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:04 INFO  BUY [KRX] 009150 mode=VWAP_RECLAIM price=1910000.0000 qty=5 size=1.0000x score=70[D] | WHY: dayChg=-0.21% vrScore=83 aboveBars=10 hadBelow=true vol/vol5=2.38x | VWAP: 1.10%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.47%/0.32%/0.58% accel=true | VOL: 3675.0000/1473.0000 TO: 7019250000.0000/2798195050.0000 | HIGH: 1911000.0000 fromHigh=-0.05% | VR: score=83 aboveBars=10 hadBelow=true vol/vol5=2.38x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 009150 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=1889000.0000 qty=5 reason=VWAP_BREAK pnl=-1.10% peakPnl=0.47% holdMs=2580000 high=1919000.0000 avgPrice=1910000.0000 weightedPnl=-1.05% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 009150 reason=VWAP_BREAK filledQty=5/5 fillRatio=1.00 weightedPnl=-1.05% dailyPnl=-1.05%
+2026-06-17 13:17:04 INFO  SELL_FILLED 009150 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 009150 mode=BREAKOUT price=2041000.0000 qty=4 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(4.12x) | VWAP: 1.24%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.49%/0.39%/0.29% accel=true | VOL: 5646.0000/1371.3000 TO: 11523486000.0000/2785197450.0000 | HIGH: 2042000.0000 fromHigh=-0.05% | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 009150 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=2017000.0000 qty=4 reason=VWAP_BREAK pnl=-1.18% peakPnl=0.83% holdMs=2880000 high=2058000.0000 avgPrice=2041000.0000 weightedPnl=-0.96% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 009150 reason=VWAP_BREAK filledQty=4/4 fillRatio=1.00 weightedPnl=-0.96% dailyPnl=-0.96%
+2026-06-17 13:17:04 INFO  SELL_FILLED 009150 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 009150 mode=BREAKOUT price=2058000.0000 qty=4 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(4.77x) | VWAP: 1.61%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.68%/0.64%/0.88% accel=true | VOL: 8885.0000/1861.2500 TO: 18285330000.0000/3807735650.0000 | HIGH: 2059000.0000 fromHigh=-0.05% | entryNo=2
+2026-06-17 13:17:04 INFO  BUY_FILLED 009150 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 009150 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=2028000.0000 qty=4 reason=VWAP_BREAK pnl=-1.46% peakPnl=0.58% holdMs=3600000 high=2070000.0000 avgPrice=2058000.0000 weightedPnl=-1.20% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 009150 reason=VWAP_BREAK filledQty=4/4 fillRatio=1.00 weightedPnl=-1.20% dailyPnl=-2.16%
+2026-06-17 13:17:04 INFO  SELL_FILLED 009150 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY amount set for 042660: 10000000.00
+2026-06-17 13:17:04 INFO  BUY [KRX] 042660 mode=VWAP_RECLAIM price=131000.0000 qty=76 size=1.0000x score=75[C] | WHY: dayChg=3.39% vrScore=85 aboveBars=7 hadBelow=true vol/vol5=3.01x | VWAP: 1.59%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.92%/0.92%/1.31% accel=false | VOL: 48860.0000/6390.8500 TO: 6410432000.0000/831725175.0000 | HIGH: 131400.0000 fromHigh=-0.15% | VR: score=85 aboveBars=7 hadBelow=true vol/vol5=3.01x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 042660 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 042660 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=129900.0000 qty=76 reason=VWAP_BREAK pnl=-0.99% peakPnl=0.61% holdMs=5160000 high=132000.0000 avgPrice=131200.0000 weightedPnl=-0.99% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 042660 reason=VWAP_BREAK filledQty=76/76 fillRatio=1.00 weightedPnl=-0.99% dailyPnl=-0.99%
+2026-06-17 13:17:04 INFO  SELL_FILLED 042660 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 042660 mode=BREAKOUT price=132000.0000 qty=75 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(4.78x) | VWAP: 0.62%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.38%/0.23%/0.30% accel=true | VOL: 15501.0000/3246.2500 TO: 2049232200.0000/428424012.5000 | HIGH: 132300.0000 fromHigh=-0.08% | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 042660 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 042660 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=130650.0000 qty=75 reason=VWAP_BREAK pnl=-1.17% peakPnl=-0.08% holdMs=2400000 high=132100.0000 avgPrice=132200.0000 weightedPnl=-1.16% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 042660 reason=VWAP_BREAK filledQty=75/75 fillRatio=1.00 weightedPnl=-1.16% dailyPnl=-1.16%
+2026-06-17 13:17:04 INFO  SELL_FILLED 042660 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 042660 mode=VWAP_RECLAIM price=122500.0000 qty=81 size=1.0000x score=65[D] | WHY: dayChg=0.58% vrScore=83 aboveBars=8 hadBelow=true vol/vol5=2.27x | VWAP: 1.97%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.16%/1.33%/0.91% accel=false | VOL: 34115.0000/7288.5000 TO: 4172264500.0000/881326845.0000 | HIGH: 122400.0000 fromHigh=-0.08% | VR: score=83 aboveBars=8 hadBelow=true vol/vol5=2.27x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 042660 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 042660 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=120100.0000 qty=81 reason=VWAP_BREAK pnl=-1.80% peakPnl=0.33% holdMs=1200000 high=122700.0000 avgPrice=122300.0000 weightedPnl=-1.78% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 042660 reason=VWAP_BREAK filledQty=81/81 fillRatio=1.00 weightedPnl=-1.78% dailyPnl=-1.78%
+2026-06-17 13:17:04 INFO  SELL_FILLED 042660 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 042660 mode=BREAKOUT price=122500.0000 qty=81 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(8.63x) | VWAP: 1.59%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.66%/0.57%/0.82% accel=true | VOL: 36000.0000/4169.8000 TO: 4410000000.0000/508524347.5000 | HIGH: 122700.0000 fromHigh=-0.16% | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 042660 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 042660 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=121400.0000 qty=81 reason=VWAP_BREAK pnl=-0.90% peakPnl=1.14% holdMs=4320000 high=123900.0000 avgPrice=122500.0000 weightedPnl=-0.89% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 042660 reason=VWAP_BREAK filledQty=81/81 fillRatio=1.00 weightedPnl=-0.89% dailyPnl=-0.89%
+2026-06-17 13:17:04 INFO  SELL_FILLED 042660 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 042660 mode=BREAKOUT price=135000.0000 qty=74 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.42x) | VWAP: 1.73%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.52%/0.45%/0.67% accel=true | VOL: 22351.0000/6536.7000 TO: 3019620100.0000/876475850.0000 | HIGH: 135100.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 042660 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 042660 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=134500.0000 qty=74 reason=VWAP_BREAK pnl=-0.44% peakPnl=1.55% holdMs=6660000 high=137200.0000 avgPrice=135100.0000 weightedPnl=-0.44% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 042660 reason=VWAP_BREAK filledQty=74/74 fillRatio=1.00 weightedPnl=-0.44% dailyPnl=-0.44%
+2026-06-17 13:17:04 INFO  SELL_FILLED 042660 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 042660 mode=VWAP_RECLAIM price=108500.0000 qty=92 size=1.0000x score=70[D] | WHY: dayChg=5.95% vrScore=87 aboveBars=11 hadBelow=true vol/vol5=2.22x | VWAP: 1.16%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.74%/0.93%/1.02% accel=false | VOL: 3729.0000/1753.2000 TO: 405342300.0000/189039577.5000 | HIGH: 108700.0000 fromHigh=0.00% | VR: score=87 aboveBars=11 hadBelow=true vol/vol5=2.22x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 042660 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 042660 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=107800.0000 qty=92 reason=VWAP_BREAK pnl=-0.83% peakPnl=0.55% holdMs=2280000 high=109300.0000 avgPrice=108700.0000 weightedPnl=-0.83% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 042660 reason=VWAP_BREAK filledQty=92/92 fillRatio=1.00 weightedPnl=-0.83% dailyPnl=-0.83%
+2026-06-17 13:17:04 INFO  SELL_FILLED 042660 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:04 INFO  BUY [KRX] 042660 mode=VWAP_RECLAIM price=115000.0000 qty=86 size=1.0000x score=75[C] | WHY: dayChg=-2.04% vrScore=88 aboveBars=10 hadBelow=true vol/vol5=2.27x | VWAP: 1.52%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.61%/0.79%/1.05% accel=false | VOL: 13442.0000/3526.6500 TO: 1545830000.0000/401420735.0000 | HIGH: 115000.0000 fromHigh=0.00% | VR: score=88 aboveBars=10 hadBelow=true vol/vol5=2.27x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 042660 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 042660 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=113200.0000 qty=86 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.57% peakPnl=-0.09% holdMs=1860000 high=114900.0000 avgPrice=115000.0000 weightedPnl=-1.55% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 042660 reason=STOP_LOSS_VWAP_RECLAIM filledQty=86/86 fillRatio=1.00 weightedPnl=-1.55% dailyPnl=-1.55%
+2026-06-17 13:17:04 INFO  SELL_FILLED 042660 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:04 INFO  BUY [KRX] 042660 mode=VWAP_RECLAIM price=118000.0000 qty=84 size=1.0000x score=85[A](CONV) | WHY: dayChg=0.94% vrScore=85 aboveBars=10 hadBelow=true vol/vol5=3.00x | VWAP: 1.13%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.43%/0.68%/0.60% accel=false | VOL: 19940.0000/5718.9500 TO: 2354914000.0000/670920375.0000 | HIGH: 118300.0000 fromHigh=-0.17% | VR: score=85 aboveBars=10 hadBelow=true vol/vol5=3.00x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 042660 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 042660 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=120500.0000 qty=84 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.12% peakPnl=2.12% holdMs=5100000 high=120600.0000 avgPrice=118100.0000 weightedPnl=2.10% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 042660 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=84/84 fillRatio=1.00 weightedPnl=2.10% dailyPnl=2.10%
+2026-06-17 13:17:04 INFO  SELL_FILLED 042660 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:04 INFO  BUY [KRX] 042660 mode=VWAP_RECLAIM price=137500.0000 qty=72 size=1.0000x score=75[C] | WHY: dayChg=6.34% vrScore=84 aboveBars=9 hadBelow=true vol/vol5=2.01x | VWAP: 1.75%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.03%/1.85%/1.40% accel=false | VOL: 101317.0000/21515.6000 TO: 13931087500.0000/2920576120.0000 | HIGH: 137500.0000 fromHigh=0.00% | VR: score=84 aboveBars=9 hadBelow=true vol/vol5=2.01x | entryNo=1
+2026-06-17 13:17:04 INFO  BUY_FILLED 042660 phase=HOLDING
+2026-06-17 13:17:04 INFO  SELL_EXECUTED [KRX] 042660 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=142000.0000 qty=72 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=3.20% peakPnl=3.20% holdMs=840000 high=141900.0000 avgPrice=137500.0000 weightedPnl=3.17% (pending fill)
+2026-06-17 13:17:04 INFO  SELL_FILLED_PNL 042660 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=72/72 fillRatio=1.00 weightedPnl=3.17% dailyPnl=3.17%
+2026-06-17 13:17:04 INFO  SELL_FILLED 042660 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:05 INFO  BUY amount set for 006340: 10000000.00
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=VWAP_RECLAIM price=6710.0000 qty=1490 size=1.0000x score=40[D] | WHY: dayChg=6.68% vrScore=85 aboveBars=6 hadBelow=true vol/vol5=3.52x | VWAP: 3.32%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=3.39%/2.91%/3.71% accel=true | VOL: 796333.0000/137342.6000 TO: 5343394430.0000/895031482.2500 | HIGH: 6750.0000 fromHigh=-0.59% | VR: score=85 aboveBars=6 hadBelow=true vol/vol5=3.52x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL [TRAIL_VWAP_RECLAIM] 006340 pnl=0.75% peakPnl=1.94% high=6840.0000 current=6760.0000
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=VWAP_RECLAIM phase=EXITING exitType=TRAIL price=6760.0000 qty=1490 reason=TRAIL_VWAP_RECLAIM pnl=0.75% peakPnl=1.94% holdMs=780000 high=6840.0000 avgPrice=6710.0000 weightedPnl=0.75% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=TRAIL_VWAP_RECLAIM filledQty=1490/1490 fillRatio=1.00 weightedPnl=0.75% dailyPnl=0.75%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=TRAIL_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=VWAP_RECLAIM price=6730.0000 qty=1485 size=1.0000x score=40[D] | WHY: dayChg=0.45% vrScore=83 aboveBars=8 hadBelow=true vol/vol5=2.42x | VWAP: 2.70%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=2.59%/2.91%/1.66% accel=false | VOL: 265458.0000/124007.6000 TO: 1786532340.0000/812592113.0000 | HIGH: 6740.0000 fromHigh=-0.15% | VR: score=83 aboveBars=8 hadBelow=true vol/vol5=2.42x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=6530.0000 qty=1485 reason=STOP_LOSS_VWAP_RECLAIM pnl=-2.97% peakPnl=-1.49% holdMs=120000 high=6630.0000 avgPrice=6730.0000 weightedPnl=-2.97% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=STOP_LOSS_VWAP_RECLAIM filledQty=1485/1485 fillRatio=1.00 weightedPnl=-2.97% dailyPnl=-2.97%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=BREAKOUT price=5820.0000 qty=1718 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.38x) | VWAP: 1.14%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.34%/0.17%/0.52% accel=true | VOL: 17564.0000/5198.6500 TO: 102222480.0000/30184164.5000 | HIGH: 5830.0000 fromHigh=-0.17% | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL [EOD_FORCE_SELL] 006340 pnl=0.69% time=15:30
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=5860.0000 qty=1718 reason=EOD_FORCE_SELL pnl=0.69% peakPnl=1.37% holdMs=5160000 high=5900.0000 avgPrice=5820.0000 weightedPnl=0.69% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=EOD_FORCE_SELL filledQty=1718/1718 fillRatio=1.00 weightedPnl=0.69% dailyPnl=0.69%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=BREAKOUT price=5450.0000 qty=1834 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(13.11x) | VWAP: 0.70%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.55%/0.37%/0.55% accel=true | VOL: 79448.0000/6062.1500 TO: 432991600.0000/32994067.7500 | HIGH: 5450.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL [EOD_FORCE_SELL] 006340 pnl=-0.37% time=15:30
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=5430.0000 qty=1834 reason=EOD_FORCE_SELL pnl=-0.37% peakPnl=0.55% holdMs=4500000 high=5480.0000 avgPrice=5450.0000 weightedPnl=-0.37% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=EOD_FORCE_SELL filledQty=1834/1834 fillRatio=1.00 weightedPnl=-0.37% dailyPnl=-0.37%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=VWAP_RECLAIM price=5450.0000 qty=1834 size=1.0000x score=85[A](CONV) | WHY: dayChg=0.37% vrScore=85 aboveBars=7 hadBelow=true vol/vol5=2.99x | VWAP: 1.09%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.74%/0.74%/1.11% accel=false | VOL: 37253.0000/8241.9000 TO: 203028850.0000/44432669.5000 | HIGH: 5470.0000 fromHigh=-0.37% | VR: score=85 aboveBars=7 hadBelow=true vol/vol5=2.99x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=5390.0000 qty=1834 reason=VWAP_BREAK pnl=-1.10% peakPnl=0.92% holdMs=3600000 high=5500.0000 avgPrice=5450.0000 weightedPnl=-1.10% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=VWAP_BREAK filledQty=1834/1834 fillRatio=1.00 weightedPnl=-1.10% dailyPnl=-1.10%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=VWAP_RECLAIM price=6130.0000 qty=1631 size=1.0000x score=40[D] | WHY: dayChg=9.46% vrScore=88 aboveBars=12 hadBelow=true vol/vol5=2.30x | VWAP: 3.13%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=3.03%/2.17%/1.83% accel=true | VOL: 367829.0000/177511.7500 TO: 2254791770.0000/1066836828.5000 | HIGH: 6130.0000 fromHigh=0.00% | VR: score=88 aboveBars=12 hadBelow=true vol/vol5=2.30x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=6310.0000 qty=1631 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.94% peakPnl=2.94% holdMs=960000 high=6310.0000 avgPrice=6130.0000 weightedPnl=2.94% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=1631/1631 fillRatio=1.00 weightedPnl=2.94% dailyPnl=2.94%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=VWAP_RECLAIM price=8120.0000 qty=1231 size=1.0000x score=70[D] | WHY: dayChg=17.00% vrScore=85 aboveBars=9 hadBelow=true vol/vol5=2.12x | VWAP: 1.19%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.74%/0.62%/0.62% accel=true | VOL: 124681.0000/59710.5500 TO: 1012409720.0000/481531316.0000 | HIGH: 8130.0000 fromHigh=-0.12% | VR: score=85 aboveBars=9 hadBelow=true vol/vol5=2.12x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL [TRAIL_VWAP_RECLAIM] 006340 pnl=0.74% peakPnl=1.97% high=8280.0000 current=8180.0000
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=VWAP_RECLAIM phase=EXITING exitType=TRAIL price=8180.0000 qty=1231 reason=TRAIL_VWAP_RECLAIM pnl=0.74% peakPnl=1.97% holdMs=1200000 high=8280.0000 avgPrice=8120.0000 weightedPnl=0.74% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=TRAIL_VWAP_RECLAIM filledQty=1231/1231 fillRatio=1.00 weightedPnl=0.74% dailyPnl=0.74%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=TRAIL_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=BREAKOUT price=8190.0000 qty=1221 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.53x) | VWAP: 1.23%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=1.24%/1.11%/0.86% accel=true | VOL: 274978.0000/77835.3500 TO: 2252069820.0000/633034132.0000 | HIGH: 8200.0000 fromHigh=-0.12% | entryNo=2
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=8090.0000 qty=1221 reason=VWAP_BREAK pnl=-1.22% peakPnl=1.22% holdMs=1860000 high=8290.0000 avgPrice=8190.0000 weightedPnl=-1.22% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=VWAP_BREAK filledQty=1221/1221 fillRatio=1.00 weightedPnl=-1.22% dailyPnl=-0.48%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=VWAP_RECLAIM price=8320.0000 qty=1201 size=1.0000x score=45[D] | WHY: dayChg=1.84% vrScore=88 aboveBars=12 hadBelow=true vol/vol5=2.32x | VWAP: 3.00%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.34%/1.46%/1.34% accel=false | VOL: 1301578.0000/389255.8000 TO: 10829128960.0000/3158883201.5000 | HIGH: 8350.0000 fromHigh=-0.36% | VR: score=88 aboveBars=12 hadBelow=true vol/vol5=2.32x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=8190.0000 qty=1201 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.56% peakPnl=0.36% holdMs=180000 high=8350.0000 avgPrice=8320.0000 weightedPnl=-1.56% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=STOP_LOSS_VWAP_RECLAIM filledQty=1201/1201 fillRatio=1.00 weightedPnl=-1.56% dailyPnl=-1.56%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=BREAKOUT price=10100.0000 qty=990 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.41x) | VWAP: 1.03%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.70%/0.50%/0.80% accel=true | VOL: 56340.0000/23355.0000 TO: 567907200.0000/233794225.5000 | HIGH: 10090.0000 fromHigh=-0.10% | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL [EOD_FORCE_SELL] 006340 pnl=-0.10% time=15:30
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=10070.0000 qty=990 reason=EOD_FORCE_SELL pnl=-0.10% peakPnl=0.40% holdMs=2340000 high=10120.0000 avgPrice=10080.0000 weightedPnl=-0.10% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=EOD_FORCE_SELL filledQty=990/990 fillRatio=1.00 weightedPnl=-0.10% dailyPnl=-0.10%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=VWAP_RECLAIM price=17400.0000 qty=574 size=1.0000x score=70[D] | WHY: dayChg=6.23% vrScore=86 aboveBars=12 hadBelow=true vol/vol5=2.47x | VWAP: 1.49%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.52%/0.35%/0.06% accel=true | VOL: 104171.0000/36408.2500 TO: 1812575400.0000/628958519.5000 | HIGH: 17400.0000 fromHigh=0.00% | VR: score=86 aboveBars=12 hadBelow=true vol/vol5=2.47x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=17100.0000 qty=574 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.72% peakPnl=-0.17% holdMs=2160000 high=17370.0000 avgPrice=17400.0000 weightedPnl=-1.72% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=STOP_LOSS_VWAP_RECLAIM filledQty=574/574 fillRatio=1.00 weightedPnl=-1.72% dailyPnl=-1.72%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=BREAKOUT price=11100.0000 qty=900 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(4.76x) | VWAP: 1.08%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.72%/0.54%/0.72% accel=true | VOL: 14510.0000/3045.2000 TO: 161351200.0000/33690868.5000 | HIGH: 11120.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=11020.0000 qty=900 reason=VWAP_BREAK pnl=-0.90% peakPnl=0.72% holdMs=4740000 high=11200.0000 avgPrice=11120.0000 weightedPnl=-0.90% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=VWAP_BREAK filledQty=900/900 fillRatio=1.00 weightedPnl=-0.90% dailyPnl=-0.90%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=VWAP_RECLAIM price=11300.0000 qty=884 size=1.0000x score=75[C] | WHY: dayChg=2.54% vrScore=83 aboveBars=8 hadBelow=true vol/vol5=3.03x | VWAP: 0.95%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.53%/0.53%/0.62% accel=false | VOL: 20165.0000/4932.1500 TO: 227662850.0000/55429729.0000 | HIGH: 11290.0000 fromHigh=0.00% | VR: score=83 aboveBars=8 hadBelow=true vol/vol5=3.03x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=11170.0000 qty=884 reason=VWAP_BREAK pnl=-1.06% peakPnl=0.53% holdMs=3780000 high=11350.0000 avgPrice=11290.0000 weightedPnl=-1.06% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=VWAP_BREAK filledQty=884/884 fillRatio=1.00 weightedPnl=-1.06% dailyPnl=-1.06%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:05 INFO  BUY [KRX] 006340 mode=VWAP_RECLAIM price=11350.0000 qty=881 size=1.0000x score=75[C] | WHY: dayChg=3.09% vrScore=88 aboveBars=11 hadBelow=true vol/vol5=2.35x | VWAP: 1.80%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.80%/1.07%/1.52% accel=false | VOL: 49708.0000/9885.4500 TO: 564682880.0000/111137301.0000 | HIGH: 11370.0000 fromHigh=-0.09% | VR: score=88 aboveBars=11 hadBelow=true vol/vol5=2.35x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 006340 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 006340 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=11200.0000 qty=881 reason=VWAP_BREAK pnl=-1.41% peakPnl=0.70% holdMs=1800000 high=11440.0000 avgPrice=11360.0000 weightedPnl=-1.41% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 006340 reason=VWAP_BREAK filledQty=881/881 fillRatio=1.00 weightedPnl=-1.41% dailyPnl=-1.41%
+2026-06-17 13:17:05 INFO  SELL_FILLED 006340 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:05 INFO  BUY amount set for 403870: 10000000.00
+2026-06-17 13:17:05 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=50500.0000 qty=198 size=1.0000x score=32[D] | WHY: dayChg=4.55% vrScore=84 aboveBars=9 hadBelow=true vol/vol5=1.92x | VWAP: 2.37%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.10%/1.51%/2.64% accel=false | VOL: 103898.0000/57579.5000 TO: 5246849000.0000/2840434640.6250 | HIGH: 50600.0000 fromHigh=-0.20% | VR: score=84 aboveBars=9 hadBelow=true vol/vol5=1.92x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=49450.0000 qty=198 reason=STOP_LOSS_VWAP_RECLAIM pnl=-2.08% peakPnl=0.40% holdMs=360000 high=50700.0000 avgPrice=50500.0000 weightedPnl=-2.08% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 403870 reason=STOP_LOSS_VWAP_RECLAIM filledQty=198/198 fillRatio=1.00 weightedPnl=-2.08% dailyPnl=-2.08%
+2026-06-17 13:17:05 INFO  SELL_FILLED 403870 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:05 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=50400.0000 qty=198 size=1.0000x score=70[D] | WHY: dayChg=2.34% vrScore=88 aboveBars=12 hadBelow=true vol/vol5=2.37x | VWAP: 1.11%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.60%/0.80%/0.80% accel=false | VOL: 11428.0000/3881.3000 TO: 575971200.0000/194194816.2500 | HIGH: 50400.0000 fromHigh=0.00% | VR: score=88 aboveBars=12 hadBelow=true vol/vol5=2.37x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=49750.0000 qty=198 reason=VWAP_BREAK pnl=-1.29% peakPnl=0.60% holdMs=3300000 high=50700.0000 avgPrice=50400.0000 weightedPnl=-1.29% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 403870 reason=VWAP_BREAK filledQty=198/198 fillRatio=1.00 weightedPnl=-1.29% dailyPnl=-1.29%
+2026-06-17 13:17:05 INFO  SELL_FILLED 403870 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:05 INFO  BUY [KRX] 403870 mode=BREAKOUT price=44300.0000 qty=225 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(3.81x) | VWAP: 0.65%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.28%/0.23%/0.28% accel=true | VOL: 8904.0000/2334.3500 TO: 394224600.0000/103105160.0000 | HIGH: 44300.0000 fromHigh=-0.06% | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL [EOD_FORCE_SELL] 403870 pnl=0.51% time=15:30
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 403870 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=44500.0000 qty=225 reason=EOD_FORCE_SELL pnl=0.51% peakPnl=1.07% holdMs=6360000 high=44750.0000 avgPrice=44275.0000 weightedPnl=0.51% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 403870 reason=EOD_FORCE_SELL filledQty=225/225 fillRatio=1.00 weightedPnl=0.51% dailyPnl=0.51%
+2026-06-17 13:17:05 INFO  SELL_FILLED 403870 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:05 INFO  BUY [KRX] 403870 mode=BREAKOUT price=45550.0000 qty=219 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(2.84x) | VWAP: 0.89%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.22%/0.11%/0.22% accel=true | VOL: 17982.0000/6331.8500 TO: 819080100.0000/287535132.5000 | HIGH: 45550.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL [EOD_FORCE_SELL] 403870 pnl=0.77% time=15:30
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 403870 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=45900.0000 qty=219 reason=EOD_FORCE_SELL pnl=0.77% peakPnl=0.88% holdMs=1380000 high=45950.0000 avgPrice=45550.0000 weightedPnl=0.77% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 403870 reason=EOD_FORCE_SELL filledQty=219/219 fillRatio=1.00 weightedPnl=0.77% dailyPnl=0.77%
+2026-06-17 13:17:05 INFO  SELL_FILLED 403870 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:05 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=47250.0000 qty=211 size=1.0000x score=85[A](CONV) | WHY: dayChg=0.96% vrScore=87 aboveBars=12 hadBelow=true vol/vol5=2.72x | VWAP: 1.65%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.53%/0.64%/0.96% accel=false | VOL: 51637.0000/12207.2000 TO: 2439848250.0000/571066270.0000 | HIGH: 47350.0000 fromHigh=-0.21% | VR: score=87 aboveBars=12 hadBelow=true vol/vol5=2.72x | entryNo=1
+2026-06-17 13:17:05 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=46500.0000 qty=211 reason=VWAP_BREAK pnl=-1.59% peakPnl=0.42% holdMs=4680000 high=47450.0000 avgPrice=47250.0000 weightedPnl=-1.58% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 403870 reason=VWAP_BREAK filledQty=211/211 fillRatio=1.00 weightedPnl=-1.58% dailyPnl=-1.58%
+2026-06-17 13:17:05 INFO  SELL_FILLED 403870 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:05 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=47050.0000 qty=212 size=1.0000x score=85[A](CONV) | WHY: dayChg=0.53% vrScore=87 aboveBars=9 hadBelow=true vol/vol5=3.21x | VWAP: 0.83%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.75%/0.53%/0.43% accel=true | VOL: 16458.0000/3891.2000 TO: 774348900.0000/182169512.5000 | HIGH: 47050.0000 fromHigh=0.00% | VR: score=87 aboveBars=9 hadBelow=true vol/vol5=3.21x | entryNo=2
+2026-06-17 13:17:05 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:05 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=48100.0000 qty=212 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.23% peakPnl=2.23% holdMs=1980000 high=48100.0000 avgPrice=47050.0000 weightedPnl=2.23% (pending fill)
+2026-06-17 13:17:05 INFO  SELL_FILLED_PNL 403870 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=212/212 fillRatio=1.00 weightedPnl=2.23% dailyPnl=0.64%
+2026-06-17 13:17:05 INFO  SELL_FILLED 403870 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:06 INFO  BUY [KRX] 403870 mode=BREAKOUT price=55600.0000 qty=179 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.18x) | VWAP: 1.45%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.72%/0.54%/0.54% accel=true | VOL: 31309.0000/9841.4500 TO: 1740780400.0000/544167715.0000 | HIGH: 55600.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 403870 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=54800.0000 qty=179 reason=VWAP_BREAK pnl=-1.44% peakPnl=0.54% holdMs=4860000 high=55900.0000 avgPrice=55600.0000 weightedPnl=-1.43% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 403870 reason=VWAP_BREAK filledQty=179/179 fillRatio=1.00 weightedPnl=-1.43% dailyPnl=-1.43%
+2026-06-17 13:17:06 INFO  SELL_FILLED 403870 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:06 INFO  BUY [KRX] 403870 mode=BREAKOUT price=54100.0000 qty=147 size=0.8000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.00x) | VWAP: 1.07%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.56%/0.37%/0.56% accel=true | VOL: 14460.0000/7228.5500 TO: 782286000.0000/388832965.0000 | HIGH: 54100.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL [EOD_FORCE_SELL] 403870 pnl=-0.74% time=15:30
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 403870 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=53700.0000 qty=147 reason=EOD_FORCE_SELL pnl=-0.74% peakPnl=0.09% holdMs=1920000 high=54150.0000 avgPrice=54100.0000 weightedPnl=-0.59% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 403870 reason=EOD_FORCE_SELL filledQty=147/147 fillRatio=1.00 weightedPnl=-0.59% dailyPnl=-0.59%
+2026-06-17 13:17:06 INFO  SELL_FILLED 403870 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:06 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=56300.0000 qty=177 size=1.0000x score=75[C] | WHY: dayChg=0.18% vrScore=89 aboveBars=8 hadBelow=true vol/vol5=3.93x | VWAP: 1.25%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.54%/0.72%/0.54% accel=false | VOL: 55823.0000/9880.7500 TO: 3142834900.0000/551902350.0000 | HIGH: 56400.0000 fromHigh=-0.18% | VR: score=89 aboveBars=8 hadBelow=true vol/vol5=3.93x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=57700.0000 qty=177 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.49% peakPnl=2.49% holdMs=840000 high=57700.0000 avgPrice=56300.0000 weightedPnl=2.48% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 403870 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=177/177 fillRatio=1.00 weightedPnl=2.48% dailyPnl=2.48%
+2026-06-17 13:17:06 INFO  SELL_FILLED 403870 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:06 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=54600.0000 qty=183 size=1.0000x score=75[C] | WHY: dayChg=0.74% vrScore=87 aboveBars=12 hadBelow=true vol/vol5=3.01x | VWAP: 0.87%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.55%/0.74%/0.55% accel=false | VOL: 20916.0000/4478.9500 TO: 1142013600.0000/243041052.5000 | HIGH: 54700.0000 fromHigh=-0.18% | VR: score=87 aboveBars=12 hadBelow=true vol/vol5=3.01x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=54200.0000 qty=183 reason=VWAP_BREAK pnl=-0.73% peakPnl=0.55% holdMs=6300000 high=54900.0000 avgPrice=54600.0000 weightedPnl=-0.73% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 403870 reason=VWAP_BREAK filledQty=183/183 fillRatio=1.00 weightedPnl=-0.73% dailyPnl=-0.73%
+2026-06-17 13:17:06 INFO  SELL_FILLED 403870 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:06 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=49600.0000 qty=201 size=1.0000x score=60[D] | WHY: dayChg=1.12% vrScore=83 aboveBars=9 hadBelow=true vol/vol5=1.81x | VWAP: 1.76%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.81%/1.12%/0.71% accel=false | VOL: 7293.0000/3366.5500 TO: 361732800.0000/164855690.0000 | HIGH: 49600.0000 fromHigh=0.00% | VR: score=83 aboveBars=9 hadBelow=true vol/vol5=1.81x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=48750.0000 qty=201 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.71% peakPnl=0.40% holdMs=480000 high=49800.0000 avgPrice=49600.0000 weightedPnl=-1.71% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 403870 reason=STOP_LOSS_VWAP_RECLAIM filledQty=201/201 fillRatio=1.00 weightedPnl=-1.71% dailyPnl=-1.71%
+2026-06-17 13:17:06 INFO  SELL_FILLED 403870 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:06 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=51600.0000 qty=193 size=1.0000x score=45[D] | WHY: dayChg=2.99% vrScore=87 aboveBars=9 hadBelow=true vol/vol5=2.51x | VWAP: 2.04%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.98%/0.78%/1.18% accel=true | VOL: 26609.0000/7762.3500 TO: 1373024400.0000/395152040.0000 | HIGH: 51600.0000 fromHigh=0.00% | VR: score=87 aboveBars=9 hadBelow=true vol/vol5=2.51x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL [TRAIL_VWAP_RECLAIM] 403870 pnl=0.58% peakPnl=1.74% high=52500.0000 current=51900.0000
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=TRAIL price=51900.0000 qty=193 reason=TRAIL_VWAP_RECLAIM pnl=0.58% peakPnl=1.74% holdMs=2520000 high=52500.0000 avgPrice=51600.0000 weightedPnl=0.58% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 403870 reason=TRAIL_VWAP_RECLAIM filledQty=193/193 fillRatio=1.00 weightedPnl=0.58% dailyPnl=0.58%
+2026-06-17 13:17:06 INFO  SELL_FILLED 403870 reason=TRAIL_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:06 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=50300.0000 qty=198 size=1.0000x score=70[D] | WHY: dayChg=8.06% vrScore=89 aboveBars=11 hadBelow=true vol/vol5=2.47x | VWAP: 1.63%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.90%/1.62%/1.11% accel=false | VOL: 62835.0000/23002.8000 TO: 3160600500.0000/1145839630.0000 | HIGH: 50500.0000 fromHigh=-0.40% | VR: score=89 aboveBars=11 hadBelow=true vol/vol5=2.47x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=51600.0000 qty=198 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.58% peakPnl=2.58% holdMs=1680000 high=51600.0000 avgPrice=50300.0000 weightedPnl=2.57% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 403870 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=198/198 fillRatio=1.00 weightedPnl=2.57% dailyPnl=2.57%
+2026-06-17 13:17:06 INFO  SELL_FILLED 403870 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:06 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=52700.0000 qty=189 size=1.0000x score=28[D] | WHY: dayChg=1.54% vrScore=85 aboveBars=12 hadBelow=true vol/vol5=1.88x | VWAP: 2.06%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.15%/1.15%/1.93% accel=false | VOL: 65022.0000/18857.1000 TO: 3426659400.0000/978564950.0000 | HIGH: 53000.0000 fromHigh=-0.57% | VR: score=85 aboveBars=12 hadBelow=true vol/vol5=1.88x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=53800.0000 qty=189 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.09% peakPnl=2.09% holdMs=420000 high=53800.0000 avgPrice=52700.0000 weightedPnl=2.08% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 403870 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=189/189 fillRatio=1.00 weightedPnl=2.08% dailyPnl=2.08%
+2026-06-17 13:17:06 INFO  SELL_FILLED 403870 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:06 INFO  BUY [KRX] 403870 mode=VWAP_RECLAIM price=65500.0000 qty=152 size=1.0000x score=45[D] | WHY: dayChg=14.31% vrScore=87 aboveBars=10 hadBelow=true vol/vol5=2.08x | VWAP: 4.63%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=2.02%/1.55%/2.50% accel=true | VOL: 317857.0000/96797.5500 TO: 20819633500.0000/6172230620.0000 | HIGH: 65500.0000 fromHigh=0.00% | VR: score=87 aboveBars=10 hadBelow=true vol/vol5=2.08x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 403870 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 403870 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=64400.0000 qty=152 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.68% peakPnl=-0.76% holdMs=120000 high=65000.0000 avgPrice=65500.0000 weightedPnl=-1.67% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 403870 reason=STOP_LOSS_VWAP_RECLAIM filledQty=152/152 fillRatio=1.00 weightedPnl=-1.67% dailyPnl=-1.67%
+2026-06-17 13:17:06 INFO  SELL_FILLED 403870 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:06 INFO  BUY amount set for 036930: 10000000.00
+2026-06-17 13:17:06 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=72300.0000 qty=138 size=1.0000x score=70[D] | WHY: dayChg=1.12% vrScore=84 aboveBars=10 hadBelow=true vol/vol5=1.94x | VWAP: 0.90%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.70%/0.42%/0.56% accel=true | VOL: 4063.0000/1603.3500 TO: 293754900.0000/115045340.0000 | HIGH: 72300.0000 fromHigh=0.00% | VR: score=84 aboveBars=10 hadBelow=true vol/vol5=1.94x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=71700.0000 qty=138 reason=VWAP_BREAK pnl=-0.83% peakPnl=1.24% holdMs=2760000 high=73200.0000 avgPrice=72300.0000 weightedPnl=-0.83% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 036930 reason=VWAP_BREAK filledQty=138/138 fillRatio=1.00 weightedPnl=-0.83% dailyPnl=-0.83%
+2026-06-17 13:17:06 INFO  SELL_FILLED 036930 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:06 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=71700.0000 qty=139 size=1.0000x score=45[D] | WHY: dayChg=4.22% vrScore=85 aboveBars=10 hadBelow=true vol/vol5=1.88x | VWAP: 2.72%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.27%/0.99%/2.14% accel=true | VOL: 25436.0000/8076.5500 TO: 1823761200.0000/566476915.0000 | HIGH: 71700.0000 fromHigh=0.00% | VR: score=85 aboveBars=10 hadBelow=true vol/vol5=1.88x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=70500.0000 qty=139 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.67% peakPnl=0.21% holdMs=480000 high=71850.0000 avgPrice=71700.0000 weightedPnl=-1.67% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 036930 reason=STOP_LOSS_VWAP_RECLAIM filledQty=139/139 fillRatio=1.00 weightedPnl=-1.67% dailyPnl=-1.67%
+2026-06-17 13:17:06 INFO  SELL_FILLED 036930 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:06 INFO  BUY [KRX] 036930 mode=BREAKOUT price=65000.0000 qty=153 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.17x) | VWAP: 1.30%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.62%/0.46%/0.62% accel=true | VOL: 4978.0000/1570.9500 TO: 323570000.0000/101588415.0000 | HIGH: 65000.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL [EOD_FORCE_SELL] 036930 pnl=0.15% time=15:30
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 036930 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=65100.0000 qty=153 reason=EOD_FORCE_SELL pnl=0.15% peakPnl=1.08% holdMs=4560000 high=65700.0000 avgPrice=65000.0000 weightedPnl=0.15% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 036930 reason=EOD_FORCE_SELL filledQty=153/153 fillRatio=1.00 weightedPnl=0.15% dailyPnl=0.15%
+2026-06-17 13:17:06 INFO  SELL_FILLED 036930 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:06 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=65300.0000 qty=153 size=1.0000x score=58[D] | WHY: dayChg=2.67% vrScore=86 aboveBars=9 hadBelow=true vol/vol5=2.33x | VWAP: 1.70%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.77%/0.77%/0.46% accel=false | VOL: 30261.0000/8428.6000 TO: 1976043300.0000/542305405.0000 | HIGH: 65900.0000 fromHigh=-0.91% | VR: score=86 aboveBars=9 hadBelow=true vol/vol5=2.33x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=64300.0000 qty=153 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.53% peakPnl=-0.31% holdMs=480000 high=65100.0000 avgPrice=65300.0000 weightedPnl=-1.53% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 036930 reason=STOP_LOSS_VWAP_RECLAIM filledQty=153/153 fillRatio=1.00 weightedPnl=-1.53% dailyPnl=-1.53%
+2026-06-17 13:17:06 INFO  SELL_FILLED 036930 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:06 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=71400.0000 qty=140 size=1.0000x score=45[D] | WHY: dayChg=3.93% vrScore=86 aboveBars=9 hadBelow=true vol/vol5=2.36x | VWAP: 2.30%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.56%/0.71%/2.00% accel=true | VOL: 50300.0000/12295.0000 TO: 3591420000.0000/866079675.0000 | HIGH: 71500.0000 fromHigh=-0.14% | VR: score=86 aboveBars=9 hadBelow=true vol/vol5=2.36x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=73500.0000 qty=140 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.94% peakPnl=2.94% holdMs=900000 high=73500.0000 avgPrice=71400.0000 weightedPnl=2.94% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 036930 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=140/140 fillRatio=1.00 weightedPnl=2.94% dailyPnl=2.94%
+2026-06-17 13:17:06 INFO  SELL_FILLED 036930 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:06 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=116500.0000 qty=85 size=1.0000x score=21[D] | WHY: dayChg=-2.83% vrScore=86 aboveBars=10 hadBelow=true vol/vol5=1.95x | VWAP: 3.91%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.66%/3.19%/3.00% accel=false | VOL: 111839.0000/81760.7000 TO: 13040427400.0000/9181707325.0000 | HIGH: 117200.0000 fromHigh=-0.51% | VR: score=86 aboveBars=10 hadBelow=true vol/vol5=1.95x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL [TRAIL_VWAP_RECLAIM] 036930 pnl=0.17% peakPnl=1.72% high=118600.0000 current=116800.0000
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=TRAIL price=116800.0000 qty=85 reason=TRAIL_VWAP_RECLAIM pnl=0.17% peakPnl=1.72% holdMs=420000 high=118600.0000 avgPrice=116600.0000 weightedPnl=0.17% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 036930 reason=TRAIL_VWAP_RECLAIM filledQty=85/85 fillRatio=1.00 weightedPnl=0.17% dailyPnl=0.17%
+2026-06-17 13:17:06 INFO  SELL_FILLED 036930 reason=TRAIL_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:06 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=127500.0000 qty=78 size=1.0000x score=85[A](CONV) | WHY: dayChg=1.35% vrScore=83 aboveBars=12 hadBelow=true vol/vol5=1.94x | VWAP: 0.90%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.63%/0.87%/0.87% accel=false | VOL: 7457.0000/2012.0500 TO: 952258900.0000/255183055.0000 | HIGH: 127800.0000 fromHigh=-0.08% | VR: score=83 aboveBars=12 hadBelow=true vol/vol5=1.94x | entryNo=1
+2026-06-17 13:17:06 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:06 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=130500.0000 qty=78 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.35% peakPnl=2.35% holdMs=540000 high=130700.0000 avgPrice=127700.0000 weightedPnl=2.34% (pending fill)
+2026-06-17 13:17:06 INFO  SELL_FILLED_PNL 036930 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=78/78 fillRatio=1.00 weightedPnl=2.34% dailyPnl=2.34%
+2026-06-17 13:17:06 INFO  SELL_FILLED 036930 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:07 INFO  BUY [KRX] 036930 mode=BREAKOUT price=126500.0000 qty=79 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(3.40x) | VWAP: 0.77%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.24%/0.16%/0.24% accel=true | VOL: 5553.0000/1632.1500 TO: 703565100.0000/206007805.0000 | HIGH: 126800.0000 fromHigh=-0.08% | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL [EOD_FORCE_SELL] 036930 pnl=-0.08% time=15:30
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 036930 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=126600.0000 qty=79 reason=EOD_FORCE_SELL pnl=-0.08% peakPnl=0.16% holdMs=7920000 high=126900.0000 avgPrice=126700.0000 weightedPnl=-0.08% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 036930 reason=EOD_FORCE_SELL filledQty=79/79 fillRatio=1.00 weightedPnl=-0.08% dailyPnl=-0.08%
+2026-06-17 13:17:07 INFO  SELL_FILLED 036930 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:07 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=127500.0000 qty=78 size=1.0000x score=85[A](CONV) | WHY: dayChg=-0.08% vrScore=86 aboveBars=11 hadBelow=true vol/vol5=1.93x | VWAP: 1.03%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.63%/0.71%/0.95% accel=false | VOL: 5579.0000/1670.7500 TO: 711880400.0000/211875925.0000 | HIGH: 127800.0000 fromHigh=-0.16% | VR: score=86 aboveBars=11 hadBelow=true vol/vol5=1.93x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=131000.0000 qty=78 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.74% peakPnl=2.74% holdMs=1560000 high=131100.0000 avgPrice=127600.0000 weightedPnl=2.73% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 036930 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=78/78 fillRatio=1.00 weightedPnl=2.73% dailyPnl=2.73%
+2026-06-17 13:17:07 INFO  SELL_FILLED 036930 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:07 INFO  BUY [KRX] 036930 mode=BREAKOUT price=138500.0000 qty=57 size=0.8000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.13x) | VWAP: 1.13%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.73%/0.65%/0.65% accel=true | VOL: 5069.0000/2379.3500 TO: 702056500.0000/328165950.0000 | HIGH: 138700.0000 fromHigh=-0.14% | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL [BREAKEVEN_GUARD] 036930 pnl=-0.43% peakPnl=1.73% holdMs=2160000
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 036930 mode=BREAKOUT phase=EXITING exitType=TRAIL price=137900.0000 qty=57 reason=BREAKEVEN_GUARD pnl=-0.43% peakPnl=1.73% holdMs=2160000 high=140900.0000 avgPrice=138500.0000 weightedPnl=-0.34% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 036930 reason=BREAKEVEN_GUARD filledQty=57/57 fillRatio=1.00 weightedPnl=-0.34% dailyPnl=-0.34%
+2026-06-17 13:17:07 INFO  SELL_FILLED 036930 reason=BREAKEVEN_GUARD remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:07 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=182000.0000 qty=54 size=1.0000x score=62[D] | WHY: dayChg=-2.20% vrScore=89 aboveBars=12 hadBelow=true vol/vol5=2.49x | VWAP: 1.00%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.83%/0.83%/1.00% accel=false | VOL: 8111.0000/4350.5500 TO: 1477013100.0000/787339750.0000 | HIGH: 182400.0000 fromHigh=-0.16% | VR: score=89 aboveBars=12 hadBelow=true vol/vol5=2.49x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=179600.0000 qty=54 reason=VWAP_BREAK pnl=-1.37% peakPnl=-0.16% holdMs=1080000 high=181800.0000 avgPrice=182100.0000 weightedPnl=-1.35% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 036930 reason=VWAP_BREAK filledQty=54/54 fillRatio=1.00 weightedPnl=-1.35% dailyPnl=-1.35%
+2026-06-17 13:17:07 INFO  SELL_FILLED 036930 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:07 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=199500.0000 qty=50 size=1.0000x score=75[C] | WHY: dayChg=7.77% vrScore=86 aboveBars=12 hadBelow=true vol/vol5=2.40x | VWAP: 0.99%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.55%/0.60%/0.81% accel=false | VOL: 17069.0000/5291.4500 TO: 3408679300.0000/1048924350.0000 | HIGH: 199800.0000 fromHigh=-0.05% | VR: score=86 aboveBars=12 hadBelow=true vol/vol5=2.40x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=204000.0000 qty=50 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.15% peakPnl=2.15% holdMs=600000 high=204000.0000 avgPrice=199700.0000 weightedPnl=2.15% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 036930 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=50/50 fillRatio=1.00 weightedPnl=2.15% dailyPnl=2.15%
+2026-06-17 13:17:07 INFO  SELL_FILLED 036930 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:07 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=231500.0000 qty=43 size=1.0000x score=40[D] | WHY: dayChg=1.09% vrScore=83 aboveBars=6 hadBelow=true vol/vol5=3.25x | VWAP: 3.13%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=2.21%/2.43%/2.66% accel=false | VOL: 85769.0000/17189.5000 TO: 19855523500.0000/3891417575.0000 | HIGH: 234000.0000 fromHigh=-1.07% | VR: score=83 aboveBars=6 hadBelow=true vol/vol5=3.25x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=228000.0000 qty=43 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.51% peakPnl=-0.65% holdMs=180000 high=230000.0000 avgPrice=231500.0000 weightedPnl=-1.51% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 036930 reason=STOP_LOSS_VWAP_RECLAIM filledQty=43/43 fillRatio=1.00 weightedPnl=-1.51% dailyPnl=-1.51%
+2026-06-17 13:17:07 INFO  SELL_FILLED 036930 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:07 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=241000.0000 qty=41 size=1.0000x score=45[D] | WHY: dayChg=5.24% vrScore=89 aboveBars=11 hadBelow=true vol/vol5=2.59x | VWAP: 2.94%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.26%/1.47%/1.26% accel=false | VOL: 37686.0000/8260.0500 TO: 9082326000.0000/1969969375.0000 | HIGH: 242000.0000 fromHigh=-0.41% | VR: score=89 aboveBars=11 hadBelow=true vol/vol5=2.59x | entryNo=2
+2026-06-17 13:17:07 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=246000.0000 qty=41 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.07% peakPnl=2.07% holdMs=180000 high=246000.0000 avgPrice=241000.0000 weightedPnl=2.05% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 036930 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=41/41 fillRatio=1.00 weightedPnl=2.05% dailyPnl=0.54%
+2026-06-17 13:17:07 INFO  SELL_FILLED 036930 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:07 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=247000.0000 qty=40 size=1.0000x score=70[D] | WHY: dayChg=25.32% vrScore=85 aboveBars=11 hadBelow=true vol/vol5=2.64x | VWAP: 0.82%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.61%/0.61%/0.82% accel=false | VOL: 11046.0000/4287.2000 TO: 2728362000.0000/1050659400.0000 | HIGH: 247000.0000 fromHigh=0.00% | VR: score=85 aboveBars=11 hadBelow=true vol/vol5=2.64x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=252500.0000 qty=40 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.23% peakPnl=2.23% holdMs=1560000 high=252500.0000 avgPrice=247000.0000 weightedPnl=2.20% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 036930 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=40/40 fillRatio=1.00 weightedPnl=2.20% dailyPnl=2.20%
+2026-06-17 13:17:07 INFO  SELL_FILLED 036930 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:07 INFO  BUY [KRX] 036930 mode=VWAP_RECLAIM price=192500.0000 qty=51 size=1.0000x score=70[D] | WHY: dayChg=-1.88% vrScore=86 aboveBars=9 hadBelow=true vol/vol5=2.31x | VWAP: 1.48%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.89%/1.31%/1.42% accel=false | VOL: 8218.0000/2913.1500 TO: 1583608600.0000/553868060.0000 | HIGH: 193000.0000 fromHigh=-0.16% | VR: score=86 aboveBars=9 hadBelow=true vol/vol5=2.31x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 036930 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 036930 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=197000.0000 qty=51 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.18% peakPnl=2.18% holdMs=360000 high=196900.0000 avgPrice=192700.0000 weightedPnl=2.14% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 036930 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=51/51 fillRatio=1.00 weightedPnl=2.14% dailyPnl=2.14%
+2026-06-17 13:17:07 INFO  SELL_FILLED 036930 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:07 INFO  BUY amount set for 347850: 10000000.00
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=78800.0000 qty=126 size=1.0000x score=80[B] | WHY: dayChg=2.60% vrScore=86 aboveBars=11 hadBelow=true vol/vol5=4.22x | VWAP: 0.90%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.38%/0.64%/0.51% accel=false | VOL: 2848.0000/388.5500 TO: 224422400.0000/30496260.0000 | HIGH: 78800.0000 fromHigh=0.00% | VR: score=86 aboveBars=11 hadBelow=true vol/vol5=4.22x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL [EOD_FORCE_SELL] 347850 pnl=0.38% time=15:30
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=TIMESTOP price=79100.0000 qty=126 reason=EOD_FORCE_SELL pnl=0.38% peakPnl=0.51% holdMs=6540000 high=79200.0000 avgPrice=78800.0000 weightedPnl=0.38% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=EOD_FORCE_SELL filledQty=126/126 fillRatio=1.00 weightedPnl=0.38% dailyPnl=0.38%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=81500.0000 qty=122 size=1.0000x score=73[D] | WHY: dayChg=1.12% vrScore=85 aboveBars=9 hadBelow=true vol/vol5=4.19x | VWAP: 0.74%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.49%/0.49%/0.37% accel=false | VOL: 18334.0000/1497.1500 TO: 1494221000.0000/121744967.5000 | HIGH: 81800.0000 fromHigh=-0.37% | VR: score=85 aboveBars=9 hadBelow=true vol/vol5=4.19x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=80400.0000 qty=122 reason=VWAP_BREAK pnl=-1.35% peakPnl=0.12% holdMs=2520000 high=81600.0000 avgPrice=81500.0000 weightedPnl=-1.34% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=VWAP_BREAK filledQty=122/122 fillRatio=1.00 weightedPnl=-1.34% dailyPnl=-1.34%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=70100.0000 qty=142 size=1.0000x score=85[A](CONV) | WHY: dayChg=0.57% vrScore=88 aboveBars=9 hadBelow=true vol/vol5=2.84x | VWAP: 1.40%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.57%/0.57%/0.94% accel=false | VOL: 4402.0000/1047.4000 TO: 308580200.0000/72834797.5000 | HIGH: 70300.0000 fromHigh=-0.28% | VR: score=88 aboveBars=9 hadBelow=true vol/vol5=2.84x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=69200.0000 qty=142 reason=VWAP_BREAK pnl=-1.28% peakPnl=0.14% holdMs=4920000 high=70200.0000 avgPrice=70100.0000 weightedPnl=-1.28% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=VWAP_BREAK filledQty=142/142 fillRatio=1.00 weightedPnl=-1.28% dailyPnl=-1.28%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=70500.0000 qty=141 size=1.0000x score=75[C] | WHY: dayChg=1.15% vrScore=89 aboveBars=8 hadBelow=true vol/vol5=3.43x | VWAP: 1.31%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.93%/0.86%/1.29% accel=true | VOL: 9674.0000/997.5500 TO: 682017000.0000/69843645.0000 | HIGH: 70600.0000 fromHigh=-0.14% | VR: score=89 aboveBars=8 hadBelow=true vol/vol5=3.43x | entryNo=2
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=72200.0000 qty=141 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.41% peakPnl=2.41% holdMs=420000 high=72200.0000 avgPrice=70500.0000 weightedPnl=2.40% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=141/141 fillRatio=1.00 weightedPnl=2.40% dailyPnl=1.12%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=80600.0000 qty=124 size=1.0000x score=75[C] | WHY: dayChg=2.68% vrScore=85 aboveBars=11 hadBelow=true vol/vol5=1.82x | VWAP: 1.51%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.75%/0.75%/1.13% accel=false | VOL: 5133.0000/1311.5000 TO: 413719800.0000/104697595.0000 | HIGH: 80700.0000 fromHigh=-0.12% | VR: score=85 aboveBars=11 hadBelow=true vol/vol5=1.82x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=79300.0000 qty=124 reason=VWAP_BREAK pnl=-1.61% peakPnl=0.74% holdMs=2760000 high=81200.0000 avgPrice=80600.0000 weightedPnl=-1.61% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=VWAP_BREAK filledQty=124/124 fillRatio=1.00 weightedPnl=-1.61% dailyPnl=-1.61%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=BREAKOUT price=85000.0000 qty=117 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(4.40x) | VWAP: 1.86%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.47%/0.35%/0.59% accel=true | VOL: 5997.0000/1362.3500 TO: 509745000.0000/115304125.0000 | HIGH: 85200.0000 fromHigh=-0.23% | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=83500.0000 qty=117 reason=VWAP_BREAK pnl=-1.76% peakPnl=-0.12% holdMs=3300000 high=84900.0000 avgPrice=85000.0000 weightedPnl=-1.76% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=VWAP_BREAK filledQty=117/117 fillRatio=1.00 weightedPnl=-1.76% dailyPnl=-1.76%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=BREAKOUT price=79600.0000 qty=125 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(3.80x) | VWAP: 0.78%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.38%/0.25%/0.51% accel=true | VOL: 3557.0000/935.9500 TO: 283137200.0000/74232010.0000 | HIGH: 79600.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL [EOD_FORCE_SELL] 347850 pnl=0.25% time=15:30
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=79800.0000 qty=125 reason=EOD_FORCE_SELL pnl=0.25% peakPnl=0.88% holdMs=1860000 high=80300.0000 avgPrice=79600.0000 weightedPnl=0.25% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=EOD_FORCE_SELL filledQty=125/125 fillRatio=1.00 weightedPnl=0.25% dailyPnl=0.25%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=PULLBACK price=78900.0000 qty=190 size=1.5000x score=80[B] | WHY: zone(-1.13%fromHigh) vel+ avgCross priceAboveAvg vol(4.10x) | VWAP: 0.77%(ABOVE slope=UP) allowedGap=1.00% | TREND: score=3 vel=0.77%/1.15%/1.15% accel=false | VOL: 4603.0000/1122.9000 TO: 363176700.0000/87745510.0000 | HIGH: 79800.0000 fromHigh=-1.13% | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL [TRAIL_PULLBACK] 347850 pnl=1.39% peakPnl=3.17% high=81400.0000 current=80000.0000
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=PULLBACK phase=EXITING exitType=TRAIL price=80000.0000 qty=190 reason=TRAIL_PULLBACK pnl=1.39% peakPnl=3.17% holdMs=1200000 high=81400.0000 avgPrice=78900.0000 weightedPnl=2.09% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=TRAIL_PULLBACK filledQty=190/190 fillRatio=1.00 weightedPnl=2.09% dailyPnl=2.09%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=TRAIL_PULLBACK remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=BREAKOUT price=74200.0000 qty=134 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.64x) | VWAP: 1.05%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.61%/0.54%/0.68% accel=true | VOL: 4503.0000/1703.2000 TO: 334122600.0000/125516857.5000 | HIGH: 74300.0000 fromHigh=-0.13% | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=72800.0000 qty=134 reason=VWAP_BREAK pnl=-1.89% peakPnl=0.00% holdMs=540000 high=74200.0000 avgPrice=74200.0000 weightedPnl=-1.88% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=VWAP_BREAK filledQty=134/134 fillRatio=1.00 weightedPnl=-1.88% dailyPnl=-1.88%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=BREAKOUT price=61800.0000 qty=129 size=0.8000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.01x) | VWAP: 0.94%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=1.15%/0.98%/0.32% accel=true | VOL: 2483.0000/1232.5000 TO: 153449400.0000/75507875.0000 | HIGH: 61800.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=61000.0000 qty=129 reason=VWAP_BREAK pnl=-1.29% peakPnl=0.65% holdMs=4860000 high=62200.0000 avgPrice=61800.0000 weightedPnl=-1.03% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=VWAP_BREAK filledQty=129/129 fillRatio=1.00 weightedPnl=-1.03% dailyPnl=-1.03%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=75200.0000 qty=132 size=1.0000x score=75[C] | WHY: dayChg=-0.13% vrScore=87 aboveBars=8 hadBelow=true vol/vol5=3.06x | VWAP: 1.22%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.67%/1.08%/0.67% accel=false | VOL: 9197.0000/1894.9000 TO: 691614400.0000/141289005.0000 | HIGH: 75200.0000 fromHigh=0.00% | VR: score=87 aboveBars=8 hadBelow=true vol/vol5=3.06x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=74300.0000 qty=132 reason=VWAP_BREAK pnl=-1.20% peakPnl=1.06% holdMs=2160000 high=76000.0000 avgPrice=75200.0000 weightedPnl=-1.19% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=VWAP_BREAK filledQty=132/132 fillRatio=1.00 weightedPnl=-1.19% dailyPnl=-1.19%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=74500.0000 qty=134 size=1.0000x score=85[A](CONV) | WHY: dayChg=-1.06% vrScore=87 aboveBars=8 hadBelow=true vol/vol5=3.35x | VWAP: 0.94%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.81%/0.81%/0.95% accel=false | VOL: 3820.0000/685.5000 TO: 284590000.0000/50727890.0000 | HIGH: 74500.0000 fromHigh=0.00% | VR: score=87 aboveBars=8 hadBelow=true vol/vol5=3.35x | entryNo=2
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=76200.0000 qty=134 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.28% peakPnl=2.28% holdMs=1140000 high=76200.0000 avgPrice=74500.0000 weightedPnl=2.28% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=134/134 fillRatio=1.00 weightedPnl=2.28% dailyPnl=1.09%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:07 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=111000.0000 qty=90 size=1.0000x score=45[D] | WHY: dayChg=5.62% vrScore=89 aboveBars=12 hadBelow=true vol/vol5=2.50x | VWAP: 3.48%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.84%/2.88%/2.02% accel=false | VOL: 82228.0000/22751.1000 TO: 9119085200.0000/2463081180.0000 | HIGH: 111000.0000 fromHigh=-0.09% | VR: score=89 aboveBars=12 hadBelow=true vol/vol5=2.50x | entryNo=1
+2026-06-17 13:17:07 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:07 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=108300.0000 qty=90 reason=STOP_LOSS_VWAP_RECLAIM pnl=-2.34% peakPnl=1.44% holdMs=420000 high=112500.0000 avgPrice=110900.0000 weightedPnl=-2.34% (pending fill)
+2026-06-17 13:17:07 INFO  SELL_FILLED_PNL 347850 reason=STOP_LOSS_VWAP_RECLAIM filledQty=90/90 fillRatio=1.00 weightedPnl=-2.34% dailyPnl=-2.34%
+2026-06-17 13:17:07 INFO  SELL_FILLED 347850 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:08 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=86800.0000 qty=115 size=1.0000x score=40[D] | WHY: dayChg=5.60% vrScore=88 aboveBars=10 hadBelow=true vol/vol5=2.40x | VWAP: 2.99%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=2.00%/1.64%/1.52% accel=true | VOL: 18934.0000/6916.0500 TO: 1643471200.0000/587351875.0000 | HIGH: 86800.0000 fromHigh=0.00% | VR: score=88 aboveBars=10 hadBelow=true vol/vol5=2.40x | entryNo=1
+2026-06-17 13:17:08 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:08 INFO  SELL [TRAIL_VWAP_RECLAIM] 347850 pnl=0.23% peakPnl=1.84% high=88400.0000 current=87000.0000
+2026-06-17 13:17:08 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=TRAIL price=87000.0000 qty=115 reason=TRAIL_VWAP_RECLAIM pnl=0.23% peakPnl=1.84% holdMs=180000 high=88400.0000 avgPrice=86800.0000 weightedPnl=0.23% (pending fill)
+2026-06-17 13:17:08 INFO  SELL_FILLED_PNL 347850 reason=TRAIL_VWAP_RECLAIM filledQty=115/115 fillRatio=1.00 weightedPnl=0.23% dailyPnl=0.23%
+2026-06-17 13:17:08 INFO  SELL_FILLED 347850 reason=TRAIL_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:17:08 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=91300.0000 qty=109 size=1.0000x score=45[D] | WHY: dayChg=4.82% vrScore=86 aboveBars=10 hadBelow=true vol/vol5=1.94x | VWAP: 2.11%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.88%/1.44%/2.01% accel=false | VOL: 19121.0000/3510.6500 TO: 1745747300.0000/316670410.0000 | HIGH: 91300.0000 fromHigh=0.00% | VR: score=86 aboveBars=10 hadBelow=true vol/vol5=1.94x | entryNo=1
+2026-06-17 13:17:08 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:08 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=93200.0000 qty=109 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.08% peakPnl=2.08% holdMs=600000 high=93200.0000 avgPrice=91300.0000 weightedPnl=2.07% (pending fill)
+2026-06-17 13:17:08 INFO  SELL_FILLED_PNL 347850 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=109/109 fillRatio=1.00 weightedPnl=2.07% dailyPnl=2.07%
+2026-06-17 13:17:08 INFO  SELL_FILLED 347850 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:17:08 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=94200.0000 qty=106 size=1.0000x score=50[D] | WHY: dayChg=7.05% vrScore=87 aboveBars=12 hadBelow=true vol/vol5=2.16x | VWAP: 2.32%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=2.28%/2.61%/1.95% accel=false | VOL: 19682.0000/9272.3333 TO: 1854044400.0000/853628955.5556 | HIGH: 94400.0000 fromHigh=-0.21% | VR: score=87 aboveBars=12 hadBelow=true vol/vol5=2.16x | entryNo=1
+2026-06-17 13:17:08 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:08 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=93100.0000 qty=106 reason=VWAP_BREAK pnl=-1.17% peakPnl=1.27% holdMs=960000 high=95400.0000 avgPrice=94200.0000 weightedPnl=-1.17% (pending fill)
+2026-06-17 13:17:08 INFO  SELL_FILLED_PNL 347850 reason=VWAP_BREAK filledQty=106/106 fillRatio=1.00 weightedPnl=-1.17% dailyPnl=-1.17%
+2026-06-17 13:17:08 INFO  SELL_FILLED 347850 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:17:08 INFO  BUY [KRX] 347850 mode=BREAKOUT price=93800.0000 qty=85 size=0.8000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.05x) | VWAP: 1.09%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.75%/0.54%/0.64% accel=true | VOL: 6522.0000/3187.8000 TO: 611763600.0000/296720395.0000 | HIGH: 93800.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:17:08 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:08 INFO  SELL_EXECUTED [KRX] 347850 mode=BREAKOUT phase=EXITING exitType=STOPLOSS price=86200.0000 qty=85 reason=EMERGENCY_STOP pnl=-8.10% peakPnl=0.64% holdMs=2700000 high=94400.0000 avgPrice=93800.0000 weightedPnl=-6.46% (pending fill)
+2026-06-17 13:17:08 INFO  SELL_FILLED_PNL 347850 reason=EMERGENCY_STOP filledQty=85/85 fillRatio=1.00 weightedPnl=-6.46% dailyPnl=-6.46%
+2026-06-17 13:17:08 INFO  SELL_FILLED 347850 reason=EMERGENCY_STOP remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:17:08 INFO  BUY [KRX] 347850 mode=VWAP_RECLAIM price=87000.0000 qty=114 size=1.0000x score=75[C] | WHY: dayChg=4.57% vrScore=89 aboveBars=12 hadBelow=true vol/vol5=2.58x | VWAP: 1.45%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.16%/1.16%/0.93% accel=false | VOL: 8501.0000/2476.8500 TO: 739587000.0000/213139480.0000 | HIGH: 87000.0000 fromHigh=0.00% | VR: score=89 aboveBars=12 hadBelow=true vol/vol5=2.58x | entryNo=1
+2026-06-17 13:17:08 INFO  BUY_FILLED 347850 phase=HOLDING
+2026-06-17 13:17:08 INFO  SELL_EXECUTED [KRX] 347850 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=89400.0000 qty=114 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.76% peakPnl=2.76% holdMs=660000 high=89400.0000 avgPrice=87000.0000 weightedPnl=2.74% (pending fill)
+2026-06-17 13:17:08 INFO  SELL_FILLED_PNL 347850 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=114/114 fillRatio=1.00 weightedPnl=2.74% dailyPnl=2.74%
+2026-06-17 13:17:08 INFO  SELL_FILLED 347850 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:30:46 INFO  BUY amount set for 112610: 10000000.00
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=VWAP_RECLAIM price=68900.0000 qty=145 size=1.0000x score=32[D] | WHY: dayChg=1.32% vrScore=84 aboveBars=12 hadBelow=true vol/vol5=1.82x | VWAP: 2.17%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.58%/1.17%/0.88% accel=false | VOL: 21680.0000/9141.3500 TO: 1493752000.0000/622883925.0000 | HIGH: 69000.0000 fromHigh=-0.14% | VR: score=84 aboveBars=12 hadBelow=true vol/vol5=1.82x | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=67400.0000 qty=145 reason=STOP_LOSS_VWAP_RECLAIM pnl=-2.18% peakPnl=0.44% holdMs=300000 high=69200.0000 avgPrice=68900.0000 weightedPnl=-2.18% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=STOP_LOSS_VWAP_RECLAIM filledQty=145/145 fillRatio=1.00 weightedPnl=-2.18% dailyPnl=-2.18%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=VWAP_RECLAIM price=61300.0000 qty=163 size=1.0000x score=46[D] | WHY: dayChg=2.00% vrScore=86 aboveBars=12 hadBelow=true vol/vol5=1.96x | VWAP: 1.25%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.82%/0.49%/0.82% accel=true | VOL: 2516.0000/1746.0000 TO: 154230800.0000/105922585.0000 | HIGH: 61400.0000 fromHigh=-0.16% | VR: score=86 aboveBars=12 hadBelow=true vol/vol5=1.96x | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=60200.0000 qty=163 reason=VWAP_BREAK pnl=-1.79% peakPnl=-0.49% holdMs=840000 high=61000.0000 avgPrice=61300.0000 weightedPnl=-1.79% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=VWAP_BREAK filledQty=163/163 fillRatio=1.00 weightedPnl=-1.79% dailyPnl=-1.79%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=BREAKOUT price=69700.0000 qty=114 size=0.8000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.09x) | VWAP: 1.49%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.72%/0.58%/0.58% accel=true | VOL: 8967.0000/4288.7500 TO: 624999900.0000/297442932.5000 | HIGH: 69900.0000 fromHigh=-0.29% | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL [EOD_FORCE_SELL] 112610 pnl=-0.43% time=15:30
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=69400.0000 qty=114 reason=EOD_FORCE_SELL pnl=-0.43% peakPnl=0.14% holdMs=2760000 high=69800.0000 avgPrice=69700.0000 weightedPnl=-0.34% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=EOD_FORCE_SELL filledQty=114/114 fillRatio=1.00 weightedPnl=-0.34% dailyPnl=-0.34%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=BREAKOUT price=69000.0000 qty=115 size=0.8000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(2.29x) | VWAP: 0.96%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.29%/0.15%/0.58% accel=true | VOL: 2613.0000/1138.9000 TO: 180297000.0000/78358435.0000 | HIGH: 69100.0000 fromHigh=-0.14% | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL [EOD_FORCE_SELL] 112610 pnl=-0.29% time=15:30
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=68800.0000 qty=115 reason=EOD_FORCE_SELL pnl=-0.29% peakPnl=-0.29% holdMs=660000 high=68800.0000 avgPrice=69000.0000 weightedPnl=-0.23% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=EOD_FORCE_SELL filledQty=115/115 fillRatio=1.00 weightedPnl=-0.23% dailyPnl=-0.23%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=BREAKOUT price=74400.0000 qty=134 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.21x) | VWAP: 1.74%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.68%/0.40%/0.27% accel=true | VOL: 6629.0000/2063.8500 TO: 493197600.0000/152540145.0000 | HIGH: 74400.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=74000.0000 qty=134 reason=VWAP_BREAK pnl=-0.54% peakPnl=1.21% holdMs=6780000 high=75300.0000 avgPrice=74400.0000 weightedPnl=-0.54% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=VWAP_BREAK filledQty=134/134 fillRatio=1.00 weightedPnl=-0.54% dailyPnl=-0.54%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=VWAP_RECLAIM price=72600.0000 qty=137 size=1.0000x score=75[C] | WHY: dayChg=-1.76% vrScore=89 aboveBars=11 hadBelow=true vol/vol5=2.97x | VWAP: 1.04%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.55%/0.28%/0.69% accel=true | VOL: 1804.0000/487.0500 TO: 130970400.0000/35201670.0000 | HIGH: 72700.0000 fromHigh=-0.14% | VR: score=89 aboveBars=11 hadBelow=true vol/vol5=2.97x | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=72100.0000 qty=137 reason=VWAP_BREAK pnl=-0.69% peakPnl=0.28% holdMs=6780000 high=72800.0000 avgPrice=72600.0000 weightedPnl=-0.69% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=VWAP_BREAK filledQty=137/137 fillRatio=1.00 weightedPnl=-0.69% dailyPnl=-0.69%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=VWAP_RECLAIM price=73400.0000 qty=136 size=1.0000x score=80[B] | WHY: dayChg=0.69% vrScore=86 aboveBars=12 hadBelow=true vol/vol5=2.09x | VWAP: 0.97%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.69%/0.55%/0.69% accel=true | VOL: 3238.0000/1362.7059 TO: 237669200.0000/99058870.5882 | HIGH: 73500.0000 fromHigh=-0.14% | VR: score=86 aboveBars=12 hadBelow=true vol/vol5=2.09x | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=72900.0000 qty=136 reason=VWAP_BREAK pnl=-0.68% peakPnl=1.09% holdMs=1080000 high=74200.0000 avgPrice=73400.0000 weightedPnl=-0.68% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=VWAP_BREAK filledQty=136/136 fillRatio=1.00 weightedPnl=-0.68% dailyPnl=-0.68%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=BREAKOUT price=67100.0000 qty=149 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(2.90x) | VWAP: 0.68%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.30%/0.15%/0.15% accel=true | VOL: 3428.0000/1182.2500 TO: 230018800.0000/79073285.0000 | HIGH: 67100.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL [EOD_FORCE_SELL] 112610 pnl=-0.30% time=15:30
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=66900.0000 qty=149 reason=EOD_FORCE_SELL pnl=-0.30% peakPnl=-0.15% holdMs=2100000 high=67000.0000 avgPrice=67100.0000 weightedPnl=-0.30% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=EOD_FORCE_SELL filledQty=149/149 fillRatio=1.00 weightedPnl=-0.30% dailyPnl=-0.30%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=BREAKOUT price=53000.0000 qty=188 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.46x) | VWAP: 0.83%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=1.15%/0.95%/1.73% accel=true | VOL: 2365.0000/963.1000 TO: 125345000.0000/50625025.0000 | HIGH: 53000.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=52500.0000 qty=188 reason=VWAP_BREAK pnl=-0.94% peakPnl=0.75% holdMs=1260000 high=53400.0000 avgPrice=53000.0000 weightedPnl=-0.94% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=VWAP_BREAK filledQty=188/188 fillRatio=1.00 weightedPnl=-0.94% dailyPnl=-0.94%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=BREAKOUT price=50800.0000 qty=196 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(2.46x) | VWAP: 0.53%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.99%/0.79%/1.20% accel=true | VOL: 1947.0000/791.1000 TO: 98907600.0000/39821445.0000 | HIGH: 50800.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=50500.0000 qty=196 reason=VWAP_BREAK pnl=-0.59% peakPnl=1.38% holdMs=7080000 high=51500.0000 avgPrice=50800.0000 weightedPnl=-0.59% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=VWAP_BREAK filledQty=196/196 fillRatio=1.00 weightedPnl=-0.59% dailyPnl=-0.59%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=BREAKOUT price=40700.0000 qty=245 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(5.54x) | VWAP: 0.93%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.99%/0.74%/0.99% accel=true | VOL: 14463.0000/2609.2500 TO: 588644100.0000/105568735.0000 | HIGH: 40750.0000 fromHigh=-0.12% | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL [EOD_FORCE_SELL] 112610 pnl=-0.37% time=15:30
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=40550.0000 qty=245 reason=EOD_FORCE_SELL pnl=-0.37% peakPnl=0.12% holdMs=1200000 high=40750.0000 avgPrice=40700.0000 weightedPnl=-0.37% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=EOD_FORCE_SELL filledQty=245/245 fillRatio=1.00 weightedPnl=-0.37% dailyPnl=-0.37%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=BREAKOUT price=43450.0000 qty=230 size=1.0000x score=85[A](CONV) | WHY: strongBreakout volBreakout retestOK multiUp vol(3.77x) | VWAP: 0.94%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.23%/0.12%/0.35% accel=true | VOL: 4000.0000/1059.9000 TO: 173800000.0000/45882437.5000 | HIGH: 43450.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL [EOD_FORCE_SELL] 112610 pnl=0.69% time=15:30
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=BREAKOUT phase=EXITING exitType=TIMESTOP price=43750.0000 qty=230 reason=EOD_FORCE_SELL pnl=0.69% peakPnl=1.50% holdMs=5760000 high=44100.0000 avgPrice=43450.0000 weightedPnl=0.69% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=EOD_FORCE_SELL filledQty=230/230 fillRatio=1.00 weightedPnl=0.69% dailyPnl=0.69%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:30:46 INFO  BUY [KRX] 112610 mode=VWAP_RECLAIM price=44600.0000 qty=224 size=1.0000x score=75[C] | WHY: dayChg=1.83% vrScore=84 aboveBars=6 hadBelow=true vol/vol5=3.44x | VWAP: 1.28%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.79%/0.68%/1.59% accel=true | VOL: 9080.0000/1496.3500 TO: 404968000.0000/65924707.5000 | HIGH: 44650.0000 fromHigh=-0.11% | VR: score=84 aboveBars=6 hadBelow=true vol/vol5=3.44x | entryNo=1
+2026-06-17 13:30:46 INFO  BUY_FILLED 112610 phase=HOLDING
+2026-06-17 13:30:46 INFO  SELL_EXECUTED [KRX] 112610 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=44100.0000 qty=224 reason=VWAP_BREAK pnl=-1.12% peakPnl=0.56% holdMs=1980000 high=44850.0000 avgPrice=44600.0000 weightedPnl=-1.12% (pending fill)
+2026-06-17 13:30:46 INFO  SELL_FILLED_PNL 112610 reason=VWAP_BREAK filledQty=224/224 fillRatio=1.00 weightedPnl=-1.12% dailyPnl=-1.12%
+2026-06-17 13:30:46 INFO  SELL_FILLED 112610 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:46 INFO  BUY amount set for 028260: 10000000.00
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=BREAKOUT price=252500.0000 qty=31 size=0.8000x score=81[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(1.97x) | VWAP: 1.12%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=1.20%/0.80%/1.00% accel=true | VOL: 4495.0000/2276.8500 TO: 1134987500.0000/566982612.5000 | HIGH: 252500.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL [TRAIL_BREAKOUT] 028260 pnl=0.99% peakPnl=2.57% high=259000.0000 current=255000.0000
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=BREAKOUT phase=EXITING exitType=TRAIL price=255000.0000 qty=31 reason=TRAIL_BREAKOUT pnl=0.99% peakPnl=2.57% holdMs=10080000 high=259000.0000 avgPrice=252500.0000 weightedPnl=0.78% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=TRAIL_BREAKOUT filledQty=31/31 fillRatio=1.00 weightedPnl=0.78% dailyPnl=0.78%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=TRAIL_BREAKOUT remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=BREAKOUT price=305500.0000 qty=32 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(8.61x) | VWAP: 1.33%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.83%/0.66%/0.83% accel=true | VOL: 12155.0000/1411.2000 TO: 3713352500.0000/428658400.0000 | HIGH: 305500.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL [BREAKEVEN_GUARD] 028260 pnl=-0.33% peakPnl=1.80% holdMs=1920000
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=BREAKOUT phase=EXITING exitType=TRAIL price=304500.0000 qty=32 reason=BREAKEVEN_GUARD pnl=-0.33% peakPnl=1.80% holdMs=1920000 high=311000.0000 avgPrice=305500.0000 weightedPnl=-0.32% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=BREAKEVEN_GUARD filledQty=32/32 fillRatio=1.00 weightedPnl=-0.32% dailyPnl=-0.32%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=BREAKEVEN_GUARD remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=VWAP_RECLAIM price=363000.0000 qty=27 size=1.0000x score=32[D] | WHY: dayChg=4.31% vrScore=85 aboveBars=11 hadBelow=true vol/vol5=1.82x | VWAP: 3.46%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.26%/0.97%/0.55% accel=true | VOL: 14162.0000/7710.2500 TO: 5140806000.0000/2746267675.0000 | HIGH: 363500.0000 fromHigh=-0.14% | VR: score=85 aboveBars=11 hadBelow=true vol/vol5=1.82x | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=370500.0000 qty=27 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.07% peakPnl=2.07% holdMs=540000 high=370500.0000 avgPrice=363000.0000 weightedPnl=2.03% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=27/27 fillRatio=1.00 weightedPnl=2.03% dailyPnl=2.03%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=VWAP_RECLAIM price=442000.0000 qty=22 size=1.0000x score=70[D] | WHY: dayChg=3.63% vrScore=83 aboveBars=8 hadBelow=true vol/vol5=2.26x | VWAP: 1.41%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.68%/0.57%/0.91% accel=true | VOL: 4326.0000/2028.5000 TO: 1912092000.0000/884115000.0000 | HIGH: 442500.0000 fromHigh=-0.11% | VR: score=83 aboveBars=8 hadBelow=true vol/vol5=2.26x | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=435000.0000 qty=22 reason=VWAP_BREAK pnl=-1.58% peakPnl=0.68% holdMs=1020000 high=445000.0000 avgPrice=442000.0000 weightedPnl=-1.54% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=VWAP_BREAK filledQty=22/22 fillRatio=1.00 weightedPnl=-1.54% dailyPnl=-1.54%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=VWAP_RECLAIM price=437500.0000 qty=22 size=1.0000x score=62[D] | WHY: dayChg=0.57% vrScore=86 aboveBars=12 hadBelow=true vol/vol5=2.09x | VWAP: 1.25%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.57%/0.57%/0.69% accel=false | VOL: 2754.0000/1703.8500 TO: 1204875000.0000/737127625.0000 | HIGH: 438000.0000 fromHigh=-0.11% | VR: score=86 aboveBars=12 hadBelow=true vol/vol5=2.09x | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=431500.0000 qty=22 reason=VWAP_BREAK pnl=-1.37% peakPnl=0.46% holdMs=900000 high=439500.0000 avgPrice=437500.0000 weightedPnl=-1.32% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=VWAP_BREAK filledQty=22/22 fillRatio=1.00 weightedPnl=-1.32% dailyPnl=-1.32%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=BREAKOUT price=404500.0000 qty=24 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.72x) | VWAP: 1.56%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.62%/0.50%/0.75% accel=true | VOL: 3112.0000/836.7500 TO: 1258804000.0000/335881925.0000 | HIGH: 404500.0000 fromHigh=0.00% | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=397500.0000 qty=24 reason=VWAP_BREAK pnl=-1.73% peakPnl=0.25% holdMs=3300000 high=405500.0000 avgPrice=404500.0000 weightedPnl=-1.68% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=VWAP_BREAK filledQty=24/24 fillRatio=1.00 weightedPnl=-1.68% dailyPnl=-1.68%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=VWAP_RECLAIM price=459500.0000 qty=21 size=1.0000x score=70[D] | WHY: dayChg=3.49% vrScore=88 aboveBars=11 hadBelow=true vol/vol5=2.26x | VWAP: 1.50%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.10%/0.88%/0.77% accel=true | VOL: 5691.0000/2132.5000 TO: 2615014500.0000/970059975.0000 | HIGH: 459500.0000 fromHigh=0.00% | VR: score=88 aboveBars=11 hadBelow=true vol/vol5=2.26x | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=470500.0000 qty=21 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.39% peakPnl=2.39% holdMs=960000 high=470500.0000 avgPrice=459500.0000 weightedPnl=2.31% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=21/21 fillRatio=1.00 weightedPnl=2.31% dailyPnl=2.31%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=BREAKOUT price=457000.0000 qty=21 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(3.88x) | VWAP: 1.24%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.77%/0.66%/0.55% accel=true | VOL: 4896.0000/1261.0000 TO: 2237472000.0000/572569650.0000 | HIGH: 457500.0000 fromHigh=-0.11% | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL [BREAKEVEN_GUARD] 028260 pnl=-0.33% peakPnl=1.53% holdMs=2280000
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=BREAKOUT phase=EXITING exitType=TRAIL price=455500.0000 qty=21 reason=BREAKEVEN_GUARD pnl=-0.33% peakPnl=1.53% holdMs=2280000 high=464000.0000 avgPrice=457000.0000 weightedPnl=-0.32% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=BREAKEVEN_GUARD filledQty=21/21 fillRatio=1.00 weightedPnl=-0.32% dailyPnl=-0.32%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=BREAKEVEN_GUARD remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=VWAP_RECLAIM price=401500.0000 qty=24 size=1.0000x score=50[D] | WHY: dayChg=-0.37% vrScore=85 aboveBars=10 hadBelow=true vol/vol5=1.88x | VWAP: 1.25%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.63%/0.50%/0.63% accel=true | VOL: 3177.0000/1738.8000 TO: 1275565500.0000/690577400.0000 | HIGH: 402500.0000 fromHigh=-0.25% | VR: score=85 aboveBars=10 hadBelow=true vol/vol5=1.88x | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL [EOD_FORCE_SELL] 028260 pnl=1.49% time=15:30
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=VWAP_RECLAIM phase=EXITING exitType=TIMESTOP price=407500.0000 qty=24 reason=EOD_FORCE_SELL pnl=1.49% peakPnl=1.49% holdMs=1260000 high=407500.0000 avgPrice=401500.0000 weightedPnl=1.44% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=EOD_FORCE_SELL filledQty=24/24 fillRatio=1.00 weightedPnl=1.44% dailyPnl=1.44%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=EOD_FORCE_SELL remainingQty=0 phase=NONE exitType=TIMESTOP
+2026-06-17 13:30:47 INFO  BUY [KRX] 028260 mode=BREAKOUT price=497500.0000 qty=20 size=1.0000x score=80[B] | WHY: strongBreakout volBreakout retestOK multiUp vol(5.29x) | VWAP: 1.25%(ABOVE slope=UP) allowedGap=1.50% | TREND: score=3 vel=0.51%/0.40%/0.51% accel=true | VOL: 3368.0000/636.1500 TO: 1675580000.0000/315063737.5000 | HIGH: 498000.0000 fromHigh=-0.10% | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 028260 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 028260 mode=BREAKOUT phase=EXITING exitType=VWAP_BREAK price=491500.0000 qty=20 reason=VWAP_BREAK pnl=-1.21% peakPnl=-0.10% holdMs=3060000 high=497000.0000 avgPrice=497500.0000 weightedPnl=-1.20% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 028260 reason=VWAP_BREAK filledQty=20/20 fillRatio=1.00 weightedPnl=-1.20% dailyPnl=-1.20%
+2026-06-17 13:30:47 INFO  SELL_FILLED 028260 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 13:30:47 INFO  BUY amount set for 126640: 10000000.00
+2026-06-17 13:30:47 INFO  BUY [KRX] 126640 mode=VWAP_RECLAIM price=1855.0000 qty=5390 size=1.0000x score=46[D] | WHY: dayChg=7.54% vrScore=86 aboveBars=10 hadBelow=true vol/vol5=1.91x | VWAP: 1.87%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.09%/0.98%/0.93% accel=true | VOL: 29917.0000/21898.4000 TO: 55436201.0000/40085815.0500 | HIGH: 1857.0000 fromHigh=-0.22% | VR: score=86 aboveBars=10 hadBelow=true vol/vol5=1.91x | entryNo=1
+2026-06-17 13:30:47 INFO  BUY_FILLED 126640 phase=HOLDING
+2026-06-17 13:30:47 INFO  SELL [TRAIL_VWAP_RECLAIM] 126640 pnl=0.32% peakPnl=1.83% high=1887.0000 current=1859.0000
+2026-06-17 13:30:47 INFO  SELL_EXECUTED [KRX] 126640 mode=VWAP_RECLAIM phase=EXITING exitType=TRAIL price=1859.0000 qty=5390 reason=TRAIL_VWAP_RECLAIM pnl=0.32% peakPnl=1.83% holdMs=1080000 high=1887.0000 avgPrice=1853.0000 weightedPnl=0.32% (pending fill)
+2026-06-17 13:30:47 INFO  SELL_FILLED_PNL 126640 reason=TRAIL_VWAP_RECLAIM filledQty=5390/5390 fillRatio=1.00 weightedPnl=0.32% dailyPnl=0.32%
+2026-06-17 13:30:47 INFO  SELL_FILLED 126640 reason=TRAIL_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=TRAIL
+2026-06-17 13:30:48 INFO  BUY [KRX] 126640 mode=VWAP_RECLAIM price=2220.0000 qty=4504 size=1.0000x score=15[D] | WHY: dayChg=12.41% vrScore=89 aboveBars=10 hadBelow=true vol/vol5=2.50x | VWAP: 2.77%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=2.30%/2.54%/0.68% accel=false | VOL: 67433.0000/41190.5500 TO: 149701260.0000/91340010.5000 | HIGH: 2260.0000 fromHigh=-1.77% | VR: score=89 aboveBars=10 hadBelow=true vol/vol5=2.50x | entryNo=1
+2026-06-17 13:30:48 INFO  BUY_FILLED 126640 phase=HOLDING
+2026-06-17 13:30:48 INFO  SELL_EXECUTED [KRX] 126640 mode=VWAP_RECLAIM phase=EXITING exitType=PROFIT price=2265.0000 qty=4504 reason=TAKE_PROFIT_VWAP_RECLAIM pnl=2.03% peakPnl=2.03% holdMs=120000 high=2265.0000 avgPrice=2220.0000 weightedPnl=2.03% (pending fill)
+2026-06-17 13:30:48 INFO  SELL_FILLED_PNL 126640 reason=TAKE_PROFIT_VWAP_RECLAIM filledQty=4504/4504 fillRatio=1.00 weightedPnl=2.03% dailyPnl=2.03%
+2026-06-17 13:30:48 INFO  SELL_FILLED 126640 reason=TAKE_PROFIT_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=PROFIT
+2026-06-17 14:03:35 INFO  BUY amount set for 353200: 10000000.00
+2026-06-17 14:03:37 INFO  BUY amount set for 093370: 10000000.00
+2026-06-17 14:03:37 INFO  BUY amount set for 196170: 10000000.00
+2026-06-17 14:03:38 INFO  BUY [KRX] 196170 mode=VWAP_RECLAIM price=387000.0000 qty=25 size=1.0000x score=85[A](CONV) | WHY: dayChg=2.11% vrScore=86 aboveBars=9 hadBelow=true vol/vol5=2.59x | VWAP: 0.92%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.52%/0.39%/0.52% accel=true | VOL: 13691.0000/3361.8000 TO: 5298417000.0000/1291444125.0000 | HIGH: 387500.0000 fromHigh=-0.13% | VR: score=86 aboveBars=9 hadBelow=true vol/vol5=2.59x | entryNo=1
+2026-06-17 14:03:38 INFO  BUY_FILLED 196170 phase=HOLDING
+2026-06-17 14:03:38 INFO  SELL_EXECUTED [KRX] 196170 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=382500.0000 qty=25 reason=VWAP_BREAK pnl=-1.16% peakPnl=0.52% holdMs=1260000 high=389000.0000 avgPrice=387000.0000 weightedPnl=-1.13% (pending fill)
+2026-06-17 14:03:38 INFO  SELL_FILLED_PNL 196170 reason=VWAP_BREAK filledQty=25/25 fillRatio=1.00 weightedPnl=-1.13% dailyPnl=-1.13%
+2026-06-17 14:03:38 INFO  SELL_FILLED 196170 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 14:03:38 INFO  BUY [KRX] 196170 mode=VWAP_RECLAIM price=385000.0000 qty=25 size=1.0000x score=63[D] | WHY: dayChg=4.48% vrScore=86 aboveBars=12 hadBelow=true vol/vol5=3.12x | VWAP: 1.32%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=2 vel=0.39%/0.26%/0.00% accel=true | VOL: 14499.0000/3102.9500 TO: 5582115000.0000/1189960575.0000 | HIGH: 386000.0000 fromHigh=-0.26% | VR: score=86 aboveBars=12 hadBelow=true vol/vol5=3.12x | entryNo=1
+2026-06-17 14:03:38 INFO  BUY_FILLED 196170 phase=HOLDING
+2026-06-17 14:03:38 INFO  SELL_EXECUTED [KRX] 196170 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=381500.0000 qty=25 reason=VWAP_BREAK pnl=-0.91% peakPnl=0.78% holdMs=3660000 high=388000.0000 avgPrice=385000.0000 weightedPnl=-0.87% (pending fill)
+2026-06-17 14:03:38 INFO  SELL_FILLED_PNL 196170 reason=VWAP_BREAK filledQty=25/25 fillRatio=1.00 weightedPnl=-0.87% dailyPnl=-0.87%
+2026-06-17 14:03:38 INFO  SELL_FILLED 196170 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 14:03:38 INFO  BUY [KRX] 196170 mode=VWAP_RECLAIM price=377500.0000 qty=26 size=1.0000x score=40[D] | WHY: dayChg=3.00% vrScore=89 aboveBars=8 hadBelow=true vol/vol5=2.80x | VWAP: 2.00%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=1.75%/1.62%/2.30% accel=true | VOL: 13038.0000/5596.2353 TO: 4921845000.0000/2071056029.4118 | HIGH: 378000.0000 fromHigh=-0.13% | VR: score=89 aboveBars=8 hadBelow=true vol/vol5=2.80x | entryNo=1
+2026-06-17 14:03:38 INFO  BUY_FILLED 196170 phase=HOLDING
+2026-06-17 14:03:38 INFO  SELL_EXECUTED [KRX] 196170 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=371500.0000 qty=26 reason=VWAP_BREAK pnl=-1.59% peakPnl=1.19% holdMs=1860000 high=382000.0000 avgPrice=377500.0000 weightedPnl=-1.56% (pending fill)
+2026-06-17 14:03:38 INFO  SELL_FILLED_PNL 196170 reason=VWAP_BREAK filledQty=26/26 fillRatio=1.00 weightedPnl=-1.56% dailyPnl=-1.56%
+2026-06-17 14:03:38 INFO  SELL_FILLED 196170 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 14:03:38 INFO  BUY amount set for 439960: 10000000.00
+2026-06-17 14:03:39 INFO  BUY amount set for 043260: 10000000.00
+2026-06-17 14:03:40 INFO  BUY amount set for 082740: 10000000.00
+2026-06-17 14:03:40 INFO  BUY amount set for 005290: 10000000.00
+2026-06-17 14:03:41 INFO  BUY [KRX] 005290 mode=VWAP_RECLAIM price=63000.0000 qty=158 size=1.0000x score=85[A](CONV) | WHY: dayChg=5.00% vrScore=87 aboveBars=7 hadBelow=true vol/vol5=2.83x | VWAP: 1.13%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.64%/0.48%/0.32% accel=true | VOL: 17821.0000/5379.9000 TO: 1122723000.0000/336324415.0000 | HIGH: 63100.0000 fromHigh=-0.16% | VR: score=87 aboveBars=7 hadBelow=true vol/vol5=2.83x | entryNo=1
+2026-06-17 14:03:41 INFO  BUY_FILLED 005290 phase=HOLDING
+2026-06-17 14:03:41 INFO  SELL_EXECUTED [KRX] 005290 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=62100.0000 qty=158 reason=VWAP_BREAK pnl=-1.43% peakPnl=0.63% holdMs=1680000 high=63400.0000 avgPrice=63000.0000 weightedPnl=-1.42% (pending fill)
+2026-06-17 14:03:41 INFO  SELL_FILLED_PNL 005290 reason=VWAP_BREAK filledQty=158/158 fillRatio=1.00 weightedPnl=-1.42% dailyPnl=-1.42%
+2026-06-17 14:03:41 INFO  SELL_FILLED 005290 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 14:03:41 INFO  BUY amount set for 000500: 10000000.00
+2026-06-17 14:03:42 INFO  BUY amount set for 204320: 10000000.00
+2026-06-17 14:20:17 INFO  BUY amount set for 112610: 10000000.00
+2026-06-17 14:20:18 INFO  BUY amount set for 006400: 10000000.00
+2026-06-17 14:20:19 INFO  BUY amount set for 067310: 10000000.00
+2026-06-17 14:20:20 INFO  BUY [KRX] 067310 mode=VWAP_RECLAIM price=43450.0000 qty=230 size=1.0000x score=75[C] | WHY: dayChg=7.55% vrScore=86 aboveBars=7 hadBelow=true vol/vol5=2.02x | VWAP: 0.80%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.70%/0.35%/0.58% accel=true | VOL: 18360.0000/4578.8500 TO: 797742000.0000/197277572.5000 | HIGH: 43500.0000 fromHigh=-0.11% | VR: score=86 aboveBars=7 hadBelow=true vol/vol5=2.02x | entryNo=1
+2026-06-17 14:20:20 INFO  BUY_FILLED 067310 phase=HOLDING
+2026-06-17 14:20:20 INFO  SELL_EXECUTED [KRX] 067310 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=42950.0000 qty=230 reason=VWAP_BREAK pnl=-1.15% peakPnl=0.00% holdMs=3000000 high=43450.0000 avgPrice=43450.0000 weightedPnl=-1.15% (pending fill)
+2026-06-17 14:20:20 INFO  SELL_FILLED_PNL 067310 reason=VWAP_BREAK filledQty=230/230 fillRatio=1.00 weightedPnl=-1.15% dailyPnl=-1.15%
+2026-06-17 14:20:20 INFO  SELL_FILLED 067310 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 14:20:21 INFO  BUY amount set for 015760: 10000000.00
+2026-06-17 14:20:22 INFO  BUY amount set for 010140: 10000000.00
+2026-06-17 14:20:23 INFO  BUY amount set for 082740: 10000000.00
+2026-06-17 14:20:25 INFO  BUY amount set for 204320: 10000000.00
+2026-06-17 14:51:21 INFO  BUY amount set for 329180: 10000000.00
+2026-06-17 14:51:23 INFO  BUY [KRX] 329180 mode=VWAP_RECLAIM price=709000.0000 qty=14 size=1.0000x score=68[D] | WHY: dayChg=1.29% vrScore=87 aboveBars=10 hadBelow=true vol/vol5=2.45x | VWAP: 1.13%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.42%/0.28%/1.00% accel=true | VOL: 4120.0000/1687.6000 TO: 2921080000.0000/1186367800.0000 | HIGH: 712000.0000 fromHigh=-0.42% | VR: score=87 aboveBars=10 hadBelow=true vol/vol5=2.45x | entryNo=1
+2026-06-17 14:51:23 INFO  BUY_FILLED 329180 phase=HOLDING
+2026-06-17 14:51:23 INFO  SELL_EXECUTED [KRX] 329180 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=701000.0000 qty=14 reason=VWAP_BREAK pnl=-1.13% peakPnl=0.85% holdMs=3900000 high=715000.0000 avgPrice=709000.0000 weightedPnl=-1.12% (pending fill)
+2026-06-17 14:51:23 INFO  SELL_FILLED_PNL 329180 reason=VWAP_BREAK filledQty=14/14 fillRatio=1.00 weightedPnl=-1.12% dailyPnl=-1.12%
+2026-06-17 14:51:23 INFO  SELL_FILLED 329180 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 14:51:23 INFO  BUY amount set for 043260: 10000000.00
+2026-06-17 14:51:24 INFO  BUY [KRX] 043260 mode=VWAP_RECLAIM price=42250.0000 qty=236 size=1.0000x score=70[D] | WHY: dayChg=0.96% vrScore=86 aboveBars=12 hadBelow=true vol/vol5=2.28x | VWAP: 0.73%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.60%/0.48%/0.36% accel=true | VOL: 3405.0000/1335.5500 TO: 143861250.0000/56137367.5000 | HIGH: 42250.0000 fromHigh=0.00% | VR: score=86 aboveBars=12 hadBelow=true vol/vol5=2.28x | entryNo=1
+2026-06-17 14:51:24 INFO  BUY_FILLED 043260 phase=HOLDING
+2026-06-17 14:51:24 INFO  SELL_EXECUTED [KRX] 043260 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=41900.0000 qty=236 reason=VWAP_BREAK pnl=-0.83% peakPnl=-0.12% holdMs=1080000 high=42200.0000 avgPrice=42250.0000 weightedPnl=-0.83% (pending fill)
+2026-06-17 14:51:24 INFO  SELL_FILLED_PNL 043260 reason=VWAP_BREAK filledQty=236/236 fillRatio=1.00 weightedPnl=-0.83% dailyPnl=-0.83%
+2026-06-17 14:51:24 INFO  SELL_FILLED 043260 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 14:51:25 INFO  BUY amount set for 093370: 10000000.00
+2026-06-17 14:51:26 INFO  BUY [KRX] 093370 mode=VWAP_RECLAIM price=13100.0000 qty=763 size=1.0000x score=70[D] | WHY: dayChg=6.85% vrScore=89 aboveBars=11 hadBelow=true vol/vol5=2.17x | VWAP: 0.88%(ABOVE slope=DN) allowedGap=3.00% | TREND: score=3 vel=0.77%/0.69%/0.54% accel=true | VOL: 12228.0000/4332.6500 TO: 160309080.0000/56331969.0000 | HIGH: 13120.0000 fromHigh=-0.08% | VR: score=89 aboveBars=11 hadBelow=true vol/vol5=2.17x | entryNo=1
+2026-06-17 14:51:26 INFO  BUY_FILLED 093370 phase=HOLDING
+2026-06-17 14:51:26 INFO  SELL_EXECUTED [KRX] 093370 mode=VWAP_RECLAIM phase=EXITING exitType=VWAP_BREAK price=13050.0000 qty=763 reason=VWAP_BREAK pnl=-0.46% peakPnl=0.65% holdMs=2880000 high=13195.0000 avgPrice=13110.0000 weightedPnl=-0.46% (pending fill)
+2026-06-17 14:51:26 INFO  SELL_FILLED_PNL 093370 reason=VWAP_BREAK filledQty=763/763 fillRatio=1.00 weightedPnl=-0.46% dailyPnl=-0.46%
+2026-06-17 14:51:26 INFO  SELL_FILLED 093370 reason=VWAP_BREAK remainingQty=0 phase=NONE exitType=VWAP_BREAK
+2026-06-17 14:51:26 INFO  BUY amount set for 015760: 10000000.00
+2026-06-17 14:51:28 INFO  BUY amount set for 005290: 10000000.00
+2026-06-17 14:51:29 INFO  BUY [KRX] 005290 mode=VWAP_RECLAIM price=56000.0000 qty=178 size=1.0000x score=53[D] | WHY: dayChg=9.80% vrScore=86 aboveBars=10 hadBelow=true vol/vol5=2.65x | VWAP: 1.37%(ABOVE slope=UP) allowedGap=3.00% | TREND: score=3 vel=0.36%/0.18%/0.18% accel=true | VOL: 6181.0000/1844.0000 TO: 346136000.0000/102717045.0000 | HIGH: 56300.0000 fromHigh=-0.53% | VR: score=86 aboveBars=10 hadBelow=true vol/vol5=2.65x | entryNo=1
+2026-06-17 14:51:29 INFO  BUY_FILLED 005290 phase=HOLDING
+2026-06-17 14:51:29 INFO  SELL_EXECUTED [KRX] 005290 mode=VWAP_RECLAIM phase=EXITING exitType=STOPLOSS price=55200.0000 qty=178 reason=STOP_LOSS_VWAP_RECLAIM pnl=-1.43% peakPnl=0.00% holdMs=900000 high=56000.0000 avgPrice=56000.0000 weightedPnl=-1.42% (pending fill)
+2026-06-17 14:51:29 INFO  SELL_FILLED_PNL 005290 reason=STOP_LOSS_VWAP_RECLAIM filledQty=178/178 fillRatio=1.00 weightedPnl=-1.42% dailyPnl=-1.42%
+2026-06-17 14:51:29 INFO  SELL_FILLED 005290 reason=STOP_LOSS_VWAP_RECLAIM remainingQty=0 phase=NONE exitType=STOPLOSS
+2026-06-17 14:51:29 INFO  BUY amount set for 267260: 10000000.00
+2026-06-17 14:51:31 INFO  BUY amount set for 000500: 10000000.00

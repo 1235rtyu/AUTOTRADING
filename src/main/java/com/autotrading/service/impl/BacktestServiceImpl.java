@@ -189,12 +189,41 @@ public class BacktestServiceImpl implements BacktestService {
             status.put("progress", totalDays > 0 ? (int)(done * 100.0 / totalDays) : 100);
             status.put("inserted", inserted);
         }
+        // 공휴일/API 무응답 날은 건너뜀 — 전체 수집 기간의 50% 이상 실패 시에만 오류
         if (!failures.isEmpty()) {
-            throw new RuntimeException("KRX 분봉 수집 실패 (" + failures.size() + "일): " + failures.get(0));
+            logger.warn("KRX 분봉 수집 부분 실패 {}: {}일 실패 ({}일 성공) — {}",
+                    symbol, failures.size(), done - failures.size(), failures.get(0));
+            if (failures.size() > totalDays / 2) {
+                throw new RuntimeException("KRX 분봉 수집 실패 " + failures.size() + "/" + totalDays + "일: " + failures.get(0));
+            }
         }
         if (inserted == 0) {
             throw new RuntimeException("KRX 분봉 데이터가 없습니다. 종목코드와 거래일을 확인하세요.");
         }
+    }
+
+    /**
+     * 백테스트 시뮬레이션용: DB에 저장된 bars 중 직전 거래일과 동일한 날(공휴일 중복 데이터)을 제거.
+     * 수집 단계에서 걸러지지 않은 중복 데이터(예: 어린이날 등 공휴일)를 시뮬레이션 전에 필터링.
+     */
+    private List<MinuteBar> filterHolidayDays(List<MinuteBar> bars) {
+        if (bars.isEmpty()) return bars;
+        Map<LocalDate, List<MinuteBar>> byDate = bars.stream()
+                .collect(Collectors.groupingBy(b -> b.getBarTime().toLocalDate(),
+                        java.util.LinkedHashMap::new, Collectors.toList()));
+        List<MinuteBar> result = new ArrayList<>();
+        List<MinuteBar> prevDayBars = Collections.emptyList();
+        for (Map.Entry<LocalDate, List<MinuteBar>> entry : byDate.entrySet()) {
+            List<MinuteBar> dayBars = entry.getValue();
+            if (looksLikeHolidayData(dayBars, prevDayBars)) {
+                logger.info("Backtest holiday-dup skip: {} ({}봉, 전일 데이터와 동일 — 공휴일 추정)",
+                        entry.getKey(), dayBars.size());
+            } else {
+                result.addAll(dayBars);
+                prevDayBars = dayBars;
+            }
+        }
+        return result;
     }
 
     /**
@@ -563,7 +592,9 @@ public class BacktestServiceImpl implements BacktestService {
 
         List<Map<String, Object>> trades = new ArrayList<>();
 
-        for (MinuteBar bar : bars) {
+        // 공휴일 중복 데이터 제거 (KIS API가 휴장일을 직전 거래일 데이터로 반환하는 경우 대응)
+        List<MinuteBar> filteredBars = filterHolidayDays(bars);
+        for (MinuteBar bar : filteredBars) {
             LocalDate barDay = bar.getBarTime().toLocalDate();
 
             // Reset daily counters on new trading day (always, regardless of position)
@@ -655,14 +686,21 @@ public class BacktestServiceImpl implements BacktestService {
                         }
                     }
 
-                    double rawPnl = avgPrice > 0 ? (price - avgPrice) / avgPrice : 0.0;
+                    String exitReason = cmd.get().getReason();
+                    // EMERGENCY_STOP: 1분봉 종가 대신 stop line(avgPrice * emStopMult) 사용 (보수적 체결)
+                    double exitPrice = price;
+                    if ("EMERGENCY_STOP".equals(exitReason) && avgPrice > 0) {
+                        double emStopMult = cfg != null ? 1.0 - cfg.emergencyStopPct / 100.0 : 0.970;
+                        exitPrice = Math.min(price, avgPrice * emStopMult);
+                    }
+                    double rawPnl = avgPrice > 0 ? (exitPrice - avgPrice) / avgPrice : 0.0;
                     double pnlPct = rawPnl - (cfg != null ? (cfg.feePct + cfg.slippagePct + (rawPnl > 0 ? cfg.taxPct : 0.0)) / 100.0 : 0.0);
                     long holdSec  = entryBarTime != null
                             ? Duration.between(entryBarTime, bar.getBarTime()).getSeconds() : 0L;
                     double actualEntryAmt = entryClose * currentQty;
 
                     trades.add(buildTrade(symbol, entryBarTime, bar.getBarTime(), entryMode,
-                            entryClose, price, pnlPct, cmd.get().getReason(),
+                            entryClose, exitPrice, pnlPct, exitReason,
                             holdSec, entryScore, entryGrade, entryVwap, entryVel,
                             entryVolRatio, entryToRatio,
                             entryScVwap, entryScTrend, entryScVol, entryScTo, entryScHigh, entryScPat,
@@ -676,8 +714,8 @@ public class BacktestServiceImpl implements BacktestService {
         }
 
         // Force-close any open position at the last bar
-        if (currentQty > 0 && !bars.isEmpty()) {
-            MinuteBar last  = bars.get(bars.size() - 1);
+        if (currentQty > 0 && !filteredBars.isEmpty()) {
+            MinuteBar last  = filteredBars.get(filteredBars.size() - 1);
             double lastPrice = last.getClosePrice();
             double rawPnl    = avgPrice > 0 ? (lastPrice - avgPrice) / avgPrice : 0.0;
             double pnlPct    = rawPnl - (cfg != null ? (cfg.feePct + cfg.slippagePct + (rawPnl > 0 ? cfg.taxPct : 0.0)) / 100.0 : 0.0);
@@ -692,7 +730,7 @@ public class BacktestServiceImpl implements BacktestService {
                     entryVelMid, entryVelLong, entryTrendSc, entryFromHigh, actualEntryAmt));
         }
 
-        Map<String, Object> result = buildResult(market, symbol, startDate, endDate, bars.size(), buyAmount, trades,
+        Map<String, Object> result = buildResult(market, symbol, startDate, endDate, filteredBars.size(), buyAmount, trades,
                 !proxyByTime.isEmpty());
 
         // 거절 사유 상위 10개 내림차순 정렬

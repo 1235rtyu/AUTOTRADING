@@ -1,4 +1,5 @@
 com\autotrading\model\AccountCredential.class
+com\autotrading\strategy\MinuteBarHistory$FiveMinuteBar.class
 com\autotrading\strategy\StrategyEngine$1.class
 com\autotrading\scheduler\SchedulerService$MarketSessionStatus.class
 com\autotrading\controller\BacktestController.class
@@ -39,6 +40,7 @@ com\autotrading\strategy\StrategyEngine.class
 com\autotrading\position\PositionService.class
 com\autotrading\scheduler\SchedulerService.class
 com\autotrading\service\AutoTradingService.class
+com\autotrading\strategy\MinuteBarHistory$RsiResult.class
 com\autotrading\service\DashboardService.class
 com\autotrading\market\MarketDataService$PriceSnapshot.class
 com\autotrading\market\KoreaInvestmentApiClient$Lot.class
@@ -78,6 +80,7 @@ com\autotrading\model\MonitorAggregateRow.class
 com\autotrading\strategy\StrategyEngine$MarketContext.class
 com\autotrading\controller\BalanceController.class
 com\autotrading\service\HistoryService.class
+com\autotrading\strategy\MinuteBarHistory$BollingerBands.class
 com\autotrading\service\impl\AuthServiceImpl.class
 com\autotrading\config\MyBatisConfig.class
 com\autotrading\strategy\MinuteBarHistory$MinuteBar.class
