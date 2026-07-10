@@ -221,6 +221,46 @@ html,body{height:100%;font-family:var(--sans);font-size:13px;color:var(--t1);bac
   cursor:pointer;transition:all .15s;letter-spacing:.5px;width:auto;padding:0 10px;margin-bottom:12px;}
 .btn-reset:hover{border-color:var(--rim-hi);color:var(--t2);}
 
+/* HISTORY BUTTON */
+.btn-hist{width:36px;height:36px;flex-shrink:0;border-radius:var(--r);border:1px solid var(--rim-hi);
+  background:var(--base);color:var(--t2);font-size:14px;cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;padding:0;}
+.btn-hist:hover{border-color:var(--gold-b);background:var(--gold-d);color:var(--gold);}
+
+/* HISTORY MODAL */
+.hist-modal{position:fixed;inset:0;z-index:600;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,2,8,.82);backdrop-filter:blur(18px);}
+.hist-modal-box{width:580px;max-width:95vw;max-height:85vh;
+  background:linear-gradient(155deg,#0e1623 0%,#080d18 55%,#0a0f1c 100%);
+  border-radius:16px;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 40px 100px rgba(0,0,0,.9),0 0 0 1px rgba(245,200,66,.14);}
+.hist-modal-top{height:3px;background:linear-gradient(90deg,var(--gold),rgba(245,200,66,.3),var(--gold));
+  background-size:200% 100%;animation:rmTopFlow 3s linear infinite;flex-shrink:0;}
+.hist-modal-hd{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 14px;flex-shrink:0;}
+.hist-modal-title{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--t1);letter-spacing:.5px;}
+.hist-modal-close{width:28px;height:28px;border-radius:6px;border:1px solid var(--rim-hi);
+  background:transparent;color:var(--t3);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.hist-modal-close:hover{border-color:var(--red-b);color:var(--red);}
+.hist-modal-body{flex:1;overflow-y:auto;padding:0 24px 16px;}
+.hist-modal-body::-webkit-scrollbar{width:4px;}
+.hist-modal-body::-webkit-scrollbar-thumb{background:var(--t4);border-radius:2px;}
+.hist-item{background:rgba(255,255,255,.03);border:1px solid var(--rim);border-radius:var(--r);
+  padding:10px 14px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:4px;margin-bottom:6px;}
+.hist-item:hover{border-color:rgba(245,200,66,.35);background:rgba(245,200,66,.05);}
+.hist-item.selected{border-color:var(--gold-b);background:var(--gold-d);}
+.hist-syms{font-family:var(--mono);font-size:11px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hist-meta{font-family:var(--mono);font-size:9px;color:var(--t3);}
+.hist-empty{font-family:var(--mono);font-size:10px;color:var(--t3);padding:20px 0;text-align:center;}
+.hist-modal-ft{padding:14px 24px;border-top:1px solid var(--rim);display:flex;gap:8px;flex-shrink:0;}
+.hist-run-btn{flex:1;height:36px;border-radius:var(--r);border:1px solid var(--gold-b);
+  background:var(--gold-d);color:var(--gold);font-family:var(--mono);font-size:11px;font-weight:600;
+  cursor:pointer;transition:all .15s;letter-spacing:.5px;}
+.hist-run-btn:hover:not(:disabled){background:var(--gold);color:var(--void);}
+.hist-run-btn:disabled{opacity:.35;cursor:default;}
+.hist-cancel-btn{height:36px;padding:0 16px;border-radius:var(--r);border:1px solid var(--rim-hi);
+  background:transparent;color:var(--t3);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;}
+.hist-cancel-btn:hover{border-color:var(--rim-hi);color:var(--t2);}
+
 /* PROGRESS */
 .progress-wrap{margin-top:10px;display:none;}
 .pb-outer{height:3px;background:var(--t4);border-radius:2px;overflow:hidden;margin-bottom:5px;}
@@ -335,7 +375,11 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
 .mb-early{background:rgba(176,127,255,.12);color:var(--purple);}
 .mb-sp{background:rgba(0,217,126,.12);color:var(--emerald);}
 .mb-vr{background:rgba(255,185,56,.12);color:var(--gold);}
+.mb-vr2{background:rgba(56,210,255,.12);color:#38d2ff;}
 .mb-rsiBb{background:rgba(255,100,180,.12);color:#ff64b4;}
+.mb-orb{background:rgba(255,152,0,.12);color:#ff9800;}
+.mb-30m{background:rgba(0,188,212,.12);color:#00bcd4;}
+.mb-r2g{background:rgba(76,175,80,.15);color:#4caf50;}
 .mb-unknown{background:var(--t4);color:var(--t2);}
 .exit-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;}
 .eb-tp{background:rgba(0,217,126,.12);color:var(--emerald);}
@@ -491,7 +535,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
       <!-- 거래대금 Top50 picker (KRX only) -->
       <div class="top50-panel" id="top50Panel" style="display:none;">
         <div class="top50-hd">
-          <span class="top50-title">거래대금 Top 50 · KRX</span>
+          <span class="top50-title" id="top50Title">거래대금 Top 50 · KRX</span>
           <span class="top50-sel-info" id="top50SelInfo">선택 0</span>
         </div>
         <div class="top50-ctrl">
@@ -586,9 +630,25 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
               <label class="f-label">Max Daily Entry</label>
               <input type="number" class="f-input" id="p_maxDailyEntryCount" value="2" step="1" min="1">
             </div>
-            <div class="f-group" style="grid-column:span 2;">
+            <div class="f-group">
               <label class="f-label">Max Same Pattern</label>
-              <input type="number" class="f-input" id="p_maxSamePatternEntry" value="1" step="1" min="1">
+              <input type="number" class="f-input" id="p_maxSamePatternEntry" value="3" step="1" min="1">
+            </div>
+            <div class="f-group">
+              <label class="f-label">진입 마감 시 (H)</label>
+              <input type="number" class="f-input" id="p_entryEndHour" value="15" step="1" min="9" max="15">
+            </div>
+            <div class="f-group">
+              <label class="f-label">진입 마감 분 (M)</label>
+              <input type="number" class="f-input" id="p_entryEndMinute" value="20" step="5" min="0" max="59">
+            </div>
+            <div class="f-group">
+              <label class="f-label">느린모드 마감 시 (H)</label>
+              <input type="number" class="f-input" id="p_slowModeEntryEndHour" value="13" step="1" min="9" max="15">
+            </div>
+            <div class="f-group">
+              <label class="f-label">느린모드 마감 분 (M)</label>
+              <input type="number" class="f-input" id="p_slowModeEntryEndMinute" value="0" step="5" min="0" max="59">
             </div>
           </div>
           <div class="cb-row">
@@ -684,11 +744,15 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Min Score ≥</label>
-              <input type="number" class="f-input" id="p_breakoutMinScore" value="83" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_breakoutMinScore" value="60" step="1" min="0" max="100">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Max Score ≤ (0=무제한)</label>
+              <input type="number" class="f-input" id="p_breakoutMaxScore" value="73" step="1" min="0" max="100">
             </div>
             <div class="f-group">
               <label class="f-label">VWAP Gap %</label>
-              <input type="number" class="f-input" id="p_vwapMaxGapBreakoutPct" value="1.5" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vwapMaxGapBreakoutPct" value="1.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Retest Lower %</label>
@@ -708,13 +772,13 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
           </div>
           <div class="cb-row"><input type="checkbox" id="p_breakoutRequireAcceleration" checked><label class="cb-label" for="p_breakoutRequireAcceleration">Require Acceleration</label></div>
-          <div class="cb-row"><input type="checkbox" id="p_breakoutRequireMultiUptrend" checked><label class="cb-label" for="p_breakoutRequireMultiUptrend">Require Multi Uptrend</label></div>
+          <div class="cb-row"><input type="checkbox" id="p_breakoutRequireMultiUptrend"><label class="cb-label" for="p_breakoutRequireMultiUptrend">Require Multi Uptrend</label></div>
           <div class="cb-row"><input type="checkbox" id="p_breakoutOverheatBlock" checked><label class="cb-label" for="p_breakoutOverheatBlock">Overheat Block 사용</label></div>
           <div class="acc-sub">청산 조건</div>
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Stop Loss %</label>
-              <input type="number" class="f-input" id="p_breakoutStopPct" value="2.0" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_breakoutStopPct" value="1.5" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Take Profit %</label>
@@ -722,11 +786,11 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Trail Start %</label>
-              <input type="number" class="f-input" id="p_breakoutTrailSt" value="1.8" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_breakoutTrailSt" value="1.3" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Drop %</label>
-              <input type="number" class="f-input" id="p_breakoutTrailDrop" value="1.5" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_breakoutTrailDrop" value="0.8" step="0.1" min="0">
             </div>
           </div>
         </div>
@@ -792,7 +856,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Pullback Min %</label>
-              <input type="number" class="f-input" id="p_spPullbackMinPct" value="0.8" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_spPullbackMinPct" value="0.2" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Pullback Max %</label>
@@ -800,7 +864,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Vol3/Vol10 Max</label>
-              <input type="number" class="f-input" id="p_spVol3RatioMax" value="0.7" step="0.05" min="0">
+              <input type="number" class="f-input" id="p_spVol3RatioMax" value="0.85" step="0.05" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Body Ratio Min</label>
@@ -808,14 +872,14 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group" style="grid-column:span 2;">
               <label class="f-label">Min Score ≥</label>
-              <input type="number" class="f-input" id="p_spMinScore" value="83" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_spMinScore" value="76" step="1" min="0" max="100">
             </div>
           </div>
           <div class="acc-sub">청산 조건</div>
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Stop Loss %</label>
-              <input type="number" class="f-input" id="p_spStopPct" value="1.8" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_spStopPct" value="1.5" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Take Profit %</label>
@@ -841,7 +905,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
         </div>
         <div class="acc-body">
           <div class="mode-enable">
-            <input type="checkbox" id="p_enableVwapReclaim" checked>
+            <input type="checkbox" id="p_enableVwapReclaim">
             <label for="p_enableVwapReclaim">Enable VWAP RECLAIM</label>
           </div>
           <div class="acc-sub">진입 조건</div>
@@ -860,18 +924,18 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Min Score ≥</label>
-              <input type="number" class="f-input" id="p_vrMinScore" value="87" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_vrMinScore" value="83" step="1" min="0" max="100">
             </div>
             <div class="f-group">
               <label class="f-label">Max Score ≤</label>
-              <input type="number" class="f-input" id="p_vrMaxScore" value="88" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_vrMaxScore" value="90" step="1" min="0" max="100">
             </div>
           </div>
           <div class="acc-sub">청산 조건</div>
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Stop Loss %</label>
-              <input type="number" class="f-input" id="p_vrStopPct" value="1.0" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_vrStopPct" value="1.5" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Take Profit %</label>
@@ -889,7 +953,76 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
         </div>
       </div>
 
-      <!-- 7. RSI_BOLLINGER_REBOUND -->
+      <!-- 7. VWAP_RECLAIM_V2 -->
+      <div class="acc-section">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-hdr-l"><div class="acc-dot" style="background:#38d2ff;"></div>VWAP RECLAIM V2</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="mode-enable">
+            <input type="checkbox" id="p_enableVwapReclaimV2">
+            <label for="p_enableVwapReclaimV2">Enable VWAP RECLAIM V2</label>
+          </div>
+          <div class="acc-sub">진입 조건</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">당일 최소 상승 %</label>
+              <input type="number" class="f-input" id="p_vr2MinIntradayGainPct" value="0.4" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">VWAP 이탈 Lookback 봉</label>
+              <input type="number" class="f-input" id="p_vr2VwapBelowLookback" value="30" step="1" min="1">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Volume Mult ×</label>
+              <input type="number" class="f-input" id="p_vr2VolMult" value="1.3" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">RSI Low ≥</label>
+              <input type="number" class="f-input" id="p_vr2RsiLow" value="45.0" step="1" min="0" max="100">
+            </div>
+            <div class="f-group">
+              <label class="f-label">RSI High ≤</label>
+              <input type="number" class="f-input" id="p_vr2RsiHigh" value="75.0" step="1" min="0" max="100">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Day High 이격 최대 %</label>
+              <input type="number" class="f-input" id="p_vr2FromDayHighMaxPct" value="4.0" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">VWAP 이격 최대 %</label>
+              <input type="number" class="f-input" id="p_vr2MaxVwapGapPct" value="2.0" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Min Score ≥</label>
+              <input type="number" class="f-input" id="p_vr2MinScore" value="75" step="1" min="0" max="100">
+            </div>
+          </div>
+          <div class="cb-row"><input type="checkbox" id="p_vr2RequireVwapBelow"><label class="cb-label" for="p_vr2RequireVwapBelow">VWAP 이탈 필수 (체크 해제 = 상승장 허용)</label></div>
+          <div class="acc-sub">청산 조건</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">Stop Loss %</label>
+              <input type="number" class="f-input" id="p_vr2StopPct" value="1.8" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Take Profit %</label>
+              <input type="number" class="f-input" id="p_vr2TpPct" value="3.0" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Start %</label>
+              <input type="number" class="f-input" id="p_vr2TrailSt" value="2.0" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Drop %</label>
+              <input type="number" class="f-input" id="p_vr2TrailDrop" value="1.0" step="0.1" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. RSI_BOLLINGER_REBOUND -->
       <div class="acc-section">
         <div class="acc-header" onclick="toggleAcc(this)">
           <div class="acc-hdr-l"><div class="acc-dot" style="background:#b07fff;"></div>RSI BOLLINGER REBOUND</div>
@@ -897,7 +1030,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
         </div>
         <div class="acc-body">
           <div class="mode-enable">
-            <input type="checkbox" id="p_enableRsiBbRebound" checked>
+            <input type="checkbox" id="p_enableRsiBbRebound">
             <label for="p_enableRsiBbRebound">Enable RSI BOLLINGER REBOUND</label>
           </div>
           <div class="acc-sub">진입 조건</div>
@@ -932,26 +1065,26 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">RSI 저점 기준 ≤</label>
-              <input type="number" class="f-input" id="p_rsiBbRsiLowThreshold" value="45.0" step="1" min="20" max="60">
+              <input type="number" class="f-input" id="p_rsiBbRsiLowThreshold" value="40.0" step="1" min="10" max="60">
             </div>
             <div class="f-group" style="grid-column:span 2;">
               <label class="f-label">Min Score ≥</label>
-              <input type="number" class="f-input" id="p_rsiBbMinScore" value="75" step="1" min="0" max="100">
+              <input type="number" class="f-input" id="p_rsiBbMinScore" value="80" step="1" min="0" max="100">
             </div>
           </div>
-          <div class="acc-sub">청산 조건</div>
+          <div class="acc-sub">청산 조건 (고정익절 없음 — 0입력 시 비활성)</div>
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Stop Loss %</label>
-              <input type="number" class="f-input" id="p_rsiBbStopPct" value="1.2" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_rsiBbStopPct" value="1.5" step="0.1" min="0">
             </div>
             <div class="f-group">
-              <label class="f-label">Take Profit %</label>
-              <input type="number" class="f-input" id="p_rsiBbTpPct" value="1.6" step="0.1" min="0">
+              <label class="f-label">Take Profit % (0=끄기)</label>
+              <input type="number" class="f-input" id="p_rsiBbTpPct" value="0.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Start %</label>
-              <input type="number" class="f-input" id="p_rsiBbTrailSt" value="1.2" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_rsiBbTrailSt" value="2.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Drop %</label>
@@ -972,24 +1105,130 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             <input type="checkbox" id="p_enableOpeningRangeBreakout" checked>
             <label for="p_enableOpeningRangeBreakout">Enable OPENING RANGE BREAKOUT</label>
           </div>
-          <div class="acc-sub">개념: 09:00~09:10 고가 기록 → 09:10~10:30 고가+0.1% 돌파 + VWAP위 + 거래량2배 + 추세↑ 진입</div>
+          <div class="acc-sub">개념: 09:00~09:10 고가 기록 → 09:30~10:30 고가+0.1% 돌파 + VWAP위 + 거래량2배 + 추세↑ 진입 (← 09:15: 장 초반 변동성 제외)</div>
+          <div class="acc-sub">진입 조건</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">최대 점수 (상한)</label>
+              <input type="number" class="f-input" id="p_orbMaxScore" value="73" step="1" min="0" max="100">
+            </div>
+          </div>
           <div class="acc-sub">청산 조건</div>
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Stop Loss %</label>
-              <input type="number" class="f-input" id="p_orbStopPct" value="1.8" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_orbStopPct" value="1.3" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Take Profit %</label>
-              <input type="number" class="f-input" id="p_orbTpPct" value="2.2" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_orbTpPct" value="2.0" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Start %</label>
-              <input type="number" class="f-input" id="p_orbTrailSt" value="1.8" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_orbTrailSt" value="1.5" step="0.1" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Trail Drop %</label>
-              <input type="number" class="f-input" id="p_orbTrailDrop" value="1.0" step="0.1" min="0">
+              <input type="number" class="f-input" id="p_orbTrailDrop" value="0.8" step="0.1" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. THIRTY_MIN_RSI_BB_CROSS -->
+      <div class="acc-section">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-hdr-l"><div class="acc-dot" style="background:#00bcd4;"></div>30분봉 RSI BB CROSS (30M_RSI_BB)</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="mode-enable">
+            <input type="checkbox" id="p_enable30mRsiBbCross" checked>
+            <label for="p_enable30mRsiBbCross">Enable 30MIN RSI BOLLINGER CROSS</label>
+          </div>
+          <div class="acc-sub">진입 조건 (30분봉 기준)</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">RSI 기간</label>
+              <input type="number" class="f-input" id="p_rsiBb30mRsiPeriod" value="5" step="1" min="3">
+            </div>
+            <div class="f-group">
+              <label class="f-label">RSI Signal 기간</label>
+              <input type="number" class="f-input" id="p_rsiBb30mSignalPeriod" value="3" step="1" min="2">
+            </div>
+            <div class="f-group">
+              <label class="f-label">BB 기간</label>
+              <input type="number" class="f-input" id="p_rsiBb30mBbPeriod" value="8" step="1" min="5">
+            </div>
+            <div class="f-group">
+              <label class="f-label">BB 표준편차 배수</label>
+              <input type="number" class="f-input" id="p_rsiBb30mStdMult" value="2.0" step="0.1" min="0.5">
+            </div>
+            <div class="f-group">
+              <label class="f-label">거래량 비교 30분봉 수</label>
+              <input type="number" class="f-input" id="p_rsiBb30mVolBars" value="20" step="1" min="5">
+            </div>
+            <div class="f-group">
+              <label class="f-label">최소 시장 점수</label>
+              <input type="number" class="f-input" id="p_rsiBb30mMinScore" value="60" step="5" min="0" max="100">
+            </div>
+          </div>
+          <div class="acc-sub">청산 조건</div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">Stop Loss %</label>
+              <input type="number" class="f-input" id="p_rsiBb30mStopPct" value="2.5" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Take Profit %</label>
+              <input type="number" class="f-input" id="p_rsiBb30mTpPct" value="4.0" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Start %</label>
+              <input type="number" class="f-input" id="p_rsiBb30mTrailSt" value="2.0" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Drop %</label>
+              <input type="number" class="f-input" id="p_rsiBb30mTrailDrop" value="1.0" step="0.1" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RED_TO_GREEN -->
+      <div class="acc-section">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-hdr-l"><div class="acc-dot" style="background:#ff9800;"></div>전일종가 반전 (RED_TO_GREEN)</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">
+          <div class="mode-enable">
+            <input type="checkbox" id="p_enableR2G" checked>
+            <label for="p_enableR2G">Enable RED TO GREEN</label>
+          </div>
+          <div class="p-grid">
+            <div class="f-group">
+              <label class="f-label">Max Cross % (전일종가 대비 최대)</label>
+              <input type="number" class="f-input" id="p_r2gMaxCrossPct" value="0.08" step="0.01" min="0">
+            </div>
+          </div>
+          <div class="acc-sub">청산 조건</div>
+          <div class="f-row">
+            <div class="f-group">
+              <label class="f-label">Stop Loss %</label>
+              <input type="number" class="f-input" id="p_r2gStopPct" value="2.5" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Take Profit %</label>
+              <input type="number" class="f-input" id="p_r2gTpPct" value="4.0" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Start %</label>
+              <input type="number" class="f-input" id="p_r2gTrailSt" value="2.0" step="0.1" min="0">
+            </div>
+            <div class="f-group">
+              <label class="f-label">Trail Drop %</label>
+              <input type="number" class="f-input" id="p_r2gTrailDrop" value="1.0" step="0.1" min="0">
             </div>
           </div>
         </div>
@@ -1005,7 +1244,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
           <div class="p-grid">
             <div class="f-group">
               <label class="f-label">Emergency Stop %</label>
-              <input type="number" class="f-input" id="p_emergencyStopPct" value="3.0" step="0.5" min="0">
+              <input type="number" class="f-input" id="p_emergencyStopPct" value="2.5" step="0.5" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">VWAP Break Buffer %</label>
@@ -1013,7 +1252,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">VWAP Break 유예 (초)</label>
-              <input type="number" class="f-input" id="p_vwapBreakGraceSec" value="480" step="30" min="0">
+              <input type="number" class="f-input" id="p_vwapBreakGraceSec" value="360" step="30" min="0">
             </div>
             <div class="f-group">
               <label class="f-label">Breakeven Peak %</label>
@@ -1021,7 +1260,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
             </div>
             <div class="f-group">
               <label class="f-label">Breakeven Loss %</label>
-              <input type="number" class="f-input" id="p_breakevenLoss" value="-0.1" step="0.05">
+              <input type="number" class="f-input" id="p_breakevenLoss" value="0.3" step="0.05">
             </div>
           </div>
           <div class="cb-row"><input type="checkbox" id="p_useVwapBreak" checked><label class="cb-label" for="p_useVwapBreak">VWAP Break 청산 사용</label></div>
@@ -1030,7 +1269,7 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
           <div class="cb-row"><input type="checkbox" id="p_useFailedPullback" checked><label class="cb-label" for="p_useFailedPullback">Failed Pullback 청산 사용</label></div>
           <div class="cb-row"><input type="checkbox" id="p_useEodForceSell" checked><label class="cb-label" for="p_useEodForceSell">EOD Force Sell 사용</label></div>
           <div class="cb-row"><input type="checkbox" id="p_blockSGrade" checked><label class="cb-label" for="p_blockSGrade">S등급(90~94) 진입 차단</label></div>
-          <div class="cb-row"><input type="checkbox" id="p_blockAGrade"><label class="cb-label" for="p_blockAGrade">A등급(85~89) 진입 차단</label></div>
+          <div class="cb-row"><input type="checkbox" id="p_blockAGrade" checked><label class="cb-label" for="p_blockAGrade">A등급(85~89) 진입 차단</label></div>
         </div>
       </div>
 
@@ -1061,8 +1300,11 @@ canvas#equityChart{width:100%;height:110px;display:block;border-radius:var(--r);
     </div><!-- sidebar-body -->
 
     <div class="sidebar-footer">
-      <button class="btn btn-run" id="btnRun" onclick="runAll()">▶ 백테스트 실행</button>
-      <button class="btn btn-ai" id="btnAiExport" onclick="downloadAiPrompt()" disabled style="margin-top:7px;">AI 분석 프롬프트 다운로드</button>
+      <div class="btn-row" style="margin-bottom:7px;">
+        <button class="btn btn-run" id="btnRun" onclick="runAll()" style="flex:1;margin-bottom:0;">▶ 백테스트 실행</button>
+        <button class="btn btn-hist" id="btnHist" onclick="openHistModal()" title="실행 이력">📋</button>
+      </div>
+      <button class="btn btn-ai" id="btnAiExport" onclick="downloadAiPrompt()" disabled>AI 분석 프롬프트 다운로드</button>
     </div>
   </aside>
 
@@ -1119,10 +1361,19 @@ function setMarket(mkt) {
   symbols = []; renderTags();
   document.getElementById('amtLabel').textContent  = mkt === 'KRX' ? '주문금액 (원)' : '주문금액 (USD)';
   hideDropdown();
-  // Top50 패널은 KRX에서만 표시
   var panel = document.getElementById('top50Panel');
-  if (mkt === 'KRX') { panel.style.display = 'block'; fetchTop50(); }
-  else               { panel.style.display = 'none'; }
+  var title = document.getElementById('top50Title');
+  if (mkt === 'KRX') {
+    panel.style.display = 'block';
+    title.textContent = '거래대금 Top 50 · KRX';
+    fetchTop50();
+  } else if (mkt === 'US') {
+    panel.style.display = 'block';
+    title.textContent = '거래대금 Top 50 · US';
+    fetchTop50();
+  } else {
+    panel.style.display = 'none';
+  }
 }
 
 /* ── Top50 Picker ── */
@@ -1163,7 +1414,11 @@ function top50Toggle(sym) {
 }
 
 function fetchTop50() {
-  fetch(ctx + '/api/market/ranking?market=KR&exch=KRX')
+  var mkt = document.getElementById('marketVal').value;
+  var url = mkt === 'US'
+    ? ctx + '/api/market/ranking?market=US&exch=NAS'
+    : ctx + '/api/market/ranking?market=KR&exch=KRX';
+  fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(d) {
       top50Rows = (d.data || d.output || []).slice(0, 50);
@@ -1190,7 +1445,7 @@ function top50AddToSymbols() {
   } else {
     toAdd = top50Rows.slice(0, n).map(function(r){ return String(r.symbol || ''); });
   }
-  toAdd = toAdd.filter(function(s){ return /^\d{5,6}$/.test(s); });
+  toAdd = toAdd.filter(function(s){ return s.length > 0; });
   if (!toAdd.length) { toast('추가할 종목이 없습니다', 'err'); return; }
   toAdd.forEach(function(s){ addSymbol(s); });
   toast(toAdd.length + '개 종목 추가됨', 'ok');
@@ -1201,6 +1456,7 @@ function top50AddToSymbols() {
   document.getElementById('top50Panel').style.display = 'block';
   fetchTop50();
   setInterval(fetchTop50, 60000);
+  loadHistory(); // 이력 미리 로드 (모달 열 때 빠르게 표시하기 위해)
 })();
 
 /* ── Period ── */
@@ -1270,7 +1526,8 @@ const PARAM_DEFAULTS = {
   // 공통 진입
   minHistoryBars:30, minHistoryMinutes:30, minPrice:1000, vwapHardLimitPct:8.0,
   minTurnoverKrx:50000000, minAvgTurnoverKrx:30000000, minTurnoverUs:10000,
-  useMarketFilter:true, buyCooldownSec:60, maxDailyEntryCount:2, maxSamePatternEntry:1,
+  useMarketFilter:true, buyCooldownSec:60, maxDailyEntryCount:2, maxSamePatternEntry:3, entryEndHour:15, entryEndMinute:20,
+  slowModeEntryEndHour:13, slowModeEntryEndMinute:0,
   // PULLBACK 활성
   enablePullback:false,
   // PULLBACK 진입
@@ -1284,11 +1541,12 @@ const PARAM_DEFAULTS = {
   // BREAKOUT 활성
   enableBreakout:true,
   // BREAKOUT 진입
-  breakoutMinScore:83, vwapMaxGapBreakoutPct:1.5,
-  breakoutRetestLower:1.0, breakoutRetestUpper:0.1, breakoutStrongVolMult:2.0, breakoutKrxVolMult:1.8, volumeMult:1.5,
-  breakoutRequireAcceleration:true, breakoutRequireMultiUptrend:true, breakoutOverheatBlock:true,
+  breakoutMinScore:60, breakoutMaxScore:73, vwapMaxGapBreakoutPct:1.0,
+  breakoutRetestLower:1.0, breakoutRetestUpper:0.1, breakoutStrongVolMult:2.0, breakoutKrxVolMult:1.4, volumeMult:1.5,
+  breakoutRequireAcceleration:true, breakoutRequireMultiUptrend:false, breakoutOverheatBlock:true,
+  breakoutMinVelocityMid:0.0, breakoutMinVelocityLong:0.0,
   // BREAKOUT 청산
-  breakoutStopPct:2.0, breakoutTpPct:2.0, breakoutTrailSt:1.8, breakoutTrailDrop:1.5,
+  breakoutStopPct:1.5, breakoutTpPct:2.0, breakoutTrailSt:1.3, breakoutTrailDrop:0.8,
   // EARLY_MOMENTUM 활성
   enableEarlyMomentum:false,
   // EARLY_MOMENTUM 진입
@@ -1298,35 +1556,50 @@ const PARAM_DEFAULTS = {
   // STRONG_PULLBACK 활성
   enableStrongPullback:true,
   // STRONG_PULLBACK 진입
-  spPullbackMinPct:0.8, spPullbackMaxPct:3.8,
-  spVwapMinAbovePct:0.2, spVol3RatioMax:0.7, spBodyRatioMin:0.4, spMinScore:83,
+  spPullbackMinPct:0.2, spPullbackMaxPct:3.8,
+  spVwapMinAbovePct:0.2, spVol3RatioMax:0.85, spBodyRatioMin:0.4, spMinScore:76,
   // STRONG_PULLBACK 청산
-  spStopPct:1.8, spTpPct:3.0, spTrailSt:2.0, spTrailDrop:0.8,
+  spStopPct:1.5, spTpPct:3.0, spTrailSt:2.0, spTrailDrop:0.8,
   // VWAP_RECLAIM 활성
-  enableVwapReclaim:true,
+  enableVwapReclaim:false,
   // VWAP_RECLAIM 진입
-  vrLookbackBars:12, vrVolMult:2.0, vrMinAboveVwapBars:5, vrMinScore:87, vrMaxScore:88,
+  vrLookbackBars:12, vrVolMult:2.0, vrMinAboveVwapBars:5, vrMinScore:83, vrMaxScore:90,
   // VWAP_RECLAIM 청산
-  vrStopPct:1.0, vrTpPct:2.2, vrTrailSt:1.8, vrTrailDrop:1.0,
+  vrStopPct:1.5, vrTpPct:2.2, vrTrailSt:1.8, vrTrailDrop:1.0,
+  // VWAP_RECLAIM_V2 활성
+  enableVwapReclaimV2:true,
+  // VWAP_RECLAIM_V2 진입
+  vr2MinIntradayGainPct:0.4, vr2VwapBelowLookback:30, vr2VolMult:1.3,
+  vr2RsiLow:45.0, vr2RsiHigh:75.0, vr2FromDayHighMaxPct:4.0, vr2MaxVwapGapPct:2.0, vr2MinScore:75, vr2RequireVwapBelow:false,
+  // VWAP_RECLAIM_V2 청산
+  vr2StopPct:1.8, vr2TpPct:3.0, vr2TrailSt:2.0, vr2TrailDrop:1.0,
   // RSI_BOLLINGER_REBOUND 활성
-  enableRsiBbRebound:true,
+  enableRsiBbRebound:false,
   // RSI_BOLLINGER_REBOUND 진입
   rsiBbRsiPeriod:14, rsiBbSignalPeriod:9, rsiBbPeriod:20, rsiBbStdMult:2.0,
-  rsiBbLowerTouchBufferPct:0.2, rsiBbMaxBreakdownPct:0.5, rsiBbMinVwapPct:-0.5, rsiBbRsiLowThreshold:45.0,
-  rsiBbMinScore:75,
+  rsiBbLowerTouchBufferPct:0.2, rsiBbMaxBreakdownPct:0.5, rsiBbMinVwapPct:-0.5, rsiBbRsiLowThreshold:40.0,
+  rsiBbMinScore:80,
   // RSI_BOLLINGER_REBOUND 청산
-  rsiBbStopPct:1.2, rsiBbTpPct:1.6, rsiBbTrailSt:1.2, rsiBbTrailDrop:0.6,
+  rsiBbStopPct:1.5, rsiBbTpPct:0.0, rsiBbTrailSt:2.0, rsiBbTrailDrop:0.6,
   // OPENING_RANGE_BREAKOUT 활성
   enableOpeningRangeBreakout:true,
   // OPENING_RANGE_BREAKOUT 청산
-  orbStopPct:1.8, orbTpPct:2.2, orbTrailSt:1.8, orbTrailDrop:1.0,
+  orbMaxScore:73, orbStopPct:1.3, orbTpPct:2.0, orbTrailSt:1.5, orbTrailDrop:0.8,
+  // THIRTY_MIN_RSI_BB_CROSS 활성
+  enable30mRsiBbCross:true,
+  // THIRTY_MIN_RSI_BB_CROSS 진입
+  rsiBb30mRsiPeriod:5, rsiBb30mSignalPeriod:3, rsiBb30mBbPeriod:8, rsiBb30mStdMult:2.0, rsiBb30mVolBars:20, rsiBb30mMinScore:60,
+  // THIRTY_MIN_RSI_BB_CROSS 청산
+  rsiBb30mStopPct:2.5, rsiBb30mTpPct:4.0, rsiBb30mTrailSt:2.0, rsiBb30mTrailDrop:1.0,
+  // RED_TO_GREEN 활성 + 청산
+  enableR2G:true, r2gMaxCrossPct:0.08, r2gStopPct:2.5, r2gTpPct:4.0, r2gTrailSt:2.0, r2gTrailDrop:1.0,
   // 공통 청산
-  emergencyStopPct:3.0, useVwapBreak:true, vwapBreakBuffer:1.0, vwapBreakGraceSec:480,
-  useBreakevenGuard:true, breakevenPeak:1.5, breakevenLoss:-0.1,
+  emergencyStopPct:2.5, useVwapBreak:true, vwapBreakBuffer:1.0, vwapBreakGraceSec:360,
+  useBreakevenGuard:true, breakevenPeak:1.5, breakevenLoss:0.3,
   useFailedBreakout:true, useFailedPullback:true,
   useEodForceSell:true,
   // 진입 등급 필터
-  blockSGrade:true, blockAGrade:false,
+  blockSGrade:false, blockAGrade:true,
   // 비용
   slippagePct:0.0, feePct:0.015, taxPct:0.18
 };
@@ -1399,6 +1672,13 @@ function buildSymbolReq(sym) {
   var buyAmt = parseFloat(document.getElementById('buyAmount').value) || 10000000;
   return Object.assign({ market: market, symbol: sym, startDate: start, endDate: end, buyAmount: String(buyAmt) }, collectParamValues());
 }
+function buildBatchReq(syms) {
+  var start  = document.getElementById('startDate').value;
+  var end    = document.getElementById('endDate').value;
+  var market = document.getElementById('marketVal').value;
+  var buyAmt = parseFloat(document.getElementById('buyAmount').value) || 10000000;
+  return Object.assign({ market: market, symbols: syms, startDate: start, endDate: end, buyAmount: String(buyAmt) }, collectParamValues());
+}
 function buildReq() {
   var syms  = getSymbolList();
   var start = document.getElementById('startDate').value;
@@ -1466,36 +1746,109 @@ function runBacktest() {
   document.getElementById('btContent').innerHTML =
     '<div class="empty-state"><div class="empty-icon">⏳</div>' +
     '<div class="empty-title">백테스트 실행 중...</div>' +
-    '<div class="empty-sub">' + syms.length + '개 종목 순차 시뮬레이션 중...</div></div>';
-
-  var idx = 0;
-  function runNext() {
-    if (idx >= syms.length) {
-      setButtons(false); hideProgress();
-      if (lastResults.length) {
-        renderMultiResult(lastResults);
-        document.getElementById('btnAiExport').disabled = false;
-      } else {
-        renderEmpty('결과 없음');
-        document.getElementById('btnAiExport').disabled = true;
-      }
-      return;
+    '<div class="empty-sub">' + syms.length + '개 종목 병렬 시뮬레이션 중...</div></div>';
+  showProgress(0, syms.length + '개 종목 병렬 시뮬레이션 중...');
+  fetch(ctx + '/backtest/runBatch', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(buildBatchReq(syms))
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    lastResults = d.results || [];
+    (d.errors || []).forEach(function(e) { toast(e.symbol + ' 오류: ' + (e.message || ''), 'err'); });
+    setButtons(false); hideProgress();
+    if (lastResults.length) {
+      renderMultiResult(lastResults);
+      document.getElementById('btnAiExport').disabled = false;
+      loadHistory();
+    } else {
+      renderEmpty('결과 없음');
+      document.getElementById('btnAiExport').disabled = true;
     }
-    var sym = syms[idx++];
-    showProgress(Math.round((idx-1)/syms.length*100), '[' + idx + '/' + syms.length + '] ' + sym);
-    fetch(ctx + '/backtest/run', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(buildSymbolReq(sym))
-    })
+  })
+  .catch(function(e) { toast('백테스트 실패: ' + e.message, 'err'); setButtons(false); hideProgress(); });
+}
+
+/* ── Backtest History ── */
+var histItems = [];
+var selectedHistIdx = -1;
+
+function loadHistory() {
+  fetch(ctx + '/backtest/history')
     .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.status === 'OK') lastResults.push(d);
-      else toast(sym + ' 오류: ' + (d.message || ''), 'err');
-      runNext();
-    })
-    .catch(function(e) { toast(sym + ' 실패: ' + e.message, 'err'); runNext(); });
+    .then(function(list) { histItems = list || []; })
+    .catch(function() {});
+}
+
+function openHistModal() {
+  selectedHistIdx = -1;
+  document.getElementById('histRunBtn').disabled = true;
+  document.getElementById('histModal').style.display = 'flex';
+  if (histItems.length > 0) {
+    renderHistModal();
+  } else {
+    document.getElementById('histModalBody').innerHTML = '<div class="hist-empty">로딩 중...</div>';
+    fetch(ctx + '/backtest/history')
+      .then(function(r) { return r.json(); })
+      .then(function(list) { histItems = list || []; renderHistModal(); })
+      .catch(function() {
+        document.getElementById('histModalBody').innerHTML = '<div class="hist-empty">이력을 불러올 수 없습니다.</div>';
+      });
   }
-  runNext();
+}
+
+function closeHistModal() {
+  document.getElementById('histModal').style.display = 'none';
+}
+
+function renderHistModal() {
+  var body = document.getElementById('histModalBody');
+  if (!histItems.length) {
+    body.innerHTML = '<div class="hist-empty">저장된 이력이 없습니다.<br>백테스트를 실행하면 자동으로 저장됩니다.</div>';
+    return;
+  }
+  body.innerHTML = histItems.map(function(h, i) {
+    var syms = (h.symbols || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    var symDisplay = syms.length > 5
+      ? syms.slice(0,5).join(', ') + ' 외 ' + (syms.length-5) + '개'
+      : syms.join(', ');
+    var dt = h.created_at ? String(h.created_at).substring(0,16).replace('T',' ') : '';
+    return '<div class="hist-item" id="histItem' + i + '" onclick="selectHistItem(' + i + ')">' +
+      '<div class="hist-syms">' + symDisplay + '</div>' +
+      '<div class="hist-meta">' + (h.market||'KRX') + ' · ' + (h.start_date||'') + ' ~ ' + (h.end_date||'') +
+      (dt ? ' · ' + dt : '') + ' · ' + syms.length + '개 종목</div>' +
+      '</div>';
+  }).join('');
+}
+
+function selectHistItem(idx) {
+  if (selectedHistIdx >= 0) {
+    var prev = document.getElementById('histItem' + selectedHistIdx);
+    if (prev) prev.classList.remove('selected');
+  }
+  selectedHistIdx = idx;
+  var el = document.getElementById('histItem' + idx);
+  if (el) el.classList.add('selected');
+  document.getElementById('histRunBtn').disabled = false;
+}
+
+function runFromHistory() {
+  if (selectedHistIdx < 0 || selectedHistIdx >= histItems.length) return;
+  var h = histItems[selectedHistIdx];
+  var syms = (h.symbols || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!syms.length) return;
+
+  closeHistModal();
+  setMarket(h.market || 'KRX');
+  symbols = [];
+  syms.forEach(function(s) { addSymbol(s); });
+  var sd = document.getElementById('startDate');
+  var ed = document.getElementById('endDate');
+  if (sd) sd.value = h.start_date || '';
+  if (ed) ed.value = h.end_date || '';
+
+  // 수집 없이 바로 백테스트 실행
+  runBacktest();
 }
 
 /* ── Render Result ── */
@@ -1962,11 +2315,9 @@ function rejectLabel(r) {
     'RSI_BB_BB_INVALID':         'RSI_BB 볼린저밴드 계산 불가',
     'RSI_BB_RSI_INVALID':        'RSI_BB RSI 계산 불가',
     'RSI_BB_NO_LOWER_TOUCH':     'RSI_BB 하단밴드 미터치',
-    'RSI_BB_RSI_NOT_LOW':        'RSI_BB RSI 저점 미달',
-    'RSI_BB_NO_RSI_CROSS':       'RSI_BB RSI 상향돌파 없음',
+    'RSI_BB_RSI_NOT_LOW':        'RSI_BB RSI 과매도 미달(≤35)',
     'RSI_BB_BROKEN_DOWN':        'RSI_BB 밴드 과하방 이탈',
-    'RSI_BB_TOO_FAR_BELOW_VWAP': 'RSI_BB VWAP 과리이탈',
-    'RSI_BB_DAY_DOWN_BLOCKED':   'RSI_BB 당일급락 차단',
+    'RSI_BB_ALREADY_REBOUNDED':  'RSI_BB 이미 중단선 이상 반등',
     'RSI_BB_SCORE_LOW':          'RSI_BB 점수 미달',
     'RSI_BB_VOLUME_LOW':         'RSI_BB 거래량 미달',
     'BREAKOUT_RETEST_FAIL':    'BREAKOUT 재테스트 실패',
@@ -2124,11 +2475,15 @@ function fmtHold(sec) {
 function modeBadge(m) {
   const map = {
     PULLBACK:'mb-pullback', BREAKOUT:'mb-breakout', EARLY_MOMENTUM:'mb-early',
-    STRONG_PULLBACK:'mb-sp', VWAP_RECLAIM:'mb-vr', RSI_BOLLINGER_REBOUND:'mb-rsiBb'
+    STRONG_PULLBACK:'mb-sp', VWAP_RECLAIM:'mb-vr', VWAP_RECLAIM_V2:'mb-vr2',
+    RSI_BOLLINGER_REBOUND:'mb-rsiBb', OPENING_RANGE_BREAKOUT:'mb-orb',
+    THIRTY_MIN_RSI_BB_CROSS:'mb-30m', RED_TO_GREEN:'mb-r2g'
   };
   const lbl = {
     PULLBACK:'PULLBACK', BREAKOUT:'BREAKOUT', EARLY_MOMENTUM:'EARLY MOM',
-    STRONG_PULLBACK:'STR-PB', VWAP_RECLAIM:'VWP-RCLM', RSI_BOLLINGER_REBOUND:'RSI-BB'
+    STRONG_PULLBACK:'STR-PB', VWAP_RECLAIM:'VWP-RCLM', VWAP_RECLAIM_V2:'VWAP-V2',
+    RSI_BOLLINGER_REBOUND:'RSI-BB', OPENING_RANGE_BREAKOUT:'ORB',
+    THIRTY_MIN_RSI_BB_CROSS:'30M-RSI', RED_TO_GREEN:'R2G'
   };
   return '<span class="mode-badge ' + (map[m]||'mb-unknown') + '">' + (lbl[m]||m||'?') + '</span>';
 }
@@ -2228,36 +2583,29 @@ function runAll() {
   function collectNext() {
     if (ci >= syms.length) {
       setRunStep2();
-      var bi = 0;
-      function backtestNext() {
-        if (bi >= syms.length) {
-          closeRunModal();
-          document.getElementById('btnRun').disabled = false;
-          if (lastResults.length) {
-            renderMultiResult(lastResults);
-            document.getElementById('btnAiExport').disabled = false;
-          } else {
-            renderEmpty('결과 없음');
-          }
-          return;
+      setRunProgress(0, '▸ ' + syms.length + '개 종목 병렬 백테스트 중...', '', 'SIMULATING');
+      fetch(ctx + '/backtest/runBatch', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(buildBatchReq(syms))
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        lastResults = d.results || [];
+        (d.errors || []).forEach(function(e) { toast(e.symbol + ' 오류: ' + (e.message || ''), 'err'); });
+        closeRunModal();
+        document.getElementById('btnRun').disabled = false;
+        if (lastResults.length) {
+          renderMultiResult(lastResults);
+          document.getElementById('btnAiExport').disabled = false;
+        } else {
+          renderEmpty('결과 없음');
         }
-        var sym = syms[bi++];
-        var pct = Math.round(((bi - 1) / syms.length) * 100);
-        setRunProgress(pct, '▸ ' + sym + ' — 백테스트 실행 중',
-          '', '[' + bi + ' / ' + syms.length + '] SIMULATING');
-        fetch(ctx + '/backtest/run', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(buildSymbolReq(sym))
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (d.status === 'OK') lastResults.push(d);
-          else toast(sym + ' 오류: ' + (d.message || ''), 'err');
-          backtestNext();
-        })
-        .catch(function(e) { toast(sym + ' 실패: ' + e.message, 'err'); backtestNext(); });
-      }
-      backtestNext();
+      })
+      .catch(function(e) {
+        toast('백테스트 실패: ' + e.message, 'err');
+        closeRunModal();
+        document.getElementById('btnRun').disabled = false;
+      });
       return;
     }
     var sym = syms[ci++];
@@ -2393,6 +2741,21 @@ var TOOLTIPS = {
   p_vrTpPct:     '진입가 대비 고정 익절 목표(%)\n0이면 비활성',
   p_vrTrailSt:   '이 수익률 도달 후 트레일링 스탑 시작',
   p_vrTrailDrop: '트레일링: 최고점 대비 이 % 하락 시 청산',
+  // VWAP_RECLAIM_V2 진입
+  p_enableVwapReclaimV2:    '급등 후 눌림 → VWAP 재탈환 2차 상승 전략\n당일 +3% 이상 상승 이력 + 30봉 내 VWAP 이탈 + 재탈환 + RSI 45~65',
+  p_vr2MinIntradayGainPct:  '당일 시가 대비 최고가가 이 % 이상이어야 함\n강한 종목 필터 — 급등 이력이 없으면 진입 불가',
+  p_vr2VwapBelowLookback:   '최근 N봉 내 VWAP 아래 봉이 있어야 함\n눌림 확인 기간 (5분봉 기준)',
+  p_vr2VolMult:             '현재 거래량 ≥ 10봉 평균 × 이 배수\n재탈환 강도 확인',
+  p_vr2RsiLow:              '5분봉 RSI 하한 (이 값 이상이어야 진입)\n과매도 영역 진입 방지',
+  p_vr2RsiHigh:             '5분봉 RSI 상한 (이 값 이하이어야 진입)\n과열 종목 진입 방지',
+  p_vr2FromDayHighMaxPct:   '당일 최고가 대비 현재가 하락 최대 %\n너무 많이 빠진 종목 차단',
+  p_vr2MaxVwapGapPct:       '현재가와 VWAP 이격 최대 % (양수)\nVWAP 위로 너무 멀리 간 경우 진입 불가',
+  p_vr2MinScore:            'VWAP_RECLAIM_V2 최소 진입 점수\n거래량·RSI·속도·이격 강도 합산',
+  // VWAP_RECLAIM_V2 청산
+  p_vr2StopPct:   '진입가 대비 손절 하락폭(%)',
+  p_vr2TpPct:     '진입가 대비 고정 익절 목표(%)\n0이면 비활성',
+  p_vr2TrailSt:   '이 수익률 도달 후 트레일링 스탑 시작',
+  p_vr2TrailDrop: '트레일링: 최고점 대비 이 % 하락 시 청산',
   // 공통 청산
   p_emergencyStopPct:  '어떤 조건과 무관하게 즉시 청산하는\n최대 손실 한도(%)',
   p_vwapBreakBuffer:   '현재가가 VWAP 아래로 이 % 초과 이탈 시\n청산 신호',
@@ -2481,5 +2844,24 @@ var TOOLTIPS = {
     </div>
   </div>
 </div>
+
+<!-- ── HISTORY MODAL ── -->
+<div id="histModal" class="hist-modal" style="display:none" onclick="if(event.target===this)closeHistModal()">
+  <div class="hist-modal-box">
+    <div class="hist-modal-top"></div>
+    <div class="hist-modal-hd">
+      <span class="hist-modal-title">📋 백테스트 이력</span>
+      <button class="hist-modal-close" onclick="closeHistModal()">✕</button>
+    </div>
+    <div class="hist-modal-body" id="histModalBody">
+      <div class="hist-empty">로딩 중...</div>
+    </div>
+    <div class="hist-modal-ft">
+      <button class="hist-run-btn" id="histRunBtn" onclick="runFromHistory()" disabled>▶ 이 설정으로 바로 실행</button>
+      <button class="hist-cancel-btn" onclick="closeHistModal()">취소</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

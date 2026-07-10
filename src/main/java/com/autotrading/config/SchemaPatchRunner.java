@@ -20,6 +20,7 @@ public class SchemaPatchRunner implements InitializingBean {
         patchWatchlistExchangeColumn();
         patchWatchlistUniqueSymbol();
         createTop50CacheTable();
+        createBacktestHistoryTable();
     }
 
     private void patchWatchlistExchangeColumn() {
@@ -55,6 +56,26 @@ public class SchemaPatchRunner implements InitializingBean {
             logger.info("Schema: tb_top50_cache ready");
         } catch (Exception e) {
             logger.warn("Schema patch skipped for tb_top50_cache: {}", e.getMessage());
+        }
+    }
+
+    private void createBacktestHistoryTable() {
+        try {
+            jdbcTemplate.execute(
+                "CREATE TABLE IF NOT EXISTS tb_backtest_history (" +
+                "  id INT NOT NULL AUTO_INCREMENT," +
+                "  market VARCHAR(8) NOT NULL DEFAULT 'KRX'," +
+                "  symbols TEXT NOT NULL," +
+                "  start_date VARCHAR(10) NOT NULL," +
+                "  end_date VARCHAR(10) NOT NULL," +
+                "  buy_amount BIGINT NOT NULL DEFAULT 600000," +
+                "  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
+                "  PRIMARY KEY (id)" +
+                ")"
+            );
+            logger.info("Schema: tb_backtest_history ready");
+        } catch (Exception e) {
+            logger.warn("Schema patch skipped for tb_backtest_history: {}", e.getMessage());
         }
     }
 

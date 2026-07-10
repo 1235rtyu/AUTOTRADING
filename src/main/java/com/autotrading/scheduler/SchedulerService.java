@@ -491,10 +491,84 @@ public class SchedulerService implements InitializingBean, DisposableBean {
         tickTasks.put(sym, task);
         logger.info("Auto-trading scheduler started for {}", sym);
 
-        // 시스템 시작 시 당일 누적 분봉을 StrategyEngine에 미리 주입 (30봉 대기 제거)
+        // 30분봉 지표용 과거 3거래일 + 당일 1분봉 사전 주입
+        preloadHistoricalBars(sym);
         preloadTodayBars(sym);
 
         return "Started " + sym;
+    }
+
+    /**
+     * 30분봉 RSI 지표용: 과거 3거래일 1분봉을 KIS API에서 조회해 StrategyEngine에 seed.
+     * D-3 → D-2 → D-1 순서로 로딩 (시간순).
+     */
+    @SuppressWarnings("unchecked")
+    private void preloadHistoricalBars(String symbol) {
+        if (isOverseasSymbol(symbol)) return;
+
+        LocalDate today = LocalDate.now(KST_ZONE);
+        List<LocalDate> tradingDays = new ArrayList<>();
+        LocalDate d = today.minusDays(1);
+        while (tradingDays.size() < 3) {
+            DayOfWeek dow = d.getDayOfWeek();
+            if (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY) {
+                tradingDays.add(0, d); // prepend: oldest first
+            }
+            d = d.minusDays(1);
+        }
+
+        int totalSeeded = 0;
+        for (LocalDate day : tradingDays) {
+            String dateStr = String.format("%04d%02d%02d", day.getYear(), day.getMonthValue(), day.getDayOfMonth());
+            String fromTime = "153000"; // start from end of day and go backward
+            List<Map<String, Object>> dayBars = new ArrayList<>();
+            try {
+                for (int page = 0; page < 12; page++) {
+                    Map<String, Object> raw = kisApiClient.fetchDailyMinuteChart(symbol, dateStr, fromTime);
+                    if (!"OK".equals(raw.get("status"))) break;
+                    List<Map<String, Object>> chunk = (List<Map<String, Object>>) raw.get("output2");
+                    if (chunk == null || chunk.isEmpty()) break;
+                    dayBars.addAll(chunk);
+                    Map<String, Object> oldest = chunk.get(chunk.size() - 1);
+                    String earliest = barStrField(oldest, "stck_cntg_hour", "xhms");
+                    if (earliest == null) break;
+                    earliest = earliest.replaceAll("[^0-9]", "");
+                    if (earliest.length() < 6 || earliest.compareTo("090100") <= 0) break;
+                    fromTime = preloadDecrOneMin(earliest);
+                }
+            } catch (Exception e) {
+                logger.warn("[HIST_PRELOAD] {} {} fetch error: {}", symbol, dateStr, e.getMessage());
+                continue;
+            }
+            if (dayBars.isEmpty()) continue;
+
+            dayBars.sort(Comparator.comparing(b ->
+                    barStrField(b, "stck_bsop_date", "xymd", "") +
+                    barStrField(b, "stck_cntg_hour", "xhms", "")));
+
+            String lastKey = "";
+            for (Map<String, Object> bar : dayBars) {
+                double close = barDoubleField(bar, "stck_prpr", "stck_clpr");
+                if (close <= 0) continue;
+                double open   = barDoubleField(bar, "stck_oprc"); if (open   <= 0) open   = close;
+                double high   = barDoubleField(bar, "stck_hgpr"); if (high   <= 0) high   = close;
+                double low    = barDoubleField(bar, "stck_lwpr"); if (low    <= 0) low    = close;
+                double volume = barDoubleField(bar, "cntg_vol", "acml_vol");
+                String dStr   = barStrField(bar, "stck_bsop_date", "xymd", "");
+                String tStr   = barStrField(bar, "stck_cntg_hour", "xhms", "");
+                String key    = dStr + tStr;
+                if (key.equals(lastKey)) continue;
+                lastKey = key;
+                long tsMs = preloadParseTs(dStr, tStr);
+                if (tsMs <= 0) continue;
+                LocalTime barTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(tsMs), KST_ZONE).toLocalTime();
+                if (barTime.isBefore(LocalTime.of(9, 0))) continue;
+                strategyEngine.record(symbol, open, high, low, close, volume, tsMs);
+                totalSeeded++;
+            }
+            logger.info("[HIST_PRELOAD] {} {} : {} bars", symbol, dateStr, dayBars.size());
+        }
+        logger.info("[HIST_PRELOAD] {} total {} bars preloaded from D-3~D-1", symbol, totalSeeded);
     }
 
     /**

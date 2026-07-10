@@ -97,6 +97,9 @@ public class MinuteBarHistory {
 
     private final int capacity;
     private final Deque<MinuteBar> bars = new ArrayDeque<>();
+    // D-1 봉 보존 버퍼: 날짜 경계에서 clear() 대신 rotateToPrevDay()를 호출하면
+    // 당일 봉이 여기로 이동하고 VWAP는 bars만 보지만 30분봉 계산은 두 버퍼를 합산한다.
+    private List<MinuteBar> prevDayBars = new ArrayList<>();
 
     public MinuteBarHistory(int capacity) {
         this.capacity = Math.max(5, capacity);
@@ -139,6 +142,36 @@ public class MinuteBarHistory {
 
     public synchronized void clear() {
         bars.clear();
+    }
+
+    /** 날짜 경계 전환: 현재 봉을 D-1 버퍼로 옮기고 당일 봉을 비운다.
+     *  VWAP 등 당일 전용 계산은 bars만 보므로 영향 없음.
+     *  30분봉 RSI/BB는 latestBarsMultiDay()를 통해 D-1 봉을 포함한다. */
+    public synchronized void rotateToPrevDay() {
+        prevDayBars = new ArrayList<>(bars);
+        bars.clear();
+    }
+
+    /** D-1 마지막 봉의 종가 — RED_TO_GREEN 기준가로 사용 */
+    public synchronized double prevDayLastClose() {
+        if (prevDayBars == null || prevDayBars.isEmpty()) return 0.0;
+        return prevDayBars.get(prevDayBars.size() - 1).getClose();
+    }
+
+    /** D-1 + 당일 봉을 합산하여 최근 n봉 반환 (30분봉 계산 전용) */
+    private List<MinuteBar> latestBarsMultiDay(int n) {
+        List<MinuteBar> current = new ArrayList<>(bars);
+        if (current.size() >= n) {
+            return current.subList(current.size() - n, current.size());
+        }
+        List<MinuteBar> result = new ArrayList<>(n);
+        if (!prevDayBars.isEmpty()) {
+            int needed = n - current.size();
+            int from = Math.max(0, prevDayBars.size() - needed);
+            result.addAll(prevDayBars.subList(from, prevDayBars.size()));
+        }
+        result.addAll(current);
+        return result;
     }
 
     public synchronized long spanSeconds() {
@@ -388,6 +421,203 @@ public class MinuteBarHistory {
         }
         double close = list.get(list.size() - 1).getClose();
         return new FiveMinuteBar(true, open, high, low == Double.MAX_VALUE ? 0 : low, close, volume);
+    }
+
+    /** 1분봉을 5분 단위로 집계해 최근 n개 5분봉 반환 (오래된 순) */
+    private List<FiveMinuteBar> buildFiveMinuteBars(int n) {
+        List<MinuteBar> raw = latestBars(n * 5);
+        List<FiveMinuteBar> result = new ArrayList<>();
+        int complete = raw.size() / 5;
+        int startIdx = raw.size() - complete * 5;
+        for (int i = 0; i < complete; i++) {
+            int from = startIdx + i * 5;
+            double open = raw.get(from).getOpen();
+            double high = 0;
+            double low  = Double.MAX_VALUE;
+            double vol  = 0;
+            for (int j = from; j < from + 5; j++) {
+                if (raw.get(j).getHigh() > high) high = raw.get(j).getHigh();
+                if (raw.get(j).getLow()  < low)  low  = raw.get(j).getLow();
+                vol += raw.get(j).getVolume();
+            }
+            double close = raw.get(from + 4).getClose();
+            result.add(new FiveMinuteBar(true, open, high,
+                    low == Double.MAX_VALUE ? 0 : low, close, vol));
+        }
+        return result;
+    }
+
+    public synchronized BollingerBands computeFiveMinuteBollingerBands(int period, double mult) {
+        List<FiveMinuteBar> bars5 = buildFiveMinuteBars(period);
+        if (bars5.size() < period) return new BollingerBands(false, 0, 0, 0, 0);
+        List<FiveMinuteBar> sub = bars5.subList(bars5.size() - period, bars5.size());
+        double sum = 0;
+        for (FiveMinuteBar b : sub) sum += b.close;
+        double middle = sum / period;
+        double variance = 0;
+        for (FiveMinuteBar b : sub) { double d = b.close - middle; variance += d * d; }
+        double stddev = Math.sqrt(variance / period);
+        double upper = middle + mult * stddev;
+        double lower = middle - mult * stddev;
+        double bandwidth = middle > 0 ? (upper - lower) / middle : 0;
+        return new BollingerBands(true, middle, upper, lower, bandwidth);
+    }
+
+    public synchronized RsiResult computeFiveMinuteRsiSignal(int rsiPeriod, int signalPeriod) {
+        int needed = rsiPeriod + signalPeriod + 3;
+        List<FiveMinuteBar> bars5 = buildFiveMinuteBars(needed);
+        if (bars5.size() < rsiPeriod + signalPeriod + 1)
+            return new RsiResult(false, 50, 50, 50, 50, false);
+        List<FiveMinuteBar> sub = bars5.size() > needed
+                ? bars5.subList(bars5.size() - needed, bars5.size()) : bars5;
+
+        double[] closes = new double[sub.size()];
+        for (int i = 0; i < sub.size(); i++) closes[i] = sub.get(i).close;
+
+        double[] gains  = new double[closes.length - 1];
+        double[] losses = new double[closes.length - 1];
+        for (int i = 0; i < closes.length - 1; i++) {
+            double diff = closes[i + 1] - closes[i];
+            gains[i]  = diff > 0 ?  diff : 0;
+            losses[i] = diff < 0 ? -diff : 0;
+        }
+
+        double avgGain = 0, avgLoss = 0;
+        for (int i = 0; i < rsiPeriod; i++) { avgGain += gains[i]; avgLoss += losses[i]; }
+        avgGain /= rsiPeriod; avgLoss /= rsiPeriod;
+
+        int rsiNeeded = signalPeriod + 2;
+        double[] rsiSeries = new double[rsiNeeded];
+        int rsiIdx = 0;
+        for (int i = rsiPeriod; i < gains.length && rsiIdx < rsiNeeded; i++) {
+            avgGain = (avgGain * (rsiPeriod - 1) + gains[i]) / rsiPeriod;
+            avgLoss = (avgLoss * (rsiPeriod - 1) + losses[i]) / rsiPeriod;
+            double rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
+            rsiSeries[rsiIdx++] = 100 - (100 / (1 + rs));
+        }
+        if (rsiIdx < rsiNeeded) return new RsiResult(false, 50, 50, 50, 50, false);
+
+        double sigSum = 0;
+        for (int i = 0; i < signalPeriod; i++) sigSum += rsiSeries[i];
+        double prevRsiSignal = sigSum / signalPeriod;
+
+        double sigSum2 = 0;
+        for (int i = 1; i <= signalPeriod; i++) sigSum2 += rsiSeries[i];
+        double curRsiSignal = sigSum2 / signalPeriod;
+
+        double prevRsi = rsiSeries[signalPeriod - 1];
+        double curRsi  = rsiSeries[signalPeriod];
+
+        boolean crossedUp = prevRsi <= prevRsiSignal && curRsi > curRsiSignal;
+        return new RsiResult(true, curRsi, curRsiSignal, prevRsi, prevRsiSignal, crossedUp);
+    }
+
+    /** 1분봉을 30분 단위로 집계해 최근 n개 30분봉 반환 (오래된 순) */
+    private List<FiveMinuteBar> buildThirtyMinuteBars(int n) {
+        List<MinuteBar> raw = latestBarsMultiDay(n * 30);
+        List<FiveMinuteBar> result = new ArrayList<>();
+        int complete = raw.size() / 30;
+        int startIdx = raw.size() - complete * 30;
+        for (int i = 0; i < complete; i++) {
+            int from = startIdx + i * 30;
+            double open = raw.get(from).getOpen();
+            double high = 0, low = Double.MAX_VALUE, vol = 0;
+            for (int j = from; j < from + 30; j++) {
+                if (raw.get(j).getHigh() > high) high = raw.get(j).getHigh();
+                if (raw.get(j).getLow()  < low)  low  = raw.get(j).getLow();
+                vol += raw.get(j).getVolume();
+            }
+            double close = raw.get(from + 29).getClose();
+            result.add(new FiveMinuteBar(true, open, high,
+                    low == Double.MAX_VALUE ? 0 : low, close, vol));
+        }
+        return result;
+    }
+
+    public synchronized BollingerBands computeThirtyMinuteBollingerBands(int period, double mult) {
+        List<FiveMinuteBar> bars30 = buildThirtyMinuteBars(period);
+        if (bars30.size() < period) return new BollingerBands(false, 0, 0, 0, 0);
+        List<FiveMinuteBar> sub = bars30.subList(bars30.size() - period, bars30.size());
+        double sum = 0;
+        for (FiveMinuteBar b : sub) sum += b.close;
+        double middle = sum / period;
+        double variance = 0;
+        for (FiveMinuteBar b : sub) { double d = b.close - middle; variance += d * d; }
+        double stddev = Math.sqrt(variance / period);
+        double upper = middle + mult * stddev;
+        double lower = middle - mult * stddev;
+        double bandwidth = middle > 0 ? (upper - lower) / middle : 0;
+        return new BollingerBands(true, middle, upper, lower, bandwidth);
+    }
+
+    public synchronized RsiResult computeThirtyMinuteRsiSignal(int rsiPeriod, int signalPeriod) {
+        int needed = rsiPeriod + signalPeriod + 3;
+        List<FiveMinuteBar> bars30 = buildThirtyMinuteBars(needed);
+        if (bars30.size() < rsiPeriod + signalPeriod + 1)
+            return new RsiResult(false, 50, 50, 50, 50, false);
+        List<FiveMinuteBar> sub = bars30.size() > needed
+                ? bars30.subList(bars30.size() - needed, bars30.size()) : bars30;
+
+        double[] closes = new double[sub.size()];
+        for (int i = 0; i < sub.size(); i++) closes[i] = sub.get(i).close;
+
+        double[] gains  = new double[closes.length - 1];
+        double[] losses = new double[closes.length - 1];
+        for (int i = 0; i < closes.length - 1; i++) {
+            double diff = closes[i + 1] - closes[i];
+            gains[i]  = diff > 0 ?  diff : 0;
+            losses[i] = diff < 0 ? -diff : 0;
+        }
+
+        double avgGain = 0, avgLoss = 0;
+        for (int i = 0; i < rsiPeriod; i++) { avgGain += gains[i]; avgLoss += losses[i]; }
+        avgGain /= rsiPeriod; avgLoss /= rsiPeriod;
+
+        int rsiNeeded = signalPeriod + 2;
+        double[] rsiSeries = new double[rsiNeeded];
+        int rsiIdx = 0;
+        for (int i = rsiPeriod; i < gains.length && rsiIdx < rsiNeeded; i++) {
+            avgGain = (avgGain * (rsiPeriod - 1) + gains[i]) / rsiPeriod;
+            avgLoss = (avgLoss * (rsiPeriod - 1) + losses[i]) / rsiPeriod;
+            double rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
+            rsiSeries[rsiIdx++] = 100 - (100 / (1 + rs));
+        }
+        if (rsiIdx < rsiNeeded) return new RsiResult(false, 50, 50, 50, 50, false);
+
+        double sigSum = 0;
+        for (int i = 0; i < signalPeriod; i++) sigSum += rsiSeries[i];
+        double prevRsiSignal = sigSum / signalPeriod;
+
+        double sigSum2 = 0;
+        for (int i = 1; i <= signalPeriod; i++) sigSum2 += rsiSeries[i];
+        double curRsiSignal = sigSum2 / signalPeriod;
+
+        double prevRsi = rsiSeries[signalPeriod - 1];
+        double curRsi  = rsiSeries[signalPeriod];
+
+        boolean crossedUp = prevRsi <= prevRsiSignal && curRsi > curRsiSignal;
+        return new RsiResult(true, curRsi, curRsiSignal, prevRsi, prevRsiSignal, crossedUp);
+    }
+
+    /** 최근 n개 완성 30분봉의 평균 거래량 (직전봉 제외) */
+    public synchronized double thirtyMinuteAverageVolume(int n) {
+        List<FiveMinuteBar> bars30 = buildThirtyMinuteBars(n + 1);
+        if (bars30.size() < 2) return 0;
+        int endIdx = bars30.size() - 1;
+        int startIdx = Math.max(0, endIdx - n);
+        double sum = 0;
+        int count = 0;
+        for (int i = startIdx; i < endIdx; i++) {
+            sum += bars30.get(i).volume;
+            count++;
+        }
+        return count > 0 ? sum / count : 0;
+    }
+
+    /** 가장 최근 완성 30분봉의 거래량 */
+    public synchronized double latestCompleteThirtyMinuteVolume() {
+        List<FiveMinuteBar> bars30 = buildThirtyMinuteBars(2);
+        return bars30.isEmpty() ? 0 : bars30.get(bars30.size() - 1).volume;
     }
 
     public synchronized BollingerBands computeBollingerBands(int period, double mult) {

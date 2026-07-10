@@ -4,6 +4,7 @@ import com.autotrading.model.BacktestConfig;
 import com.autotrading.service.BacktestService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,17 +13,21 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/backtest")
 public class BacktestController {
 
     private final BacktestService backtestService;
+    private final JdbcTemplate jdbcTemplate;
 
-    public BacktestController(BacktestService backtestService) {
+    public BacktestController(BacktestService backtestService, JdbcTemplate jdbcTemplate) {
         this.backtestService = backtestService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @GetMapping
@@ -64,6 +69,87 @@ public class BacktestController {
         );
     }
 
+    @PostMapping("/runBatch")
+    @ResponseBody
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> runBatch(@RequestBody Map<String, Object> body) {
+        List<String> symbols;
+        try { symbols = (List<String>) body.get("symbols"); }
+        catch (ClassCastException e) { symbols = null; }
+        if (symbols == null || symbols.isEmpty()) {
+            Map<String, Object> err = new LinkedHashMap<>();
+            err.put("status", "ERROR"); err.put("message", "종목 목록이 비어있습니다."); return err;
+        }
+
+        String market    = String.valueOf(body.getOrDefault("market",    "KRX"));
+        String startDate = String.valueOf(body.getOrDefault("startDate", ""));
+        String endDate   = String.valueOf(body.getOrDefault("endDate",   ""));
+        double buyAmount = 600_000.0;
+        try { buyAmount = Double.parseDouble(String.valueOf(body.getOrDefault("buyAmount", "600000"))); }
+        catch (Exception ignored) {}
+
+        Map<String, String> strReq = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> e : body.entrySet()) {
+            if (e.getValue() != null) strReq.put(e.getKey(), e.getValue().toString());
+        }
+        BacktestConfig cfg = parseConfig(strReq);
+
+        final String mkt = market, sd = startDate, ed = endDate;
+        final double amt = buyAmount;
+        final BacktestConfig finalCfg = cfg;
+
+        List<CompletableFuture<Map<String, Object>>> futures = symbols.stream()
+                .map(sym -> CompletableFuture.supplyAsync(() ->
+                        backtestService.runBacktest(mkt, sym.trim().toUpperCase(), sd, ed, amt, finalCfg)))
+                .collect(Collectors.toList());
+
+        List<Map<String, Object>> results = new ArrayList<>();
+        List<Map<String, Object>> errors  = new ArrayList<>();
+        for (int i = 0; i < futures.size(); i++) {
+            try {
+                Map<String, Object> r = futures.get(i).get();
+                if ("OK".equals(r.get("status"))) results.add(r);
+                else {
+                    Map<String, Object> err = new LinkedHashMap<>();
+                    err.put("symbol", symbols.get(i));
+                    err.put("message", r.getOrDefault("message", "오류"));
+                    errors.add(err);
+                }
+            } catch (Exception e) {
+                Map<String, Object> err = new LinkedHashMap<>();
+                err.put("symbol", symbols.get(i));
+                err.put("message", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+                errors.add(err);
+            }
+        }
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("status", "OK"); resp.put("results", results); resp.put("errors", errors);
+
+        if (!results.isEmpty()) {
+            try {
+                jdbcTemplate.update(
+                    "INSERT INTO tb_backtest_history (market, symbols, start_date, end_date, buy_amount) VALUES (?,?,?,?,?)",
+                    mkt, String.join(",", symbols), sd, ed, (long) amt
+                );
+            } catch (Exception ignored) {}
+        }
+        return resp;
+    }
+
+    @GetMapping("/history")
+    @ResponseBody
+    public List<Map<String, Object>> getHistory() {
+        try {
+            return jdbcTemplate.queryForList(
+                "SELECT id, market, symbols, start_date, end_date, buy_amount, created_at " +
+                "FROM tb_backtest_history ORDER BY created_at DESC LIMIT 20"
+            );
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
     /**
      * 백테스트 결과를 AI 분석용 텍스트 프롬프트로 내보냅니다.
      * JSP의 lastResults 배열 전체를 받아 서버에서 포맷 후 .txt 파일로 반환합니다.
@@ -93,7 +179,7 @@ public class BacktestController {
         String SEP2 = "─".repeat(70);
 
         sb.append("당신은 주식 단기 트레이딩 전략 분석 전문가입니다.\n");
-        sb.append("아래는 1분봉 기반 자동매매 전략(BREAKOUT / PULLBACK / STRONG_PULLBACK / VWAP_RECLAIM / RSI_BOLLINGER_REBOUND / OPENING_RANGE_BREAKOUT)의\n");
+        sb.append("아래는 1분봉 기반 자동매매 전략(BREAKOUT / PULLBACK / STRONG_PULLBACK / VWAP_RECLAIM / VWAP_RECLAIM_V2 / RSI_BOLLINGER_REBOUND / OPENING_RANGE_BREAKOUT / THIRTY_MIN_RSI_BB_CROSS / RED_TO_GREEN)의\n");
         sb.append("백테스트 결과와 전략 파라미터 전체입니다. 결과를 분석하고 전략의 강점·약점·개선 방향을 제시해 주세요.\n\n");
 
         // ── 기본 정보 ──────────────────────────────────────────
@@ -108,7 +194,7 @@ public class BacktestController {
         List<String> symbols = new ArrayList<>();
         for (Map<String, Object> r : results) symbols.add(str(r, "symbol", "?"));
 
-        String entryEndH = str(params, "entryEndHour",   "13");
+        String entryEndH = str(params, "entryEndHour",   "10");
         String entryEndM = str(params, "entryEndMinute", "30");
         if (entryEndM.length() == 1) entryEndM = "0" + entryEndM;
 
@@ -205,6 +291,7 @@ public class BacktestController {
         sb.append(pLine("일일 최대 진입 수",       params, "maxDailyEntryCount",  "2건"));
         sb.append(pLine("같은 패턴 최대 진입",     params, "maxSamePatternEntry", "1건"));
         sb.append(String.format("  %-30s: %s:%s%n", "진입 마감 시각 (KRX)", entryEndH, entryEndM));
+        sb.append(pLine("느린모드 마감 (SP/RSI_BB/VR2/30M)", params, "slowModeEntryEndHour", "13:00  (← 12: 12시 차단 역효과 확인 → 복원)"));
         sb.append(pLine("일일 최대 손실 한도",     params, "maxDailyLossPct",    "3.0%  (초과 시 당일 신규 진입 전면 차단)"));
         sb.append(pLine("일일 수익 목표 한도",     params, "maxDailyProfitPct",  "5.0%  (달성 시 당일 신규 진입 차단)"));
 
@@ -240,7 +327,7 @@ public class BacktestController {
         // BREAKOUT 진입
         sb.append("\n▶ BREAKOUT 진입 조건\n").append(SEP2).append("\n");
         sb.append(pLine("활성 여부",              params, "enableBreakout",               "true"));
-        sb.append(pLine("최소 점수(0~100)",        params, "breakoutMinScore",             "83"));
+        sb.append(pLine("최소 점수(0~100)",        params, "breakoutMinScore",             "85"));
         sb.append(pLine("VWAP 최대 이격",          params, "vwapMaxGapBreakoutPct",        "1.5%"));
         sb.append(pLine("리테스트 하한",           params, "breakoutRetestLower",          "1.0%  (전고 대비 눌림 허용 하한)"));
         sb.append(pLine("리테스트 상한",           params, "breakoutRetestUpper",          "0.1%  (전고 대비 돌파 초과 상한)"));
@@ -249,26 +336,26 @@ public class BacktestController {
         sb.append(pLine("가속도 조건 필수",        params, "breakoutRequireAcceleration",  "true  (단기속도 > 중기속도)"));
         sb.append(pLine("MA 3중 상승 필수",        params, "breakoutRequireMultiUptrend",  "true  (false면 2개 이상)"));
         sb.append(pLine("과열 차단",              params, "breakoutOverheatBlock",         "true"));
-        sb.append(pLine("중기 속도 하한",          params, "breakoutMinVelocityMid",       "0.001"));
+        sb.append(pLine("중기 속도 하한",          params, "breakoutMinVelocityMid",       "0.0008"));
         sb.append(pLine("장기 속도 하한",          params, "breakoutMinVelocityLong",      "0.0005"));
         sb.append(pLine("필요 상승봉 수",          params, "breakoutRequiredBullishBars",  "2봉"));
 
         // BREAKOUT 청산
         sb.append("\n▶ BREAKOUT 청산 조건\n").append(SEP2).append("\n");
-        sb.append(pLine("손절",                    params, "breakoutStopPct",   "2.0%"));
+        sb.append(pLine("손절",                    params, "breakoutStopPct",   "1.5%"));
         sb.append(pLine("고정 익절",               params, "breakoutTpPct",     "2.0%"));
-        sb.append(pLine("트레일 시작 수익",         params, "breakoutTrailSt",   "1.8%"));
-        sb.append(pLine("트레일 고점 대비 하락",    params, "breakoutTrailDrop", "1.5%"));
+        sb.append(pLine("트레일 시작 수익",         params, "breakoutTrailSt",   "1.5%"));
+        sb.append(pLine("트레일 고점 대비 하락",    params, "breakoutTrailDrop", "1.2%"));
 
         // STRONG_PULLBACK 진입
         sb.append("\n▶ STRONG_PULLBACK 진입 조건\n").append(SEP2).append("\n");
         sb.append(pLine("활성 여부",              params, "enableStrongPullback", "true"));
-        sb.append(pLine("최근 고점 대비 눌림 최소",params, "spPullbackMinPct",    "0.8%"));
+        sb.append(pLine("최근 고점 대비 눌림 최소",params, "spPullbackMinPct",    "0.5%"));
         sb.append(pLine("최근 고점 대비 눌림 최대",params, "spPullbackMaxPct",    "3.8%"));
         sb.append(pLine("VWAP 위 최소 위치",       params, "spVwapMinAbovePct",   "0.2%  (현재가가 VWAP 대비 최소 이 % 위)"));
-        sb.append(pLine("3봉 vs 10봉 거래량 비율", params, "spVol3RatioMax",      "0.7  (3봉 평균 < 10봉 평균 × 이 값 → 거래량 감소 확인)"));
+        sb.append(pLine("3봉 vs 10봉 거래량 비율", params, "spVol3RatioMax",      "0.85  (3봉 평균 < 10봉 평균 × 이 값 → 거래량 감소 확인)"));
         sb.append(pLine("양봉 몸통 비율 최소",     params, "spBodyRatioMin",      "0.4  (몸통/전체 캔들 크기)"));
-        sb.append(pLine("최소 점수",              params, "spMinScore",           "83"));
+        sb.append(pLine("최소 점수",              params, "spMinScore",           "72"));
 
         // STRONG_PULLBACK 청산
         sb.append("\n▶ STRONG_PULLBACK 청산 조건\n").append(SEP2).append("\n");
@@ -283,19 +370,19 @@ public class BacktestController {
         sb.append(pLine("VWAP 이탈 확인 봉수",    params, "vrLookbackBars",     "12봉  (최근 N봉 내 VWAP 아래 봉 존재 확인)"));
         sb.append(pLine("거래량 배수",             params, "vrVolMult",          "2.0x  (5봉 평균 대비)"));
         sb.append(pLine("연속 VWAP 위 봉 수",     params, "vrMinAboveVwapBars", "5봉  (회복 후 연속 N봉 이상 VWAP 위)"));
-        sb.append(pLine("최소 점수",              params, "vrMinScore",          "87"));
-        sb.append(pLine("최대 점수",              params, "vrMaxScore",          "88  (89점 PF 0.45 → 과열 직전 차단)"));
+        sb.append(pLine("최소 점수",              params, "vrMinScore",          "83  (← 87)"));
+        sb.append(pLine("최대 점수",              params, "vrMaxScore",          "90  (← 88: 범위 83~90으로 확장)"));
 
         // VWAP_RECLAIM 청산
         sb.append("\n▶ VWAP_RECLAIM 청산 조건\n").append(SEP2).append("\n");
-        sb.append(pLine("손절",                    params, "vrStopPct",   "1.0%"));
+        sb.append(pLine("손절",                    params, "vrStopPct",   "1.5%  (← 1.0%)"));
         sb.append(pLine("고정 익절",               params, "vrTpPct",     "2.2%"));
         sb.append(pLine("트레일 시작 수익",         params, "vrTrailSt",   "1.8%"));
         sb.append(pLine("트레일 고점 대비 하락",    params, "vrTrailDrop", "1.0%"));
 
         // RSI_BOLLINGER_REBOUND 진입
         sb.append("\n▶ RSI_BOLLINGER_REBOUND 진입 조건\n").append(SEP2).append("\n");
-        sb.append(pLine("활성 여부",             params, "enableRsiBbRebound",       "false  (PF 0.62 → 비활성)"));
+        sb.append(pLine("활성 여부",             params, "enableRsiBbRebound",       "false  (비활성 — PF 0.74 손실 확인)"));
         sb.append(pLine("RSI 기간",             params, "rsiBbRsiPeriod",           "14"));
         sb.append(pLine("RSI Signal 기간",      params, "rsiBbSignalPeriod",        "9"));
         sb.append(pLine("BB 기간",              params, "rsiBbPeriod",              "20"));
@@ -303,34 +390,34 @@ public class BacktestController {
         sb.append(pLine("BB 하단 터치 버퍼 %",  params, "rsiBbLowerTouchBufferPct", "0.2%  (5분봉 low ≤ BB하단×(1+버퍼))"));
         sb.append(pLine("최대 하방 이탈 %",     params, "rsiBbMaxBreakdownPct",     "0.5%  (BB하단 이 % 초과 이탈 시 차단)"));
         sb.append(pLine("VWAP 대비 최소 %",     params, "rsiBbMinVwapPct",          "-0.5%  (VWAP 대비 이 % 이상 위치)"));
-        sb.append(pLine("RSI 저점 기준 ≤",      params, "rsiBbRsiLowThreshold",     "45.0  (RSI/Signal이 이 값 이하 = 과매도)"));
-        sb.append(pLine("최소 점수",            params, "rsiBbMinScore",            "75"));
+        sb.append(pLine("RSI 저점 기준 ≤",      params, "rsiBbRsiLowThreshold",     "40.0  (← 32.0: 0건 발생 → 추가 완화)"));
+        sb.append(pLine("최소 점수",            params, "rsiBbMinScore",            "80"));
 
         // RSI_BOLLINGER_REBOUND 청산
         sb.append("\n▶ RSI_BOLLINGER_REBOUND 청산 조건\n").append(SEP2).append("\n");
-        sb.append(pLine("손절",                  params, "rsiBbStopPct",   "1.2%"));
-        sb.append(pLine("고정 익절",             params, "rsiBbTpPct",     "1.6%  (짧은 반등 목표)"));
-        sb.append(pLine("트레일 시작 수익",       params, "rsiBbTrailSt",   "1.2%"));
+        sb.append(pLine("손절",                  params, "rsiBbStopPct",   "1.5%"));
+        sb.append(pLine("고정 익절",             params, "rsiBbTpPct",     "0.0%  (트레일만 사용)"));
+        sb.append(pLine("트레일 시작 수익",       params, "rsiBbTrailSt",   "2.0%"));
         sb.append(pLine("트레일 고점 대비 하락",  params, "rsiBbTrailDrop", "0.6%"));
 
         // OPENING_RANGE_BREAKOUT 진입
         sb.append("\n▶ OPENING_RANGE_BREAKOUT (ORB) 진입 조건\n").append(SEP2).append("\n");
-        sb.append(pLine("활성 여부",          params, "enableOpeningRangeBreakout", "false  (백테스트 검증 후 활성화)"));
-        sb.append("  ORB 개념: 09:00~09:10 고가 기록 → 09:10~10:30 사이 고가+0.1% 돌파 + VWAP위 + 거래량2배 + 추세↑ 진입\n");
+        sb.append(pLine("활성 여부",          params, "enableOpeningRangeBreakout", "true  (ORB PF 2.94 확인 → 활성화)"));
+        sb.append("  ORB 개념: 09:00~09:10 고가 기록 → 09:30~10:30 사이 고가+0.1% 돌파 + VWAP위 + 거래량2배 + 추세↑ 진입 (← 09:15: 장 초반 변동성 제외)\n");
 
         // OPENING_RANGE_BREAKOUT 청산
         sb.append("\n▶ OPENING_RANGE_BREAKOUT 청산 조건\n").append(SEP2).append("\n");
-        sb.append(pLine("손절",                  params, "orbStopPct",   "1.8%"));
-        sb.append(pLine("고정 익절",             params, "orbTpPct",     "2.2%"));
-        sb.append(pLine("트레일 시작 수익",       params, "orbTrailSt",   "1.8%"));
-        sb.append(pLine("트레일 고점 대비 하락",  params, "orbTrailDrop", "1.0%"));
+        sb.append(pLine("손절",                  params, "orbStopPct",   "1.3%  (← 1.8%)"));
+        sb.append(pLine("고정 익절",             params, "orbTpPct",     "2.0%  (← 2.2%)"));
+        sb.append(pLine("트레일 시작 수익",       params, "orbTrailSt",   "1.5%  (← 1.8%)"));
+        sb.append(pLine("트레일 고점 대비 하락",  params, "orbTrailDrop", "0.8%"));
 
         // 공통 청산 조건
         sb.append("\n▶ 공통 청산 조건\n").append(SEP2).append("\n");
         sb.append(pLine("긴급 손절",              params, "emergencyStopPct",  "3.0%  (모든 조건 무시, 즉시 청산)"));
         sb.append(pLine("VWAP Break 청산",        params, "useVwapBreak",      "true"));
-        sb.append(pLine("VWAP Break 버퍼",        params, "vwapBreakBuffer",   "1.0%  (VWAP 아래 이 % 초과 이탈 시 청산)"));
-        sb.append(pLine("VWAP Break 유예시간",    params, "vwapBreakGraceSec", "480초  (진입 후 N초 이내 VWAP Break 무시)"));
+        sb.append(pLine("VWAP Break 버퍼",        params, "vwapBreakBuffer",   "0.5%  (VWAP 아래 이 % 초과 이탈 시 청산)"));
+        sb.append(pLine("VWAP Break 유예시간",    params, "vwapBreakGraceSec", "300초  (진입 후 N초 이내 VWAP Break 무시)"));
         sb.append(pLine("Breakeven Guard",        params, "useBreakevenGuard", "true"));
         sb.append(pLine("Breakeven 고점 기준",    params, "breakevenPeak",     "1.5%  (이 수익 도달 후 Guard 활성)"));
         sb.append(pLine("Breakeven 손실 한도",    params, "breakevenLoss",     "-0.1%  (Guard 활성 후 이 손실 시 청산)"));
@@ -384,11 +471,11 @@ public class BacktestController {
         sb.append("   - BREAKOUT / PULLBACK / STRONG_PULLBACK / VWAP_RECLAIM / RSI_BOLLINGER_REBOUND / OPENING_RANGE_BREAKOUT 각 모드의 강약점\n");
         sb.append("   - 비활성화하거나 조건을 강화해야 할 모드 추천\n\n");
         sb.append("3. 진입 조건 최적화\n");
-        sb.append("   - 현재 최소 점수(BREAKOUT=" + str(params, "breakoutMinScore", "83")
+        sb.append("   - 현재 최소 점수(BREAKOUT=" + str(params, "breakoutMinScore", "85")
                 + ", PULLBACK=" + str(params, "pullbackMinScore", "80")
-                + ", SP=" + str(params, "spMinScore", "83")
-                + ", VR=" + str(params, "vrMinScore", "87")
-                + ", RSI_BB=" + str(params, "rsiBbMinScore", "75") + ")가 적절한지 검토\n");
+                + ", SP=" + str(params, "spMinScore", "72")
+                + ", VR=" + str(params, "vrMinScore", "83")
+                + ", RSI_BB=" + str(params, "rsiBbMinScore", "80") + ")가 적절한지 검토\n");
         sb.append("   - S등급(90~94) 차단: " + str(params, "blockSGrade", "true")
                 + " / A등급(85~89) 차단: " + str(params, "blockAGrade", "false") + " 설정 재검토\n");
         sb.append("   - VWAP 이격 기준(PB=" + str(params, "vwapMaxGapPullbackPct", "1.0")
@@ -396,10 +483,10 @@ public class BacktestController {
         sb.append("   - 속도(velocity) 조건 조정 필요 여부\n\n");
         sb.append("4. 청산 조건 최적화\n");
         sb.append("   - 모드별 손절%·익절%·트레일 파라미터 최적화 제안\n");
-        sb.append("   - BREAKOUT: 손절=" + str(params, "breakoutStopPct", "2.0")
+        sb.append("   - BREAKOUT: 손절=" + str(params, "breakoutStopPct", "1.5")
                 + "%, 익절=" + str(params, "breakoutTpPct", "2.0")
-                + "%, 트레일시작=" + str(params, "breakoutTrailSt", "1.8")
-                + "%, 트레일하락=" + str(params, "breakoutTrailDrop", "1.5") + "%\n");
+                + "%, 트레일시작=" + str(params, "breakoutTrailSt", "1.5")
+                + "%, 트레일하락=" + str(params, "breakoutTrailDrop", "1.2") + "%\n");
         sb.append("   - PULLBACK: 손절=" + str(params, "pullbackStopPct", "2.3")
                 + "%, 익절=" + str(params, "pullbackTpPct", "3.2")
                 + "%, 트레일시작=" + str(params, "pullbackTrailSt", "2.2")
@@ -408,21 +495,21 @@ public class BacktestController {
                 + "%, 익절=" + str(params, "spTpPct", "3.0")
                 + "%, 트레일시작=" + str(params, "spTrailSt", "2.0")
                 + "%, 트레일하락=" + str(params, "spTrailDrop", "0.8") + "%\n");
-        sb.append("   - VR: 손절=" + str(params, "vrStopPct", "1.0")
+        sb.append("   - VR: 손절=" + str(params, "vrStopPct", "1.5")
                 + "%, 익절=" + str(params, "vrTpPct", "2.2")
                 + "%, 트레일시작=" + str(params, "vrTrailSt", "1.8")
                 + "%, 트레일하락=" + str(params, "vrTrailDrop", "1.0") + "%\n");
-        sb.append("   - RSI_BB: 손절=" + str(params, "rsiBbStopPct", "1.2")
-                + "%, 익절=" + str(params, "rsiBbTpPct", "1.6")
-                + "%, 트레일시작=" + str(params, "rsiBbTrailSt", "1.2")
+        sb.append("   - RSI_BB: 손절=" + str(params, "rsiBbStopPct", "1.5")
+                + "%, 익절=" + str(params, "rsiBbTpPct", "0.0")
+                + "%, 트레일시작=" + str(params, "rsiBbTrailSt", "2.0")
                 + "%, 트레일하락=" + str(params, "rsiBbTrailDrop", "0.6") + "%\n");
-        sb.append("   - ORB: 손절=" + str(params, "orbStopPct", "1.8")
-                + "%, 익절=" + str(params, "orbTpPct", "2.2")
-                + "%, 트레일시작=" + str(params, "orbTrailSt", "1.8")
-                + "%, 트레일하락=" + str(params, "orbTrailDrop", "1.0") + "%\n");
+        sb.append("   - ORB: 손절=" + str(params, "orbStopPct", "1.3")
+                + "%, 익절=" + str(params, "orbTpPct", "2.0")
+                + "%, 트레일시작=" + str(params, "orbTrailSt", "1.5")
+                + "%, 트레일하락=" + str(params, "orbTrailDrop", "0.8") + "%\n");
         sb.append("   - 긴급손절=" + str(params, "emergencyStopPct", "3.0")
-                + "%, VWAP Break 버퍼=" + str(params, "vwapBreakBuffer", "1.0")
-                + "%, 유예=" + str(params, "vwapBreakGraceSec", "480") + "초 검토\n\n");
+                + "%, VWAP Break 버퍼=" + str(params, "vwapBreakBuffer", "0.5")
+                + "%, 유예=" + str(params, "vwapBreakGraceSec", "300") + "초 검토\n\n");
         sb.append("5. 수익·손실 거래 패턴 차이\n");
         sb.append("   - 진입 시간대(장 초반 vs 중반 vs 후반) 별 성과\n");
         sb.append("   - 보유 시간과 수익률의 상관관계\n");
@@ -721,6 +808,7 @@ public class BacktestController {
 
         // BREAKOUT 진입
         tryInt(req, "breakoutMinScore",           v -> cfg.breakoutMinScore       = v);
+        tryInt(req, "breakoutMaxScore",           v -> cfg.breakoutMaxScore       = v);
         tryDbl(req, "vwapMaxGapBreakoutPct",      v -> cfg.vwapMaxGapBreakoutPct  = v);
         tryDbl(req, "breakoutRetestLower",        v -> cfg.breakoutRetestLower    = v);
         tryDbl(req, "breakoutRetestUpper",        v -> cfg.breakoutRetestUpper    = v);
@@ -770,6 +858,8 @@ public class BacktestController {
         tryInt(req,  "vwapBreakGraceSec",      v -> cfg.vwapBreakGraceSec     = v);
         tryInt(req,  "entryEndHour",           v -> cfg.entryEndHour          = v);
         tryInt(req,  "entryEndMinute",         v -> cfg.entryEndMinute        = v);
+        tryInt(req,  "slowModeEntryEndHour",   v -> cfg.slowModeEntryEndHour  = v);
+        tryInt(req,  "slowModeEntryEndMinute", v -> cfg.slowModeEntryEndMinute= v);
         tryDbl(req,  "maxDailyLossPct",        v -> cfg.maxDailyLossPct       = v);
         tryDbl(req,  "maxDailyProfitPct",      v -> cfg.maxDailyProfitPct     = v);
 
@@ -824,10 +914,50 @@ public class BacktestController {
 
         // OPENING_RANGE_BREAKOUT
         tryBool(req, "enableOpeningRangeBreakout", v -> cfg.enableOpeningRangeBreakout = v);
+        tryInt(req,  "orbMaxScore",                v -> cfg.orbMaxScore                = v);
         tryDbl(req,  "orbStopPct",                 v -> cfg.orbStopPct                 = v);
         tryDbl(req,  "orbTpPct",                   v -> cfg.orbTpPct                   = v);
         tryDbl(req,  "orbTrailSt",                 v -> cfg.orbTrailSt                 = v);
         tryDbl(req,  "orbTrailDrop",               v -> cfg.orbTrailDrop               = v);
+
+        // THIRTY_MIN_RSI_BB_CROSS 진입
+        tryBool(req, "enable30mRsiBbCross",    v -> cfg.enable30mRsiBbCross    = v);
+        tryInt(req,  "rsiBb30mRsiPeriod",      v -> cfg.rsiBb30mRsiPeriod      = v);
+        tryInt(req,  "rsiBb30mSignalPeriod",   v -> cfg.rsiBb30mSignalPeriod   = v);
+        tryInt(req,  "rsiBb30mBbPeriod",       v -> cfg.rsiBb30mBbPeriod       = v);
+        tryDbl(req,  "rsiBb30mStdMult",        v -> cfg.rsiBb30mStdMult        = v);
+        tryInt(req,  "rsiBb30mVolBars",        v -> cfg.rsiBb30mVolBars        = v);
+        tryInt(req,  "rsiBb30mMinScore",       v -> cfg.rsiBb30mMinScore       = v);
+        // THIRTY_MIN_RSI_BB_CROSS 청산
+        tryDbl(req,  "rsiBb30mStopPct",        v -> cfg.rsiBb30mStopPct        = v);
+        tryDbl(req,  "rsiBb30mTpPct",          v -> cfg.rsiBb30mTpPct          = v);
+        tryDbl(req,  "rsiBb30mTrailSt",        v -> cfg.rsiBb30mTrailSt        = v);
+        tryDbl(req,  "rsiBb30mTrailDrop",      v -> cfg.rsiBb30mTrailDrop      = v);
+
+        // RED_TO_GREEN 진입
+        tryBool(req, "enableR2G",              v -> cfg.enableR2G              = v);
+        tryDbl(req,  "r2gMaxCrossPct",         v -> cfg.r2gMaxCrossPct         = v);
+        tryDbl(req,  "r2gStopPct",             v -> cfg.r2gStopPct             = v);
+        tryDbl(req,  "r2gTpPct",               v -> cfg.r2gTpPct               = v);
+        tryDbl(req,  "r2gTrailSt",             v -> cfg.r2gTrailSt             = v);
+        tryDbl(req,  "r2gTrailDrop",           v -> cfg.r2gTrailDrop           = v);
+
+        // VWAP_RECLAIM_V2 진입
+        tryBool(req, "enableVwapReclaimV2",    v -> cfg.enableVwapReclaimV2    = v);
+        tryDbl(req,  "vr2MinIntradayGainPct",  v -> cfg.vr2MinIntradayGainPct  = v);
+        tryInt(req,  "vr2VwapBelowLookback",   v -> cfg.vr2VwapBelowLookback   = v);
+        tryDbl(req,  "vr2VolMult",             v -> cfg.vr2VolMult             = v);
+        tryDbl(req,  "vr2RsiLow",             v -> cfg.vr2RsiLow              = v);
+        tryDbl(req,  "vr2RsiHigh",            v -> cfg.vr2RsiHigh             = v);
+        tryDbl(req,  "vr2FromDayHighMaxPct",   v -> cfg.vr2FromDayHighMaxPct   = v);
+        tryDbl(req,  "vr2MaxVwapGapPct",       v -> cfg.vr2MaxVwapGapPct       = v);
+        tryInt(req,  "vr2MinScore",            v -> cfg.vr2MinScore            = v);
+        tryBool(req, "vr2RequireVwapBelow",    v -> cfg.vr2RequireVwapBelow    = v);
+        // VWAP_RECLAIM_V2 청산
+        tryDbl(req,  "vr2StopPct",             v -> cfg.vr2StopPct             = v);
+        tryDbl(req,  "vr2TpPct",               v -> cfg.vr2TpPct               = v);
+        tryDbl(req,  "vr2TrailSt",             v -> cfg.vr2TrailSt             = v);
+        tryDbl(req,  "vr2TrailDrop",           v -> cfg.vr2TrailDrop           = v);
 
         return cfg;
     }

@@ -14,7 +14,7 @@
 [INFO] --- compiler:3.11.0:compile (default-compile) @ auto-trading ---
 [INFO] Changes detected - recompiling the module! :source
 [INFO] Compiling 69 source files with javac [debug target 11] to target\classes
-[WARNING] /C:/workspace/autotrading/src/main/java/com/autotrading/model/BacktestConfig.java:[139,19] deprecated item is not annotated with @Deprecated
+[WARNING] /C:/workspace/autotrading/src/main/java/com/autotrading/model/BacktestConfig.java:[165,19] deprecated item is not annotated with @Deprecated
 [INFO] /C:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: C:\workspace\autotrading\src\main\java\com\autotrading\market\KoreaInvestmentApiClient.java uses unchecked or unsafe operations.
 [INFO] /C:/workspace/autotrading/src/main/java/com/autotrading/market/KoreaInvestmentApiClient.java: Recompile with -Xlint:unchecked for details.
 [INFO] 
@@ -36,6 +36,6 @@
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  7.821 s
-[INFO] Finished at: 2026-06-26T12:40:58+09:00
+[INFO] Total time:  5.457 s
+[INFO] Finished at: 2026-07-10T16:41:33+09:00
 [INFO] ------------------------------------------------------------------------
